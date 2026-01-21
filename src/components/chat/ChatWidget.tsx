@@ -172,7 +172,7 @@ export function ChatWidget() {
                                     : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
                             )}
                         >
-                            {m.content ? m.content : (m.parts ? m.parts.map((p: any) => p.type === 'text' ? p.text : '').join('') : '')}
+                            {m.content || (m.parts ? m.parts.map((p: any) => p.type === 'text' ? p.text : '').join('') : '')}
                         </div>
                     </div>
                 ))}

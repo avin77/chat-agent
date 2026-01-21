@@ -171,9 +171,15 @@ export async function POST(req: Request) {
                     const phone = validatePhone(latestMessage);
                     const name = extractName(latestMessage);
 
+                    // Check for SHORT phone (5-9 digits) which is invalid
+                    const hasShortPhone = /\b\d{5,9}\b/.test(latestMessage);
+
                     if (intent === 'maid_hire' || intent === 'complaint' || intent === 'helper_reg') {
                         if (phone && !name) {
                             finalText = "Thank you for the number. What is your Name?";
+                        } else if (name && hasShortPhone && !phone) {
+                            // Name provided but phone is invalid (too short)
+                            finalText = "I got your name, but the phone number looks invalid. Please provide a 10-digit mobile number.";
                         } else if (name && !phone) {
                             finalText = "Thanks! Could you please share your 10-digit Phone Number?";
                         } else if (!phone && !name) {

@@ -8627,3 +8627,999 @@ DEBUG_SESSION: ResolvedID: 247zggpr06jmknuoa3b BodyID: 247zggpr06jmknuoa3b Heade
   "intent": "maid_hire"
 }
 ---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "tXcq45ZycVVGRbF8"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "tXcq45ZycVVGRbF8"
+    },
+    {
+      "id": "ExhDOI0JIXKIZn4h",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cleaning",
+      "id": "6sVhL71Vttww6aLc"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "tXcq45ZycVVGRbF8"
+    },
+    {
+      "id": "ExhDOI0JIXKIZn4h",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cleaning",
+      "id": "6sVhL71Vttww6aLc"
+    },
+    {
+      "id": "WwovbsMPMlLEKO4K",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cooking",
+      "id": "ZoTBHKge6bNc6XmO"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: "." -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "tXcq45ZycVVGRbF8"
+    },
+    {
+      "id": "ExhDOI0JIXKIZn4h",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cleaning",
+      "id": "6sVhL71Vttww6aLc"
+    },
+    {
+      "id": "WwovbsMPMlLEKO4K",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cooking",
+      "id": "ZoTBHKge6bNc6XmO"
+    },
+    {
+      "id": "kUXyMgRmLOpF9Czl",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": ".",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cleaning",
+      "id": "ay5yfie1EwxR11ux"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: "." -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "QbPfW2Wc0XZsfpUr"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "QbPfW2Wc0XZsfpUr"
+    },
+    {
+      "id": "jmczLXEVvnfHKWce",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "sadas 8979799998",
+      "id": "PKL534mSlTAUyP4W"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Thank you for the number. What is your Name?"
+[Finish] {
+  "text": "Thank you for the number. What is your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "QbPfW2Wc0XZsfpUr"
+    },
+    {
+      "id": "jmczLXEVvnfHKWce",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "sadas 8979799998",
+      "id": "PKL534mSlTAUyP4W"
+    },
+    {
+      "id": "1NFq5LS3Ik5er8jE",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": ".\n",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "hhkkjh 9877987945454",
+      "id": "LmgSblzemSJI0X1F"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: "." -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "QbPfW2Wc0XZsfpUr"
+    },
+    {
+      "id": "jmczLXEVvnfHKWce",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "sadas 8979799998",
+      "id": "PKL534mSlTAUyP4W"
+    },
+    {
+      "id": "1NFq5LS3Ik5er8jE",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": ".\n",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "hhkkjh 9877987945454",
+      "id": "LmgSblzemSJI0X1F"
+    },
+    {
+      "id": "UO2A4taUfJZLnMbO",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": ".",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "nbb 8789799999",
+      "id": "xM0zvtpXTzZlW7dT"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: "." -> Replaced: "Thank you for the number. What is your Name?"
+[Finish] {
+  "text": "Thank you for the number. What is your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "imtWD9VaTPECVlvQ"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "imtWD9VaTPECVlvQ"
+    },
+    {
+      "id": "kGt0M22iPQ1zhNaO",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cleanng",
+      "id": "VlRxYTVHKflpu5mu"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "D4ybXl3oSjFhEuSc"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "D4ybXl3oSjFhEuSc"
+    },
+    {
+      "id": "nMlP2Su5VFt4GU3q",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "sadas 78799",
+      "id": "2Ub7ppO4lkX12EBt"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "CGd0yjf300kOJoEi"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "CGd0yjf300kOJoEi"
+    },
+    {
+      "id": "9UjQDBXfFkXLETHB",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cleaning",
+      "id": "b9rbXgJqMNnlqDJe"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "zKRK3WDVzfmpjJZf"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "zKRK3WDVzfmpjJZf"
+    },
+    {
+      "id": "OteeucDbLmPDmoTL",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "cleaning",
+      "id": "CkpRrDONfE5IqaSB"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Sure. What kind of help do you need? (Cleaning, Cooking, Baby Care, Elderly Care, or All-rounder)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "aqNBhvoIw4JSxbVo"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "aqNBhvoIw4JSxbVo"
+    },
+    {
+      "id": "a63NnJBNQEfFMMMH",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "bhb 998799797",
+      "id": "YbFlIrrwKfmlImAI"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "x26vcjwsMpzkBJiR"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "x26vcjwsMpzkBJiR"
+    },
+    {
+      "id": "I5ZRHsCXNOl1TvPI",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "bjhb 9797997",
+      "id": "0e2invazemqnI4rE"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "hpjxihuLzrJzqGfX"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "hpjxihuLzrJzqGfX"
+    },
+    {
+      "id": "ZsTsC7aJ394Yrxov",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "asd 7979797993",
+      "id": "YvqDqWZ55Vqe0gUp"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Thank you for the number. What is your Name?"
+[Finish] {
+  "text": "Thank you for the number. What is your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "SMRgxXONxc88RDJx"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "SMRgxXONxc88RDJx"
+    },
+    {
+      "id": "UwZElFEFTHY40S4x",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "shob 9997997979",
+      "id": "7FLaHYmrIfzgNDmg"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Thank you for the number. What is your Name?"
+[Finish] {
+  "text": "Thank you for the number. What is your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "yEeimxVcfLRUQkNI"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "yEeimxVcfLRUQkNI"
+    },
+    {
+      "id": "Nx1okbox6QpEDA6C",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "hhkh 8868787686",
+      "id": "kjCqjxBBoGqtM0I8"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[Finish] {
+  "text": ".\n\nPlease share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "38v0d96f8h8mknonvar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "yEeimxVcfLRUQkNI"
+    },
+    {
+      "id": "Nx1okbox6QpEDA6C",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "hhkh 8868787686",
+      "id": "kjCqjxBBoGqtM0I8"
+    },
+    {
+      "id": "3C10TDI30qZXllBa",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": ".\n\nPlease share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "nmmkjlj 8878778888",
+      "id": "R9CCX7FgfJs2l1Wt"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Thank you for the number. What is your Name?"
+[Finish] {
+  "text": "Thank you for the number. What is your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "topdv5vj90gmknwizxj",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "zeOwEoryDuGB4c5X"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: topdv5vj90gmknwizxj BodyID: topdv5vj90gmknwizxj HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "topdv5vj90gmknwizxj",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "zeOwEoryDuGB4c5X"
+    },
+    {
+      "id": "WAU77F1LgtEJNsvp",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "sadsad 8876889993",
+      "id": "e2pW9gRpTDb19TnK"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: topdv5vj90gmknwizxj BodyID: topdv5vj90gmknwizxj HeaderID: null
+[Finish] {
+  "text": "Thank you [Name]. Our priority team will call you at [Phone]. ESCALATE\n",
+  "intent": "complaint"
+}
+---
