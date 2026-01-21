@@ -158,7 +158,7 @@ export async function POST(req: Request) {
         // Wrap streamText in try-catch logic
         try {
             const result = streamText({
-                model: google('gemma-3-1b-it'),
+                model: google('gemma-3-27b-it'),
                 system: systemPrompt,
                 messages: trimmedMessages,
                 onError: async (error: any) => {
@@ -337,27 +337,26 @@ export async function POST(req: Request) {
                         }
                     }
                 },
-            },
             });
 
-        return result.toUIMessageStreamResponse();
-    } catch (streamError: any) {
-        console.error("🔥 GEMINI EXECUTION ERROR:", streamError);
-        if (streamError.message?.includes('429')) {
-            return new Response("System Busy (Rate Limit)", { status: 429 });
+            return result.toUIMessageStreamResponse();
+        } catch (streamError: any) {
+            console.error("🔥 GEMINI EXECUTION ERROR:", streamError);
+            if (streamError.message?.includes('429')) {
+                return new Response("System Busy (Rate Limit)", { status: 429 });
+            }
+            throw streamError;
         }
-        throw streamError;
-    }
-} catch (error: any) {
-    console.error('API Error:', error);
+    } catch (error: any) {
+        console.error('API Error:', error);
 
-    if (error?.message?.includes('429') || error?.status === 429) {
-        return new Response(JSON.stringify({
-            error: 'Rate Limit Exceeded',
-            waitMs: 60000,
-        }), { status: 429 });
-    }
+        if (error?.message?.includes('429') || error?.status === 429) {
+            return new Response(JSON.stringify({
+                error: 'Rate Limit Exceeded',
+                waitMs: 60000,
+            }), { status: 429 });
+        }
 
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
-}
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+    }
 }
