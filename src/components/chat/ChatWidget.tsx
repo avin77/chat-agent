@@ -125,7 +125,7 @@ export function ChatWidget() {
     };
 
     return (
-        <div className="flex flex-col h-[600px] w-full max-w-md bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden font-sans mx-auto mt-10">
+        <div className="flex flex-col h-full w-full bg-white font-sans">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex items-center justify-between">
                 <div>

@@ -8570,3 +8570,60 @@ DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 Heade
   "intent": "complaint"
 }
 ---
+{
+  "id": "247zggpr06jmknuoa3b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "QMu8QPveAqOTn2ln"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 247zggpr06jmknuoa3b BodyID: 247zggpr06jmknuoa3b HeaderID: null
+[Finish] {
+  "text": "Okay, let's start collecting information.\n\n“Hi, I want to hire a maid. Could you please provide your Name and Phone number?”",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "247zggpr06jmknuoa3b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I want to hire a maid.",
+      "id": "QMu8QPveAqOTn2ln"
+    },
+    {
+      "id": "tPJhGIQrOIQjwWti",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's start collecting information.\n\n“Hi, I want to hire a maid. Could you please provide your Name and Phone number?”",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "name and phone nooo",
+      "id": "bu48g5Ojg2EwKa8D"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: 247zggpr06jmknuoa3b BodyID: 247zggpr06jmknuoa3b HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "maid_hire"
+}
+---
