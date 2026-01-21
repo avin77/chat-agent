@@ -56,6 +56,24 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
         }
 
         if (existingSession && !error) {
+            // Check if user is switching context
+            const newIntent = detectIntent(latestMessage);
+            const currentIntent = existingSession.detected_intent;
+
+            // If new intent is detected AND it's different AND it's not 'general' (unless we want to allow resetting)
+            // Ideally, specific intents > general.
+            if (newIntent !== 'general' && newIntent !== currentIntent) {
+                console.log(`[Session] Switching intent from ${currentIntent} to ${newIntent}`);
+                await supabase
+                    .from('conversation_sessions')
+                    .update({
+                        detected_intent: newIntent,
+                        last_activity: new Date().toISOString()
+                    })
+                    .eq('conversation_id', conversationId);
+                return newIntent;
+            }
+
             await supabase
                 .from('conversation_sessions')
                 .update({ last_activity: new Date().toISOString() })
@@ -143,7 +161,36 @@ export async function POST(req: Request) {
             messages: trimmedMessages,
             onFinish: async ({ text }) => {
                 const tookMs = Date.now() - startTime;
-                const cleaned = applyStrictGuardrails(text);
+
+                // SAFETY NET: Catch truncated/empty responses
+                let finalText = text;
+                if (!text || text.trim().length <= 2 || /^[\.\,\!\?]+$/.test(text.trim())) {
+                    console.warn('[SAFETY NET] Detected truncated response:', text);
+
+                    // Context-aware fallback
+                    const phone = validatePhone(latestMessage);
+                    const name = extractName(latestMessage);
+
+                    if (intent === 'maid_hire' || intent === 'complaint' || intent === 'helper_reg') {
+                        if (phone && !name) {
+                            finalText = "Thank you for the number. What is your Name?";
+                        } else if (name && !phone) {
+                            finalText = "Thanks! Could you please share your 10-digit Phone Number?";
+                        } else if (!phone && !name) {
+                            finalText = "Could you please provide your Name and Phone Number so I can help you?";
+                        } else {
+                            finalText = "I'm processing your request. Could you please confirm your details?";
+                        }
+                    } else {
+                        finalText = "I didn't quite catch that. Could you please rephrase?";
+                    }
+
+                    try {
+                        fs.appendFileSync('chat_debug.log', `[SAFETY NET TRIGGERED] Original: "${text}" -> Replaced: "${finalText}"\n`);
+                    } catch (e) { }
+                }
+
+                const cleaned = applyStrictGuardrails(finalText);
 
                 // Debug log
                 try {

@@ -7851,3 +7851,722 @@ DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 Heade
   "intent": "complaint"
 }
 ---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "uVFVaufxOOpuGPPZ"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "uVFVaufxOOpuGPPZ"
+    },
+    {
+      "id": "nLuIbRJLo2sQ8Z4q",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "9911223344",
+      "id": "BXirZLQkb4nI5f8v"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Thank you for the number. May I have your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "OF8LpTjKcEKxcVvw"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "OF8LpTjKcEKxcVvw"
+    },
+    {
+      "id": "OVzVi9QF3zJVP3kQ",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "9911223344",
+      "id": "cg7gmYZ4OVie4PoM"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Thank you for the number. May I have your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "dLzh1GzzPoucJXxW"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "dLzh1GzzPoucJXxW"
+    },
+    {
+      "id": "fUFO2jfg7fdODDQ9",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "My name is John",
+      "id": "VqVtia4mvGXpkFyq"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, John. 9898989898.\n\nThank you! We will send profiles to [Phone]. ESCALATE",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "4a0VlaC8HkgkSfiI"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "4a0VlaC8HkgkSfiI"
+    },
+    {
+      "id": "1HRDNiO6w3eSc0Xh",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Actually i have a complaint",
+      "id": "2OWCMURrphbzk4BG"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": ".",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "pmiNHWAIPYLUyMsY"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "pmiNHWAIPYLUyMsY"
+    },
+    {
+      "id": "sIPUSMLB5vhQ9CTU",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "9911223344",
+      "id": "4IYOidKCUBgbA4VD"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Thank you for the number. May I have your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "3SJ6IMdScGCsO068"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "3SJ6IMdScGCsO068"
+    },
+    {
+      "id": "PWGW1fiEENmZZzWE",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "My name is John",
+      "id": "H4RiZVTvHmKhot7w"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, John. 9898989898.\n\nThank you! We will send profiles to [Phone]. ESCALATE",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "Cuqmqq9JS4vTgvQo"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "complaint about maid",
+      "id": "Cuqmqq9JS4vTgvQo"
+    },
+    {
+      "id": "tuJBwaus7wpheBrw",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "9911223344",
+      "id": "FfvHrrwpvzyUs98s"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Thank you for the number. May I have your Name?",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "xjR6lmjxEvAvWJyC"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire maid",
+      "id": "xjR6lmjxEvAvWJyC"
+    },
+    {
+      "id": "CW6qTj9jftvCrAfQ",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's start collecting lead details.\n\nHello! I'm EzyBot, your Domestic Help Intake.\n\nFirst, please check your input for a 10-digit phone number.\n",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "My name is John",
+      "id": "jgUj08DOtw445MgK"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, John. 9898989898.\n\nThank you! We will send profiles to [Phone]. ESCALATE",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I am a new customer looking for a maid.",
+      "id": "8KOQLQIRLBfPbOJA"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, let's start collecting information.\n\n“Hi, I am a new customer looking for a maid. Could you please provide your Name and Phone number?”",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I am a new customer looking for a maid.",
+      "id": "8KOQLQIRLBfPbOJA"
+    },
+    {
+      "id": "mkonFnRHUkfKrqfU",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's start collecting information.\n\n“Hi, I am a new customer looking for a maid. Could you please provide your Name and Phone number?”",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "shij 98987979",
+      "id": "fKnTQqAeRMfeH0Oy"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Got the number. What is your Name?",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I am a new customer looking for a maid.",
+      "id": "8KOQLQIRLBfPbOJA"
+    },
+    {
+      "id": "mkonFnRHUkfKrqfU",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's start collecting information.\n\n“Hi, I am a new customer looking for a maid. Could you please provide your Name and Phone number?”",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "shij 98987979",
+      "id": "fKnTQqAeRMfeH0Oy"
+    },
+    {
+      "id": "asU0IT6Ad4vgSxT2",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Got the number. What is your Name?",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "sho",
+      "id": "dJHBbxJB0qQW75eS"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": ".",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire faster maid ",
+      "id": "G3gD5QsHQcCBZ8WX"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, let's begin!\n\nHello! I'm EzyBot, your Domestic Help Intake. Let's collect some information.\n\nFirst, could you please check your input for a 10-digit phone number?",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire faster maid ",
+      "id": "G3gD5QsHQcCBZ8WX"
+    },
+    {
+      "id": "bngEV2XW1zpXRSBo",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's begin!\n\nHello! I'm EzyBot, your Domestic Help Intake. Let's collect some information.\n\nFirst, could you please check your input for a 10-digit phone number?",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "jkjnk 98877999",
+      "id": "4RI1O85Ukn9wvflF"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Okay, got it! 98877999.\n\nName: ?\nPhone: ?\nWork Type: ?\n\n",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hire faster maid ",
+      "id": "G3gD5QsHQcCBZ8WX"
+    },
+    {
+      "id": "bngEV2XW1zpXRSBo",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, let's begin!\n\nHello! I'm EzyBot, your Domestic Help Intake. Let's collect some information.\n\nFirst, could you please check your input for a 10-digit phone number?",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "jkjnk 98877999",
+      "id": "4RI1O85Ukn9wvflF"
+    },
+    {
+      "id": "1Sk0zwZAyIoeMgkw",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Okay, got it! 98877999.\n\nName: ?\nPhone: ?\nWork Type: ?\n\n",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "phone shared name  hibhit work -maid",
+      "id": "636Ra0i4VXFnTJ6O"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": ".",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "QipuHk78XKA6iElO"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[Finish] {
+  "text": "Please share your Name and Phone Number (10 digits).",
+  "intent": "complaint"
+}
+---
+{
+  "id": "dv7aca9upnumknpzr45",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint to report.",
+      "id": "QipuHk78XKA6iElO"
+    },
+    {
+      "id": "5RYyiM40a7vbBgdN",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Please share your Name and Phone Number (10 digits).",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "bj 9879899",
+      "id": "NIlW3zVqJ6meAEA9"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: dv7aca9upnumknpzr45 BodyID: dv7aca9upnumknpzr45 HeaderID: null
+[SAFETY NET TRIGGERED] Original: ".
+" -> Replaced: "Could you please provide your Name and Phone Number so I can help you?"
+[Finish] {
+  "text": "Could you please provide your Name and Phone Number so I can help you?",
+  "intent": "complaint"
+}
+---

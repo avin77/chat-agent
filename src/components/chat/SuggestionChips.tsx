@@ -7,10 +7,12 @@ interface SuggestionChipsProps {
 }
 
 const SUGGESTIONS = [
-    { label: "👋 I'm a New Customer", text: "Hi, I am a new customer looking for a maid." },
-    { label: "🧹 I want to work as Helper", text: "Hi, I want to register as a helper." },
-    { label: "😤 I have a Complaint", text: "I have a complaint to report." },
-    { label: "❓ General Enquiry", text: "I have a general question." },
+    { label: "🏠 I want to hire a maid", text: "Hi, I want to hire a maid." },
+    { label: "⚠️ I have a complaint", text: "I have a complaint to report." },
+    { label: "💼 I'm looking for a job", text: "Hi, I want to register as a helper." },
+    { label: "💰 What are your charges?", text: "What are your charges for maid services?" },
+    { label: "📍 Which areas do you serve?", text: "Which areas do you serve?" },
+    { label: "📞 How can I contact you?", text: "How can I contact your team?" },
 ];
 
 export function SuggestionChips({ onSelect }: SuggestionChipsProps) {
