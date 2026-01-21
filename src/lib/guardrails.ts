@@ -60,8 +60,10 @@ export function validatePhone(text: string): string | null {
 
 export function extractName(text: string): string | null {
     const patterns = [
-        /(?:name is|i am|i'm|this is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
-        /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d{10}/,
+        /(?:name is|i am|i'm|this is|name:?)\s+([a-zA-Z]{2,}(?:\s+[a-zA-Z]+)?)/i,
+        /([a-zA-Z]{2,}(?:\s+[a-zA-Z]+)?)\s+\d{10}/,
+        // Fallback for just a name (2+ letters) if it's the only text (risky but needed for "JH")
+        /^([a-zA-Z]{2,}(?:\s+[a-zA-Z]+)?)$/i
     ];
 
     for (const pattern of patterns) {

@@ -97,8 +97,7 @@ export function ChatWidget() {
         e?.preventDefault();
         if (!input.trim()) return;
 
-        // Validation: Phone Number
-        // Prevent sending invalid phone numbers (5-9 digits) when context implies phone entry
+        /* REMOVED CLIENT VALIDATION: Trust Server Side Logic
         const lastBotMsg = (messages.filter((m: any) => m.role !== 'user').pop() as any)?.content?.toLowerCase() || '';
         const isAskingForPhone = /phone|number|mobile|contact/.test(lastBotMsg);
 
@@ -112,6 +111,7 @@ export function ChatWidget() {
                 return;
             }
         }
+        */
 
         const currentInput = input;
         setInput('');
@@ -172,7 +172,10 @@ export function ChatWidget() {
                                     : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
                             )}
                         >
-                            {m.content || (m.parts ? m.parts.map((p: any) => p.type === 'text' ? p.text : '').join('') : '')}
+                            {/* Hide [ESCALATE] tag from UI */}
+                            {(m.content || (m.parts ? m.parts.map((p: any) => p.type === 'text' ? p.text : '').join('') : ''))
+                                .replace(/\[?ESCALATE\]?/gi, '')
+                                .trim()}
                         </div>
                     </div>
                 ))}

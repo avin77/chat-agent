@@ -155,160 +155,209 @@ export async function POST(req: Request) {
 
         const startTime = Date.now();
 
-        const result = streamText({
-            model: google('gemma-3-1b-it'),
-            system: systemPrompt,
-            messages: trimmedMessages,
-            onFinish: async ({ text }) => {
-                const tookMs = Date.now() - startTime;
+        // Wrap streamText in try-catch logic
+        try {
+            const result = streamText({
+                model: google('gemma-3-1b-it'),
+                system: systemPrompt,
+                messages: trimmedMessages,
+                onError: async (error: any) => {
+                    console.error("🔥 GEMINI STREAM ERROR:", error);
+                    if (error.message?.includes('429') || error.status === 429) {
+                        // Log System Error
+                        await logLLMInteraction({
+                            conversationId, intent: 'SYSTEM_ERROR',
+                            systemPrompt: 'Resource Exhausted', userMessage: latestMessage,
+                            fullHistory: [], rawResponse: '429 Rate Limit',
+                            cleanedResponse: 'System is busy. Please try again later.', tookMs: 0
+                        });
+                    }
+                },
+                onFinish: async ({ text }) => {
+                    const tookMs = Date.now() - startTime;
 
-                // SAFETY NET: Catch truncated/empty responses
-                let finalText = text;
-                if (!text || text.trim().length <= 2 || /^[\.\,\!\?]+$/.test(text.trim())) {
-                    console.warn('[SAFETY NET] Detected truncated response:', text);
+                    // SAFETY NET: Catch truncated/empty responses
+                    let finalText = text;
+                    // stricter check: if text is empty, < 4 chars (unless specific words), or just punctuation
+                    if (!text || text.trim().length < 4 || /^[\.\,\!\?\s]+$/.test(text) || text.trim() === 'failed') {
+                        console.warn('[SAFETY NET] Detected truncated response:', text);
 
-                    // Context-aware fallback
+                        // Context-aware fallback
+                        const phone = validatePhone(latestMessage);
+                        const name = extractName(latestMessage);
+
+
+                        // Check for SHORT phone (5-9 digits) which is invalid
+                        const hasShortPhone = /\b\d{5,9}\b/.test(latestMessage);
+
+                        // DELAY SIMULATION: If specific invalid pattern, wait 2s to mimic "Checking..."
+                        if (intent !== 'general' && (hasShortPhone || (!phone && /^\d+$/.test(latestMessage)))) {
+                            console.log('[Delay] simulating human check for invalid number...');
+                            await new Promise(r => setTimeout(r, 2000));
+                        }
+
+                        if (intent === 'maid_hire' || intent === 'complaint' || intent === 'helper_reg') {
+                            if (phone && !name) {
+                                finalText = "Thank you for the number. What is your Name?";
+                            } else if (name && hasShortPhone && !phone) {
+                                // Name provided but phone is invalid (too short)
+                                finalText = "I got your name, but the phone number looks invalid. Please provide a 10-digit mobile number.";
+                            } else if (name && !phone) {
+                                finalText = "Thanks! Could you please share your 10-digit Phone Number?";
+                            } else if (!phone && !name) {
+                                finalText = "Could you please provide your Name and Phone Number so I can help you?";
+                            } else {
+                                finalText = "I'm processing your request. Could you please confirm your details?";
+                            }
+                        } else {
+                            finalText = "I didn't quite catch that. Could you please rephrase?";
+                        }
+
+                        try {
+                            fs.appendFileSync('chat_debug.log', `[SAFETY NET TRIGGERED] Original: "${text}" -> Replaced: "${finalText}"\n`);
+                        } catch (e) { }
+                    }
+
+                    const cleaned = applyStrictGuardrails(finalText);
+
+                    // Debug log
+                    try {
+                        fs.appendFileSync('chat_debug.log', `[Finish] ${JSON.stringify({ text: cleaned, intent }, null, 2)}\n---\n`);
+                    } catch (e) { }
+
+                    // Console log (dev)
+                    if (process.env.NODE_ENV === 'development') {
+                        logToConsole({
+                            intent,
+                            systemPrompt,
+                            userMessage: latestMessage,
+                            rawResponse: text,
+                            cleanedResponse: cleaned
+                        });
+                    }
+
+                    // Log to Supabase
+                    try {
+                        await logLLMInteraction({
+                            conversationId,
+                            intent,
+                            systemPrompt,
+                            userMessage: latestMessage,
+                            fullHistory: trimmedMessages,
+                            rawResponse: text,
+                            cleanedResponse: cleaned,
+                            tookMs
+                        });
+                    } catch (logError) {
+                        console.error('Logging failed:', logError);
+                    }
+
+                    // Extract data
                     const phone = validatePhone(latestMessage);
                     const name = extractName(latestMessage);
 
-                    // Check for SHORT phone (5-9 digits) which is invalid
-                    const hasShortPhone = /\b\d{5,9}\b/.test(latestMessage);
+                    // Handle escalation
+                    // Detect [ESCALATE] or just ESCALATE (case insensitive)
+                    if (/\[?ESCALATE\]?/i.test(text)) {
+                        try {
+                            // Handle escalation
+                            console.log(`[ESCALATE] Attempting DB Insert for Intent: ${intent}`);
+                            let dbError = null;
 
-                    if (intent === 'maid_hire' || intent === 'complaint' || intent === 'helper_reg') {
-                        if (phone && !name) {
-                            finalText = "Thank you for the number. What is your Name?";
-                        } else if (name && hasShortPhone && !phone) {
-                            // Name provided but phone is invalid (too short)
-                            finalText = "I got your name, but the phone number looks invalid. Please provide a 10-digit mobile number.";
-                        } else if (name && !phone) {
-                            finalText = "Thanks! Could you please share your 10-digit Phone Number?";
-                        } else if (!phone && !name) {
-                            finalText = "Could you please provide your Name and Phone Number so I can help you?";
-                        } else {
-                            finalText = "I'm processing your request. Could you please confirm your details?";
-                        }
-                    } else {
-                        finalText = "I didn't quite catch that. Could you please rephrase?";
-                    }
+                            if (intent === 'complaint') {
+                                const { error } = await supabase.from('complaints').insert({
+                                    name, phone,
+                                    issue_description: latestMessage,
+                                    conversation_id: conversationId,
+                                    full_conversation: coreMessages
+                                });
+                                dbError = error;
+                            } else if (intent === 'maid_hire') {
+                                const { error } = await supabase.from('leads').insert({
+                                    name, phone,
+                                    conversation_id: conversationId,
+                                    full_conversation: coreMessages
+                                });
+                                dbError = error;
+                            } else if (intent === 'helper_reg') {
+                                const { error } = await supabase.from('helper_registrations').insert({
+                                    name, phone,
+                                    conversation_id: conversationId,
+                                    full_conversation: coreMessages
+                                });
+                                dbError = error;
+                            } else {
+                                // CS: Fallback escalation for 'general'
+                                const { error } = await supabase.from('general_enquiries').insert({
+                                    conversation_id: conversationId,
+                                    question: `[ESCALATED] ${latestMessage}`,
+                                    bot_answer: "Escalated to admin."
+                                });
+                                dbError = error;
+                            }
 
-                    try {
-                        fs.appendFileSync('chat_debug.log', `[SAFETY NET TRIGGERED] Original: "${text}" -> Replaced: "${finalText}"\n`);
-                    } catch (e) { }
-                }
+                            if (dbError) {
+                                console.error(`❌ DB INSERT FAILED (${intent}):`, dbError);
+                                try { fs.appendFileSync('chat_debug.log', `[DB ERROR] ${JSON.stringify(dbError)}\n`); } catch (e) { }
+                            } else {
+                                console.log(`✅ DB Insert Success for ${intent}`);
+                            }
 
-                const cleaned = applyStrictGuardrails(finalText);
-
-                // Debug log
-                try {
-                    fs.appendFileSync('chat_debug.log', `[Finish] ${JSON.stringify({ text: cleaned, intent }, null, 2)}\n---\n`);
-                } catch (e) { }
-
-                // Console log (dev)
-                if (process.env.NODE_ENV === 'development') {
-                    logToConsole({
-                        intent,
-                        systemPrompt,
-                        userMessage: latestMessage,
-                        rawResponse: text,
-                        cleanedResponse: cleaned
-                    });
-                }
-
-                // Log to Supabase
-                try {
-                    await logLLMInteraction({
-                        conversationId,
-                        intent,
-                        systemPrompt,
-                        userMessage: latestMessage,
-                        fullHistory: trimmedMessages,
-                        rawResponse: text,
-                        cleanedResponse: cleaned,
-                        tookMs
-                    });
-                } catch (logError) {
-                    console.error('Logging failed:', logError);
-                }
-
-                // Extract data
-                const phone = validatePhone(latestMessage);
-                const name = extractName(latestMessage);
-
-                // Handle escalation
-                if (text.includes('[ESCALATE]')) {
-                    try {
-                        if (intent === 'complaint') {
-                            await supabase.from('complaints').insert({
-                                name, phone,
-                                issue_description: latestMessage,
-                                conversation_id: conversationId,
-                                full_conversation: coreMessages
-                            });
-                        } else if (intent === 'maid_hire') {
-                            await supabase.from('leads').insert({
-                                name, phone,
-                                conversation_id: conversationId,
-                                full_conversation: coreMessages
-                            });
-                        } else if (intent === 'helper_reg') {
-                            await supabase.from('helper_registrations').insert({
-                                name, phone,
-                                conversation_id: conversationId,
-                                full_conversation: coreMessages
-                            });
-                        }
-
-                        // Send email
-                        await sendEmail({
-                            to: process.env.ADMIN_EMAIL!,
-                            subject: `🚨 ${intent.toUpperCase()}: ${name || 'New'} - ${phone || 'No phone'}`,
-                            html: `
-                <h2>New ${intent.replace('_', ' ').toUpperCase()}</h2>
+                            // Send email
+                            await sendEmail({
+                                to: process.env.ADMIN_EMAIL!,
+                                subject: `🚨 ${intent.toUpperCase()} ESCALATION: ${name || 'Unknown'}`,
+                                html: `
+                <h2>New ${intent.replace('_', ' ').toUpperCase()} Lead</h2>
                 <p><strong>Name:</strong> ${name || 'Not provided'}</p>
                 <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
                 <p><strong>Conversation ID:</strong> ${conversationId}</p>
+                <p><strong>Intent:</strong> ${intent}</p>
                 <hr>
                 <h3>Full Conversation:</h3>
                 <pre>${JSON.stringify(coreMessages, null, 2)}</pre>
               `
-                        });
+                            });
 
-                        console.log('✅ Escalation processed:', intent, name, phone);
-                        try { fs.appendFileSync('chat_debug.log', `[ESCALATION SUCCESS] Intent: ${intent}, Name: ${name}, Phone: ${phone}\n`); } catch (e) { }
-                    } catch (escalationError) {
-                        console.error('Escalation failed:', escalationError);
+                            console.log('✅ Escalation processed:', intent, name, phone);
+                            try { fs.appendFileSync('chat_debug.log', `[ESCALATION SUCCESS] Intent: ${intent}, Name: ${name}, Phone: ${phone}\n`); } catch (e) { }
+                        } catch (escalationError) {
+                            console.error('Escalation failed:', escalationError);
+                            try { fs.appendFileSync('chat_debug.log', `[ESCALATION FAILED] ${escalationError}\n`); } catch (e) { }
+                        }
+                    } else if (intent === 'general') {
+                        try {
+                            await supabase.from('general_enquiries').insert({
+                                conversation_id: conversationId,
+                                question: latestMessage,
+                                bot_answer: cleaned
+                            });
+                        } catch {
+                            console.warn('Failed to log general enquiry');
+                        }
                     }
-                } else if (intent === 'general') {
-                    try {
-                        await supabase.from('general_enquiries').insert({
-                            conversation_id: conversationId,
-                            question: latestMessage,
-                            bot_answer: cleaned
-                        });
-                    } catch {
-                        console.warn('Failed to log general enquiry');
-                    }
-                }
+                },
             },
-            onError: (error) => {
-                console.error('Stream Error:', error);
-                try {
-                    fs.appendFileSync('chat_debug.log', `[Error] ${JSON.stringify(error, null, 2)}\n---\n`);
-                } catch (e) { }
-            },
-        });
+            });
 
         return result.toUIMessageStreamResponse();
-    } catch (error: any) {
-        console.error('API Error:', error);
-
-        if (error?.message?.includes('429') || error?.status === 429) {
-            return new Response(JSON.stringify({
-                error: 'Rate Limit Exceeded',
-                waitMs: 60000,
-            }), { status: 429 });
+    } catch (streamError: any) {
+        console.error("🔥 GEMINI EXECUTION ERROR:", streamError);
+        if (streamError.message?.includes('429')) {
+            return new Response("System Busy (Rate Limit)", { status: 429 });
         }
-
-        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+        throw streamError;
     }
+} catch (error: any) {
+    console.error('API Error:', error);
+
+    if (error?.message?.includes('429') || error?.status === 429) {
+        return new Response(JSON.stringify({
+            error: 'Rate Limit Exceeded',
+            waitMs: 60000,
+        }), { status: 429 });
+    }
+
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+}
 }
