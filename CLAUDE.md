@@ -78,6 +78,33 @@ Required in `.env.local`:
 - `RESEND_API_KEY` - Resend email API key (fallback)
 - `DEMO_MODE` - Set to "true" to skip external calls
 
+## How Andy Can Deploy & Test EzyBot
+
+When asked to deploy or test changes, Andy should:
+
+```bash
+# From inside the container (projects are mounted at /workspace/extra/projects)
+cd /workspace/extra/projects/chat-agent
+bash deploy.sh "feat: describe what changed"
+```
+
+This will:
+1. Build the project (`npm run build`)
+2. Commit + push to GitHub (`git push origin main`)
+3. Vercel auto-deploys from GitHub (takes ~1-2 min)
+
+**Live URL:** Check Vercel dashboard or the URL printed by the script.
+
+**Prerequisite (one-time setup by user):**
+- Connect `avin77/chat-agent` GitHub repo to Vercel at vercel.com
+- Vercel will auto-deploy on every push to `main`
+
+**For local dev testing only (no public URL):**
+```bash
+cd /workspace/extra/projects/chat-agent
+npm run dev   # runs on localhost:3000 inside container - not publicly accessible
+```
+
 ## How to Start Andy (WhatsApp AI Assistant)
 
 Run this from PowerShell on Windows — starts Docker, nanoclaw and verifies WhatsApp:
