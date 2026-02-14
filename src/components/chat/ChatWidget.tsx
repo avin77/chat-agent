@@ -118,10 +118,7 @@ export function ChatWidget() {
 
         console.log('📤 Sending message to Gemini API...');
 
-        await sendMessage({
-            role: 'user',
-            content: currentInput,
-        } as any);
+        await sendMessage({ text: currentInput });
     };
 
     return (
