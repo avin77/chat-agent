@@ -340,7 +340,10 @@ export async function POST(req: Request) {
             });
 
             return new Response(stream, {
-                headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+                headers: {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                    'x-vercel-ai-data-stream': 'v1',
+                }
             });
         } catch (apiError: any) {
             console.error("🔥 GEMINI EXECUTION ERROR:", apiError);
