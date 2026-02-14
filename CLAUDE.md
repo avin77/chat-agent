@@ -78,6 +78,33 @@ Required in `.env.local`:
 - `RESEND_API_KEY` - Resend email API key (fallback)
 - `DEMO_MODE` - Set to "true" to skip external calls
 
+## How to Start Andy (WhatsApp AI Assistant)
+
+Run this from PowerShell on Windows — starts Docker, nanoclaw and verifies WhatsApp:
+```powershell
+cd C:\Coding\EzyBot\ezybot
+.\start-andy.ps1
+```
+Or from anywhere:
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\Coding\EzyBot\ezybot\start-andy.ps1"
+```
+
+**After running:**
+- Open WhatsApp → message **yourself** (Saved Messages / self-chat on 918860753300)
+- No trigger word needed — just type anything
+- Andy stays running 24/7 via `Restart=always` in systemd — auto-recovers from crashes
+
+**To check if Andy is running:**
+```powershell
+wsl systemctl --user status nanoclaw.service
+```
+
+**To see live logs:**
+```powershell
+wsl journalctl --user -u nanoclaw.service -f
+```
+
 ## Developer Environment: Windows + WSL2
 
 This project is developed on a **Windows machine with WSL2 (Ubuntu)**. Both sides have the code:
