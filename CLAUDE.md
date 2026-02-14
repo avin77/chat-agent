@@ -37,9 +37,10 @@ User (ChatWidget) --> POST /api/chat --> Gemini AI (streaming)
 ```
 
 - **Intent detection**: First message determines intent (complaint/maid_hire/helper_reg/general), stored in Supabase `conversation_sessions`
-- **Streaming**: Uses Vercel AI SDK `streamText()` with `toUIMessageStreamResponse()`
+- **Response**: Uses `generateText()` (not streaming) so safety net fallbacks actually reach the user
 - **Guardrails**: Post-processing strips prices, validates phones, removes external links
-- **Escalation**: When `[ESCALATE]` tag detected in AI response, saves to DB and sends email
+- **Escalation**: Deterministic (phone + action intent) OR LLM `[ESCALATE]` tag → saves to DB and sends email
+- **Dead code**: `src/flows/` and `src/extractors/` contain a state machine architecture not yet integrated
 
 ## Development
 
@@ -76,3 +77,52 @@ Required in `.env.local`:
 - `ADMIN_EMAIL` - Comma-separated admin emails for escalation
 - `RESEND_API_KEY` - Resend email API key (fallback)
 - `DEMO_MODE` - Set to "true" to skip external calls
+
+## Developer Environment: Windows + WSL2
+
+This project is developed on a **Windows machine with WSL2 (Ubuntu)**. Both sides have the code:
+
+| Side | Path |
+|------|------|
+| WSL2 Ubuntu | `/home/shobhit/projects/chat-agent/` |
+| Windows | `C:\Users\shobh\nanoclaw\` (synced via WSL2) |
+
+**Runtime stack:**
+- Node.js v22 (WSL Ubuntu) / v24 (Windows) — both available
+- Docker Desktop on Windows (WSL2 integration enabled)
+- Git remote: `git@github.com:avin77/chat-agent.git`
+
+**To run from WSL Ubuntu (recommended):**
+```bash
+cd /home/shobhit/projects/chat-agent
+npm run dev
+```
+
+**To run from Windows PowerShell:**
+```powershell
+cd C:\Users\shobh\projects\chat-agent
+npm run dev
+```
+
+## Related: NanoClaw (WhatsApp → Claude Bridge)
+
+On this machine, **NanoClaw** is also running — it connects WhatsApp to Claude agents via Docker containers. It is a separate project at `/home/shobhit/nanoclaw/` (open source: `gavrielc/nanoclaw`).
+
+NanoClaw is used to interact with Claude via WhatsApp to work on this and other projects. It runs as a systemd user service in WSL Ubuntu:
+```bash
+systemctl --user status nanoclaw.service   # Check status
+systemctl --user restart nanoclaw.service  # Restart if not responding
+journalctl --user -u nanoclaw.service -f   # Live logs
+```
+
+## Roadmap (see PLAN.md)
+
+- [x] Fix safety net (generateText instead of streamText)
+- [x] Improve prompts with few-shot examples
+- [x] Deterministic escalation (phone + action intent)
+- [x] Guardrails bug fixes
+- [ ] Integrate dead code state machine (`src/flows/` + `src/extractors/`)
+- [ ] Multi-question flow for maid hiring (8 fields)
+- [ ] Add vitest test framework
+- [ ] Operations dashboard
+- [ ] Semi-agentic upgrade (weighted intent scoring, field tracking)

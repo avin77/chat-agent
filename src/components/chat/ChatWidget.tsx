@@ -24,7 +24,7 @@ export function ChatWidget() {
     });
 
     const { messages, sendMessage, status, error } = useChat({
-        id: sessionId
+        id: sessionId,
     });
     const isLoading = status !== 'ready';
     const [input, setInput] = useState('');

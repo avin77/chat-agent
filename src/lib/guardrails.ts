@@ -22,12 +22,14 @@ export function applyStrictGuardrails(text: string): string {
     for (const pattern of pricePatterns) {
         if (pattern.test(cleaned)) {
             console.error('[GUARDRAIL] Price blocked:', cleaned.match(pattern));
+            // Reset lastIndex since .test() with /g flag advances it
+            pattern.lastIndex = 0;
             cleaned = cleaned.replace(pattern, '**[Our team will contact you with pricing details]**');
         }
     }
 
     // 2. LOCATION HANDLING
-    if (/(?:work|serve|available|operate).*?(mumbai|delhi|pune|hyderabad|chennai|kolkata)/gi.test(cleaned)) {
+    if (/(?:work|serve|available|operate).*?(?:mumbai|delhi|pune|hyderabad|chennai|kolkata)/i.test(cleaned)) {
         cleaned += '\n\nNote: We primarily operate in Bengaluru. Our team will confirm service availability in your area.';
     }
 
