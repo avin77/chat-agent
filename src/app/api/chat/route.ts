@@ -28,6 +28,7 @@ function trimMessages(messages: any[]): any[] {
 }
 
 function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg' | 'general' {
+    if (!message) return 'general';
     const lower = message.toLowerCase();
 
     // Negative patterns
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
 
         geminiRateLimiter.recordRequest();
 
-        const latestMessage = messages[messages.length - 1].content;
+        const latestMessage = messages[messages.length - 1]?.content || '';
         const conversationId = req.headers.get('x-conversation-id') || id || crypto.randomUUID();
 
         try {
