@@ -323,13 +323,12 @@ export async function POST(req: Request) {
             const displayText = cleaned.replace(/\[?ESCALATE\]?/gi, '').trim();
 
             // Return as UI Message Stream response for useChat compatibility (ai SDK v6)
+            const textId = crypto.randomUUID();
             const uiStream = createUIMessageStream({
                 execute: ({ writer }) => {
-                    writer.write({
-                        type: 'text-delta',
-                        delta: displayText,
-                        id: crypto.randomUUID(),
-                    });
+                    writer.write({ type: 'text-start', id: textId });
+                    writer.write({ type: 'text-delta', delta: displayText, id: textId });
+                    writer.write({ type: 'text-end', id: textId });
                 },
             });
 
