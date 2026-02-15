@@ -323,7 +323,11 @@ export async function POST(req: Request) {
             const displayText = cleaned.replace(/\[?ESCALATE\]?/gi, '').trim();
 
             // Return as UI Message Stream response for useChat compatibility
-            const usageData = usage ? JSON.parse(JSON.stringify(usage)) : { promptTokens: 0, completionTokens: 0 };
+            // useChat (@ai-sdk/react v3) expects promptTokens/completionTokens (NOT inputTokens/outputTokens)
+            const usageData = {
+                promptTokens: usage?.inputTokens ?? usage?.promptTokens ?? 0,
+                completionTokens: usage?.outputTokens ?? usage?.completionTokens ?? 0,
+            };
             const encoder = new TextEncoder();
             const stream = new ReadableStream({
                 start(controller) {
