@@ -244,8 +244,24 @@ export async function POST(req: Request) {
             // (after all questions answered). For complaint/helper_reg, escalate on phone collected.
             const llmTriggeredEscalation = /\[?ESCALATE\]?/i.test(text);
             const phoneCollected = !!phone;
-            const shouldEscalate = llmTriggeredEscalation ||
-                ((intent === 'complaint' || intent === 'helper_reg') && phoneCollected);
+
+            // Check if this conversation was already escalated (prevent duplicate emails)
+            let alreadyEscalated = false;
+            try {
+                const tableMap: Record<string, string> = {
+                    complaint: 'complaints',
+                    maid_hire: 'leads',
+                    helper_reg: 'helper_registrations',
+                };
+                const table = tableMap[intent];
+                if (table) {
+                    const { data } = await supabase.from(table).select('id').eq('conversation_id', conversationId).maybeSingle();
+                    alreadyEscalated = !!data;
+                }
+            } catch { }
+
+            const shouldEscalate = !alreadyEscalated && (llmTriggeredEscalation ||
+                ((intent === 'complaint' || intent === 'helper_reg') && phoneCollected));
 
             if (shouldEscalate) {
                 try {
