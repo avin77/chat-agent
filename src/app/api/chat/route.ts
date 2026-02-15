@@ -17,12 +17,12 @@ export const maxDuration = 30;
 export const runtime = 'nodejs';
 
 // Trim messages to fit token limit
+// NOTE: Gemini does NOT support system messages mid-conversation — only keep user/assistant messages
 function trimMessages(messages: any[]): any[] {
     if (messages.length <= 12) return messages;
-
+    // Keep first 2 + last 10, no system message in middle (Gemini rejects it)
     return [
         ...messages.slice(0, 2),
-        { role: 'system', content: '[... earlier conversation ...]' },
         ...messages.slice(-10)
     ];
 }
@@ -318,22 +318,29 @@ export async function POST(req: Request) {
                     }
 
                     // HTML-escape user data in email to prevent XSS
-                    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    const esc = (s: string | null | undefined) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-                    await sendEmail({
-                        to: process.env.ADMIN_EMAIL!,
-                        subject: `🚨 ${intent.toUpperCase()} ESCALATION: ${name || 'Unknown'}`,
-                        html: `
-                            <h2>New ${esc(intent.replace('_', ' ').toUpperCase())} Lead</h2>
-                            <p><strong>Name:</strong> ${esc(name || 'Not provided')}</p>
-                            <p><strong>Phone:</strong> ${esc(phone || 'Not provided')}</p>
-                            <p><strong>Conversation ID:</strong> ${esc(conversationId)}</p>
-                            <p><strong>Intent:</strong> ${esc(intent)}</p>
-                            <hr>
-                            <h3>Full Conversation:</h3>
-                            <pre>${esc(JSON.stringify(coreMessages, null, 2))}</pre>
-                        `
-                    });
+                    // Only send email if ADMIN_EMAIL is configured
+                    if (process.env.ADMIN_EMAIL) {
+                        try {
+                            await sendEmail({
+                                to: process.env.ADMIN_EMAIL,
+                                subject: `🚨 ${intent.toUpperCase()} ESCALATION: ${name || 'Unknown'}`,
+                                html: `
+                                    <h2>New ${esc(intent.replace('_', ' ').toUpperCase())} Lead</h2>
+                                    <p><strong>Name:</strong> ${esc(name)}</p>
+                                    <p><strong>Phone:</strong> ${esc(phone)}</p>
+                                    <p><strong>Conversation ID:</strong> ${esc(conversationId)}</p>
+                                    <p><strong>Intent:</strong> ${esc(intent)}</p>
+                                    <hr>
+                                    <h3>Full Conversation:</h3>
+                                    <pre>${esc(JSON.stringify(coreMessages, null, 2))}</pre>
+                                `
+                            });
+                        } catch (emailError) {
+                            console.error('Email send failed (non-fatal):', emailError);
+                        }
+                    }
 
                     console.log('✅ Escalation processed:', intent, name, phone);
                     try { fs.appendFileSync('chat_debug.log', `[ESCALATION SUCCESS] Intent: ${intent}, Name: ${name}, Phone: ${phone}\n`); } catch (e) { }
