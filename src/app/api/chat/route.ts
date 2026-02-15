@@ -128,14 +128,19 @@ export async function POST(req: Request) {
 
         const lastMsg = messages[messages.length - 1];
         const latestMessage = lastMsg?.content || lastMsg?.parts?.find((p: any) => p.type === 'text')?.text || '';
+        // Build full conversation text for intent detection (use all user messages)
+        const fullConversationText = messages
+            .filter((m: any) => m.role === 'user')
+            .map((m: any) => m.content || m.parts?.find((p: any) => p.type === 'text')?.text || '')
+            .join(' ');
         const conversationId = req.headers.get('x-conversation-id') || id || crypto.randomUUID();
 
         try {
             fs.appendFileSync('chat_debug.log', `DEBUG_SESSION: ResolvedID: ${conversationId} BodyID: ${id} HeaderID: ${req.headers.get('x-conversation-id')}\n`);
         } catch (e) { }
 
-        // Get intent from session
-        const intent = await getOrCreateSession(conversationId, latestMessage);
+        // Get intent from session - pass full conversation for better intent detection
+        const intent = await getOrCreateSession(conversationId, fullConversationText);
         let systemPrompt = ENHANCED_PROMPTS[intent] || ENHANCED_PROMPTS.general;
 
         // Smart Prompt Injection for reliability
