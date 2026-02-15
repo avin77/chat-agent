@@ -10817,3 +10817,971 @@ DEBUG_SESSION: ResolvedID: 38v0d96f8h8mknonvar BodyID: 38v0d96f8h8mknonvar Heade
 }
 ---
 [ESCALATION SUCCESS] Intent: complaint, Name: null, Phone: null
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need a maid for cooking"
+    }
+  ],
+  "id": "test-claude-001"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-001 BodyID: test-claude-001 HeaderID: test-claude-001
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Please share your 10-digit mobile number to proceed.\n\n\n\n",
+  "intent": "maid_hire"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, what services do you offer?"
+    }
+  ],
+  "id": "test-claude-002"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-002 BodyID: test-claude-002 HeaderID: test-claude-002
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Services are Cleaning, Cooking, Baby, and Elderly Care.",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "My name is Rahul and my number is 9876543210"
+    }
+  ],
+  "id": "test-claude-003"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-003 BodyID: test-claude-003 HeaderID: test-claude-003
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Services are Cleaning, Cooking, Baby, and Elderly Care.\n\nWould you like our team to call you?\n\n\n\n",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint about the maid service"
+    }
+  ],
+  "id": "test-claude-004"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-004 BodyID: test-claude-004 HeaderID: test-claude-004
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Please share your 10-digit Phone Number so we can reach you.\n\n\n\n",
+  "intent": "complaint"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I want to register as a helper, my name is Priya"
+    }
+  ],
+  "id": "test-claude-005"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-005 BodyID: test-claude-005 HeaderID: test-claude-005
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "We currently only assist customers looking to *hire* help, and do not have a registration process for helpers at this time. \n\nHowever",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need a maid for cooking"
+    },
+    {
+      "role": "assistant",
+      "content": "Please share your 10-digit mobile number to proceed."
+    },
+    {
+      "role": "user",
+      "content": "my number is 98765"
+    }
+  ],
+  "id": "test-claude-006"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-006 BodyID: test-claude-006 HeaderID: test-claude-006
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "That is not a valid 10-digit mobile number, please provide a complete 10-digit number so our team can assist you.",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need a maid for cooking"
+    },
+    {
+      "role": "assistant",
+      "content": "Please share your 10-digit mobile number to proceed."
+    },
+    {
+      "role": "user",
+      "content": "9876543210"
+    }
+  ],
+  "id": "test-claude-001"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-001 BodyID: test-claude-001 HeaderID: test-claude-001
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Would you like our team to call you?\n\nAlso, could you please share your requirements for a cook, such as the type of cuisine, days needed, and timings?",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "what is the price for a full time maid?"
+    }
+  ],
+  "id": "test-claude-008"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-008 BodyID: test-claude-008 HeaderID: test-claude-008
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "I do not provide pricing information. Services are cleaning, cooking, baby, and elderly care.",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need a cook"
+    },
+    {
+      "role": "assistant",
+      "content": "Please share your 10-digit mobile number."
+    },
+    {
+      "role": "user",
+      "content": "8899776655"
+    }
+  ],
+  "id": "test-claude-009"
+}
+---
+DEBUG_SESSION: ResolvedID: test-claude-009 BodyID: test-claude-009 HeaderID: test-claude-009
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Would you like our team to call you?\n\nAlso, could you please share your requirements for a cook, such as the type of cuisine, cooking frequency, and any specific skills you are looking for?",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need a maid for cooking"
+    }
+  ],
+  "id": "test-v2-maid-1"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-maid-1 BodyID: test-v2-maid-1 HeaderID: test-v2-maid-1
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, what services do you offer?"
+    }
+  ],
+  "id": "test-v2-general-1"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-general-1 BodyID: test-v2-general-1 HeaderID: test-v2-general-1
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint about the maid service"
+    }
+  ],
+  "id": "test-v2-complaint-1"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-complaint-1 BodyID: test-v2-complaint-1 HeaderID: test-v2-complaint-1
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    }
+  ],
+  "id": "test1"
+}
+---
+DEBUG_SESSION: ResolvedID: test1 BodyID: test1 HeaderID: null
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    }
+  ],
+  "id": "test1"
+}
+---
+DEBUG_SESSION: ResolvedID: test1 BodyID: test1 HeaderID: null
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    }
+  ],
+  "id": "test1"
+}
+---
+DEBUG_SESSION: ResolvedID: test1 BodyID: test1 HeaderID: null
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    }
+  ],
+  "id": "test-flash-1"
+}
+---
+DEBUG_SESSION: ResolvedID: test-flash-1 BodyID: test-flash-1 HeaderID: null
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    }
+  ],
+  "id": "test-gemma-1"
+}
+---
+DEBUG_SESSION: ResolvedID: test-gemma-1 BodyID: test-gemma-1 HeaderID: null
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Hello! How can I help you today? We offer Cleaning, Cooking, Baby Care, and Elderly Care services in Bengaluru.",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need a maid for cooking"
+    }
+  ],
+  "id": "test-v2-maid-10"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-maid-10 BodyID: test-v2-maid-10 HeaderID: test-v2-maid-10
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Sure! Please share your 10-digit mobile number so we can send you cook profiles.",
+  "intent": "maid_hire"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "What services do you offer?"
+    }
+  ],
+  "id": "test-v2-general-10"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-general-10 BodyID: test-v2-general-10 HeaderID: test-v2-general-10
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "We offer Cleaning, Cooking, Baby Care, and Elderly Care services in Bengaluru. We can help you find reliable domestic help for your needs!",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint about the maid service"
+    }
+  ],
+  "id": "test-v2-complaint-10"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-complaint-10 BodyID: test-v2-complaint-10 HeaderID: test-v2-complaint-10
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "I'm sorry to hear that. Please share your 10-digit Phone Number so our priority team can reach you.",
+  "intent": "complaint"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I want to register as a helper, my name is Priya"
+    }
+  ],
+  "id": "test-v2-helper-10"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-helper-10 BodyID: test-v2-helper-10 HeaderID: test-v2-helper-10
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Welcome Priya! Please share your 10-digit Phone Number so we can register you.",
+  "intent": "helper_reg"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "my number is 98765"
+    }
+  ],
+  "id": "test-v2-invalid-10"
+}
+---
+DEBUG_SESSION: ResolvedID: test-v2-invalid-10 BodyID: test-v2-invalid-10 HeaderID: test-v2-invalid-10
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Hello! That's not a valid 10-digit mobile number. Could you please share a complete 10-digit phone number so our team can assist you?",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I have a complaint"
+    },
+    {
+      "role": "assistant",
+      "content": "I am sorry to hear that. Please share your 10-digit Phone Number so our priority team can reach you."
+    },
+    {
+      "role": "user",
+      "content": "9876543210"
+    }
+  ],
+  "id": "test-final-complaint-1"
+}
+---
+DEBUG_SESSION: ResolvedID: test-final-complaint-1 BodyID: test-final-complaint-1 HeaderID: test-final-complaint-1
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Thank you! Would you like our team to call you at 9876543210? [ESCALATE]",
+  "intent": "general"
+}
+---
+[DB ERROR] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[ESCALATION SUCCESS] Intent: general, Name: null, Phone: 9876543210
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need a maid for cooking"
+    },
+    {
+      "role": "assistant",
+      "content": "Sure! Please share your 10-digit mobile number."
+    },
+    {
+      "role": "user",
+      "content": "My name is Rahul and number is 9876543210"
+    }
+  ],
+  "id": "test-final-maid-3"
+}
+---
+DEBUG_SESSION: ResolvedID: test-final-maid-3 BodyID: test-final-maid-3 HeaderID: test-final-maid-3
+[DB Select Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[DB Insert Error] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[Finish] {
+  "text": "Thank you! Would you like our team to call you at 9876543210? [ESCALATE]",
+  "intent": "general"
+}
+---
+[DB ERROR] {"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND ojkpgwhnkqnnmqilzqxq.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)","hint":"","code":""}
+[ESCALATION SUCCESS] Intent: general, Name: Rahul and, Phone: 9876543210
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need a maid for cooking"
+    }
+  ],
+  "conversationId": "test-123"
+}
+---
+DEBUG_SESSION: ResolvedID: 672fff87-b3a7-445e-8445-0f9cceb46e82 BodyID: undefined HeaderID: null
+[Finish] {
+  "text": "Sure! Please share your 10-digit mobile number so we can send you cook profiles.",
+  "intent": "maid_hire"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need a maid for cooking"
+    }
+  ],
+  "conversationId": "test-123"
+}
+---
+DEBUG_SESSION: ResolvedID: b1fe7dc3-35a3-4dab-b7f2-7447e8db45a3 BodyID: undefined HeaderID: null
+[Finish] {
+  "text": "Sure! Please share your 10-digit mobile number so we can send you cook profiles.",
+  "intent": "maid_hire"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ],
+  "conversationId": "test-abc"
+}
+---
+DEBUG_SESSION: ResolvedID: 626cb8da-a9f9-4541-a61c-e0ddb213fe3c BodyID: undefined HeaderID: null
+[Finish] {
+  "text": "Hello! How can I help you today? We offer Cleaning, Cooking, Baby Care, and Elderly Care services in Bengaluru.",
+  "intent": "general"
+}
+---
+{
+  "id": "b3ggtuqtro7mlmmnv3p",
+  "messages": [
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "I need a maid for cookingHi, I want to hire a maid."
+        }
+      ],
+      "id": "FjJ9I6HAJ6qzqOuD",
+      "role": "user"
+    }
+  ],
+  "trigger": "submit-message"
+}
+---
+DEBUG_SESSION: ResolvedID: b3ggtuqtro7mlmmnv3p BodyID: b3ggtuqtro7mlmmnv3p HeaderID: null
+[Session Error] {}
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, what services do you provide?"
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: 6866b445-be9e-4d98-a31b-c40260f07647 BodyID: undefined HeaderID: null
+[Finish] {
+  "text": "Hello! We offer Cleaning, Cooking, Baby Care, and Elderly Care services in Bengaluru. Let me know if you’d like to know more about any of these!",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need a maid"
+    },
+    {
+      "role": "assistant",
+      "content": "Please share your phone number."
+    },
+    {
+      "role": "user",
+      "content": "9876543210"
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: 788a47fc-5abe-4c74-8e15-0d0edb9b9fa2 BodyID: undefined HeaderID: null
+[Finish] {
+  "text": "Thank you! Would you like our team to call you at 9876543210? [ESCALATE]",
+  "intent": "general"
+}
+---
+[ESCALATION SUCCESS] Intent: general, Name: null, Phone: 9876543210
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: bfb18311-4d4c-457c-ba1a-317eff326f7c BodyID: undefined HeaderID: null
+[Finish] {
+  "text": "Hello! How can I help you today? We offer Cleaning, Cooking, Baby Care, and Elderly Care services in Bengaluru.\n",
+  "intent": "general"
+}
+---
+{
+  "id": "t2",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "I need a maid"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "Please share your 10-digit mobile number."
+    },
+    {
+      "id": "m3",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "9876543210"
+        }
+      ]
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: t2 BodyID: t2 HeaderID: null
+[Finish] {
+  "text": "Thank you! Would you like our team to call you at 9876543210? [ESCALATE]",
+  "intent": "general"
+}
+---
+[ESCALATION SUCCESS] Intent: general, Name: null, Phone: 9876543210
+{
+  "id": "test_1771146168",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "I need a maid"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "Please share your 10-digit mobile number."
+    },
+    {
+      "id": "m3",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "9876543210"
+        }
+      ]
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: test_1771146168 BodyID: test_1771146168 HeaderID: null
+[Finish] {
+  "text": "Thank you! Would you like our team to call you at 9876543210? [ESCALATE]",
+  "intent": "general"
+}
+---
+[ESCALATION SUCCESS] Intent: general, Name: null, Phone: 9876543210
+{
+  "id": "flow_1771146253",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "I need a maid"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "Please share your mobile number."
+    },
+    {
+      "id": "m3",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "9876543210"
+        }
+      ]
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: flow_1771146253 BodyID: flow_1771146253 HeaderID: null
+[Finish] {
+  "text": "Got it! Which area in Bengaluru are you looking for help? (e.g. Koramangala, Indiranagar, Whitefield)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "mumbai_1771146266",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Do you have service in Mumbai?"
+        }
+      ]
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: mumbai_1771146266 BodyID: mumbai_1771146266 HeaderID: null
+[Finish] {
+  "text": "We currently operate in Bengaluru only. We're expanding soon — share your number and we'll reach out when we're available in Mumbai!\n\nNote: We primarily operate in Bengaluru. Our team will confirm service availability in your area.",
+  "intent": "general"
+}
+---
+{
+  "id": "step3b_1771146281",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "I need a maid"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "Please share your mobile number."
+    },
+    {
+      "id": "m3",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "9876543210"
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "role": "assistant",
+      "content": "Got it! Which area in Bengaluru?"
+    },
+    {
+      "id": "m5",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Koramangala"
+        }
+      ]
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: step3b_1771146281 BodyID: step3b_1771146281 HeaderID: null
+[Finish] {
+  "text": "What kind of help do you need? Cooking / Cleaning / Baby Care / Elderly Care (you can pick more than one)",
+  "intent": "maid_hire"
+}
+---
+{
+  "id": "fullflow_1771159418",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "I need a maid"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "Please share your 10-digit mobile number."
+    },
+    {
+      "id": "m3",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "9876543210"
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "role": "assistant",
+      "content": "Got it! Which area in Bengaluru?"
+    },
+    {
+      "id": "m5",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Koramangala"
+        }
+      ]
+    },
+    {
+      "id": "m6",
+      "role": "assistant",
+      "content": "What kind of help do you need?"
+    },
+    {
+      "id": "m7",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "cooking"
+        }
+      ]
+    },
+    {
+      "id": "m8",
+      "role": "assistant",
+      "content": "Full-time or Part-time?"
+    },
+    {
+      "id": "m9",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "full-time"
+        }
+      ]
+    },
+    {
+      "id": "m10",
+      "role": "assistant",
+      "content": "Expected salary range?"
+    },
+    {
+      "id": "m11",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "15000"
+        }
+      ]
+    },
+    {
+      "id": "m12",
+      "role": "assistant",
+      "content": "How many family members?"
+    },
+    {
+      "id": "m13",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "4"
+        }
+      ]
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: fullflow_1771159418 BodyID: fullflow_1771159418 HeaderID: null
+{
+  "id": "fullflow2_1771159453",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "I need a maid"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "Please share your 10-digit mobile number."
+    },
+    {
+      "id": "m3",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "9876543210"
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "role": "assistant",
+      "content": "Got it! Which area in Bengaluru?"
+    },
+    {
+      "id": "m5",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Koramangala"
+        }
+      ]
+    },
+    {
+      "id": "m6",
+      "role": "assistant",
+      "content": "What kind of help do you need?"
+    },
+    {
+      "id": "m7",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "cooking"
+        }
+      ]
+    },
+    {
+      "id": "m8",
+      "role": "assistant",
+      "content": "Full-time or Part-time?"
+    },
+    {
+      "id": "m9",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "full-time"
+        }
+      ]
+    },
+    {
+      "id": "m10",
+      "role": "assistant",
+      "content": "Expected salary range?"
+    },
+    {
+      "id": "m11",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "15000"
+        }
+      ]
+    },
+    {
+      "id": "m12",
+      "role": "assistant",
+      "content": "How many family members?"
+    },
+    {
+      "id": "m13",
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "4"
+        }
+      ]
+    }
+  ]
+}
+---
+DEBUG_SESSION: ResolvedID: fullflow2_1771159453 BodyID: fullflow2_1771159453 HeaderID: null
+[Finish] {
+  "text": "Have you hired a maid before?",
+  "intent": "maid_hire"
+}
+---

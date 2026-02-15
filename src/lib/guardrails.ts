@@ -28,10 +28,7 @@ export function applyStrictGuardrails(text: string): string {
         }
     }
 
-    // 2. LOCATION HANDLING
-    if (/(?:work|serve|available|operate).*?(?:mumbai|delhi|pune|hyderabad|chennai|kolkata)/i.test(cleaned)) {
-        cleaned += '\n\nNote: We primarily operate in Bengaluru. Our team will confirm service availability in your area.';
-    }
+    // 2. LOCATION HANDLING - prompt already handles non-Bangalore cities, no extra note needed
 
     // 3. PREVENT PHONE LEAKS
     const phonePattern = /(?<!\w)\d{10}(?!\w)/g;

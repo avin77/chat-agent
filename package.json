@@ -8,10 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "eval": "node eval.js",
-    "eval:prod": "node eval.js --url=https://chat-agent-three.vercel.app",
+    "eval:prod": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app",
     "eval:verbose": "node eval.js --verbose",
-    "eval:whatsapp": "node eval.js --url=https://chat-agent-three.vercel.app --whatsapp",
-    "eval:json": "node eval.js --url=https://chat-agent-three.vercel.app --json"
+    "eval:whatsapp": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app --whatsapp",
+    "eval:json": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app --json"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",
