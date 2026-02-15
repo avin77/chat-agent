@@ -6,6 +6,13 @@
 
 Write-Host "Starting Andy stack..." -ForegroundColor Cyan
 
+# ── Step 0: Prevent Windows from sleeping (keeps Andy alive 24/7) ─────────────
+Write-Host "[0/3] Setting power plan to never sleep..." -ForegroundColor Yellow
+powercfg /change standby-timeout-ac 0   # Never sleep when plugged in
+powercfg /change standby-timeout-dc 0   # Never sleep on battery
+powercfg /change monitor-timeout-ac 0   # Screen can stay on too (optional)
+Write-Host "      Sleep disabled. Andy will stay running." -ForegroundColor Green
+
 # ── Step 1: Start Docker Desktop if not running ──────────────────────────────
 $dockerCheck = docker ps 2>&1
 if ($dockerCheck -match "error|cannot|failed") {

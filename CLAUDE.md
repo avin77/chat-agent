@@ -122,6 +122,15 @@ powershell -ExecutionPolicy Bypass -File "C:\Coding\EzyBot\ezybot\start-andy.ps1
 - No trigger word needed — just type anything
 - Andy stays running 24/7 via `Restart=always` in systemd — auto-recovers from crashes
 
+**Why Andy goes silent (most common cause):**
+Windows laptop sleep freezes WSL2, which freezes nanoclaw. Messages sent while laptop is asleep are only seen when it wakes up.
+The startup script automatically disables sleep (`powercfg`). If you skipped the script, run manually:
+```powershell
+powercfg /change standby-timeout-ac 0
+powercfg /change standby-timeout-dc 0
+```
+Or: **Settings → System → Power & Sleep → Sleep → Never**
+
 **To check if Andy is running:**
 ```powershell
 wsl systemctl --user status nanoclaw.service
