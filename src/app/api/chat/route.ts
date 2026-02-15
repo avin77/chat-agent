@@ -234,11 +234,12 @@ export async function POST(req: Request) {
             const phone = validatePhone(latestMessage);
             const name = extractName(latestMessage);
 
-            // Deterministic escalation: auto-escalate when phone is collected in action intents
+            // Escalation: for maid_hire, only escalate when LLM explicitly signals [ESCALATE]
+            // (after all questions answered). For complaint/helper_reg, escalate on phone collected.
             const llmTriggeredEscalation = /\[?ESCALATE\]?/i.test(text);
             const phoneCollected = !!phone;
-            const isActionIntent = intent === 'maid_hire' || intent === 'complaint' || intent === 'helper_reg';
-            const shouldEscalate = llmTriggeredEscalation || (isActionIntent && phoneCollected);
+            const shouldEscalate = llmTriggeredEscalation ||
+                ((intent === 'complaint' || intent === 'helper_reg') && phoneCollected);
 
             if (shouldEscalate) {
                 try {
