@@ -126,7 +126,8 @@ export async function POST(req: Request) {
 
         geminiRateLimiter.recordRequest();
 
-        const latestMessage = messages[messages.length - 1]?.content || '';
+        const lastMsg = messages[messages.length - 1];
+        const latestMessage = lastMsg?.content || lastMsg?.parts?.find((p: any) => p.type === 'text')?.text || '';
         const conversationId = req.headers.get('x-conversation-id') || id || crypto.randomUUID();
 
         try {
@@ -145,10 +146,10 @@ export async function POST(req: Request) {
             systemPrompt += "\n\nSYSTEM ALERT: Input contains VALID 10-digit phone. EXTRACT IT and acknowledge it.";
         }
 
-        // Sanitize and trim messages
+        // Sanitize and trim messages - handle both content string and parts array (AI SDK v3+)
         const coreMessages = messages.map((m: any) => ({
             role: m.role,
-            content: m.content || '.',
+            content: m.content || m.parts?.find((p: any) => p.type === 'text')?.text || '.',
         }));
 
         const trimmedMessages = trimMessages(coreMessages);
