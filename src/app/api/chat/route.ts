@@ -142,7 +142,8 @@ export async function POST(req: Request) {
         if (/\b\d{5,9}\b/.test(latestMessage) && !/\b\d{10}\b/.test(latestMessage)) {
             systemPrompt += "\n\nSYSTEM ALERT: Input contains INVALID phone (5-9 digits). REJECT IT. Ask for 10-digit number.";
         }
-        if (/\b\d{10}\b/.test(latestMessage)) {
+        // For maid_hire, don't override — let the multi-step prompt handle phone naturally
+        if (/\b\d{10}\b/.test(latestMessage) && intent !== 'maid_hire') {
             systemPrompt += "\n\nSYSTEM ALERT: Input contains VALID 10-digit phone. EXTRACT IT and acknowledge it.";
         }
 
