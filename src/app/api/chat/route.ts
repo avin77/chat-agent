@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { generateText, createUIMessageStreamResponse, createUIMessageStream } from 'ai';
 import * as fs from 'fs';
 import { ENHANCED_PROMPTS } from '@/lib/prompts-enhanced';
 import { applyStrictGuardrails, validatePhone, extractName } from '@/lib/guardrails';
@@ -322,35 +322,18 @@ export async function POST(req: Request) {
             // Strip [ESCALATE] tag server-side before sending to client
             const displayText = cleaned.replace(/\[?ESCALATE\]?/gi, '').trim();
 
-            // Return as UI Message Stream response for useChat compatibility
-            // useChat (@ai-sdk/react v3) expects promptTokens/completionTokens (NOT inputTokens/outputTokens)
-            const usageData = {
-                promptTokens: usage?.inputTokens ?? usage?.promptTokens ?? 0,
-                completionTokens: usage?.outputTokens ?? usage?.completionTokens ?? 0,
-            };
-            const encoder = new TextEncoder();
-            const stream = new ReadableStream({
-                start(controller) {
-                    controller.enqueue(encoder.encode(`0:${JSON.stringify(displayText)}\n`));
-                    controller.enqueue(encoder.encode(`e:${JSON.stringify({
-                        finishReason: finishReason || "stop",
-                        usage: usageData,
-                        isContinued: false
-                    })}\n`));
-                    controller.enqueue(encoder.encode(`d:${JSON.stringify({
-                        finishReason: finishReason || "stop",
-                        usage: usageData
-                    })}\n`));
-                    controller.close();
-                }
+            // Return as UI Message Stream response for useChat compatibility (ai SDK v6)
+            const uiStream = createUIMessageStream({
+                execute: ({ writer }) => {
+                    writer.write({
+                        type: 'text-delta',
+                        delta: displayText,
+                        id: crypto.randomUUID(),
+                    });
+                },
             });
 
-            return new Response(stream, {
-                headers: {
-                    'Content-Type': 'text/plain; charset=utf-8',
-                    'x-vercel-ai-data-stream': 'v1',
-                }
-            });
+            return createUIMessageStreamResponse({ stream: uiStream });
         } catch (apiError: any) {
             console.error("🔥 GEMINI EXECUTION ERROR:", apiError);
 
