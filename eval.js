@@ -269,13 +269,15 @@ const TEST_CASES = [
     }
 ];
 
-// ─── API Call ─────────────────────────────────────────────────────────────────
+// ─── API Call (with latency) ──────────────────────────────────────────────────
 async function callChat(messages, conversationId) {
+    const start = Date.now();
     const res = await fetch(`${BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages, id: conversationId }),
     });
+    const latencyMs = Date.now() - start;
 
     if (!res.ok) {
         const text = await res.text();
@@ -286,22 +288,19 @@ async function callChat(messages, conversationId) {
     const text = await res.text();
 
     // Parse AI SDK v6 UI message stream format
-    // Lines look like: 0:"text content here"
     let botText = '';
     for (const line of text.split('\n')) {
-        // text-delta lines: f:{"type":"text-delta","delta":"hello"}
         const deltaMatch = line.match(/"type":"text-delta","delta":"(.*?)"/);
         if (deltaMatch) {
-            botText += JSON.parse(`"${deltaMatch[1]}"`);
+            try { botText += JSON.parse(`"${deltaMatch[1]}"`); } catch(e) { botText += deltaMatch[1]; }
         }
-        // Also try simple 0:"..." format
         const simpleMatch = line.match(/^0:"(.*)"/);
         if (simpleMatch) {
             try { botText += JSON.parse(`"${simpleMatch[1]}"`); } catch (e) { botText += simpleMatch[1]; }
         }
     }
 
-    return botText.trim() || text.trim();
+    return { text: botText.trim() || text.trim(), latencyMs };
 }
 
 // ─── Run a single test case ───────────────────────────────────────────────────
@@ -309,16 +308,21 @@ async function runTest(tc) {
     const convId = `eval_${tc.id}_${Date.now()}`;
     const messages = [];
     const results = [];
+    const latencies = [];
 
     for (let i = 0; i < tc.turns.length; i++) {
         const turn = tc.turns[i];
         messages.push({ role: 'user', content: turn.user });
 
         let botReply = '';
+        let latencyMs = 0;
         let error = null;
 
         try {
-            botReply = await callChat([...messages], convId);
+            const resp = await callChat([...messages], convId);
+            botReply = resp.text;
+            latencyMs = resp.latencyMs;
+            latencies.push(latencyMs);
         } catch (e) {
             error = e.message;
         }
@@ -349,6 +353,7 @@ async function runTest(tc) {
             turn: i + 1,
             user: turn.user,
             bot: botReply || `[ERROR: ${error}]`,
+            latencyMs,
             pass: failures.length === 0 && !error,
             failures,
             error,
@@ -356,55 +361,66 @@ async function runTest(tc) {
     }
 
     const passed = results.every(r => r.pass);
-    return { tc, results, passed };
+    const avgLatency = latencies.length ? Math.round(latencies.reduce((a,b) => a+b, 0) / latencies.length) : 0;
+    return { tc, results, passed, avgLatency };
 }
 
 // ─── Main Runner ──────────────────────────────────────────────────────────────
 async function main() {
-    console.log(`\n${'═'.repeat(60)}`);
-    console.log(`  EzyBot Eval Suite`);
-    console.log(`  Target: ${BASE_URL}`);
-    console.log(`  Tests: ${TEST_CASES.length}`);
-    console.log(`${'═'.repeat(60)}\n`);
+    const WHATSAPP = process.argv.includes('--whatsapp'); // compact output for Andy to forward
+    const jsonOutput = process.argv.includes('--json');
+
+    if (!WHATSAPP) {
+        console.log(`\n${'═'.repeat(60)}`);
+        console.log(`  EzyBot Eval Suite`);
+        console.log(`  Target: ${BASE_URL}`);
+        console.log(`  Tests: ${TEST_CASES.length}`);
+        console.log(`${'═'.repeat(60)}\n`);
+    }
 
     // Check if server is reachable
     try {
         await fetch(`${BASE_URL}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     } catch (e) {
-        console.error(`❌ Cannot reach ${BASE_URL} — is the server running?\n   npm run dev\n`);
+        const msg = `Cannot reach ${BASE_URL} — is the server running?`;
+        console.error(WHATSAPP ? `❌ ${msg}` : `❌ ${msg}\n   npm run dev\n`);
         process.exit(1);
     }
 
     const categoryResults = {};
+    const allLatencies = [];
     let totalPassed = 0;
     let totalFailed = 0;
+    const failedTests = [];
 
     for (const tc of TEST_CASES) {
-        process.stdout.write(`  [${tc.category}] ${tc.name}... `);
+        if (!WHATSAPP) process.stdout.write(`  [${tc.category}] ${tc.name}... `);
 
         try {
             const result = await runTest(tc);
+            if (result.avgLatency) allLatencies.push(result.avgLatency);
 
             if (result.passed) {
-                console.log('✅ PASS');
+                if (!WHATSAPP) console.log(`✅ PASS  (${result.avgLatency}ms)`);
                 totalPassed++;
             } else {
-                console.log('❌ FAIL');
-                totalFailed++;
-                for (const r of result.results) {
-                    if (!r.pass) {
-                        console.log(`     Turn ${r.turn}: "${r.user}"`);
-                        console.log(`     Bot:  "${r.bot.substring(0, 120)}..."`);
-                        for (const f of r.failures) {
-                            console.log(`     ✗ ${f}`);
+                if (!WHATSAPP) {
+                    console.log('❌ FAIL');
+                    for (const r of result.results) {
+                        if (!r.pass) {
+                            console.log(`     Turn ${r.turn}: "${r.user}"`);
+                            console.log(`     Bot:  "${r.bot.substring(0, 120)}"`);
+                            for (const f of r.failures) console.log(`     ✗ ${f}`);
                         }
                     }
                 }
+                totalFailed++;
+                failedTests.push({ id: tc.id, name: tc.name, category: tc.category, results: result.results });
             }
 
-            if (VERBOSE) {
+            if (VERBOSE && !WHATSAPP) {
                 for (const r of result.results) {
-                    console.log(`\n     Turn ${r.turn}:`);
+                    console.log(`\n     Turn ${r.turn} (${r.latencyMs}ms):`);
                     console.log(`     User: ${r.user}`);
                     console.log(`     Bot:  ${r.bot}`);
                 }
@@ -416,41 +432,94 @@ async function main() {
             else categoryResults[tc.category].fail++;
 
         } catch (e) {
-            console.log(`💥 ERROR: ${e.message}`);
+            if (!WHATSAPP) console.log(`💥 ERROR: ${e.message}`);
             totalFailed++;
         }
 
-        // Small delay between tests to avoid rate limiting
-        await new Promise(r => setTimeout(r, 1200));
+        // Delay between tests to avoid rate limiting
+        await new Promise(r => setTimeout(r, 1500));
     }
 
-    // ── Summary ──────────────────────────────────────────────────────────────
-    console.log(`\n${'═'.repeat(60)}`);
-    console.log(`  RESULTS`);
-    console.log(`${'═'.repeat(60)}`);
-
-    for (const [cat, r] of Object.entries(categoryResults)) {
-        const total = r.pass + r.fail;
-        const pct = Math.round(r.pass / total * 100);
-        const bar = '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10));
-        console.log(`  ${cat.padEnd(22)} ${bar} ${r.pass}/${total} (${pct}%)`);
-    }
-
+    // ── Metrics ───────────────────────────────────────────────────────────────
     const total = totalPassed + totalFailed;
     const overallPct = Math.round(totalPassed / total * 100);
-    console.log(`${'─'.repeat(60)}`);
-    console.log(`  Overall: ${totalPassed}/${total} passed (${overallPct}%)`);
-    console.log('');
+    const avgLatency = allLatencies.length ? Math.round(allLatencies.reduce((a,b)=>a+b,0) / allLatencies.length) : 0;
+    const maxLatency = allLatencies.length ? Math.max(...allLatencies) : 0;
+    const slowTests = allLatencies.filter(l => l > 5000).length;
 
-    if (overallPct >= 90) {
-        console.log('  ✅ PRODUCTION READY (≥90% pass rate)');
-    } else if (overallPct >= 70) {
-        console.log('  ⚠️  NEEDS IMPROVEMENT (70-89%) — fix failing tests before go-live');
-    } else {
-        console.log('  ❌ NOT READY (<70%) — significant issues to address');
+    const verdict = overallPct >= 90 ? '✅ PRODUCTION READY'
+        : overallPct >= 70 ? '⚠️ NEEDS IMPROVEMENT'
+        : '❌ NOT READY';
+
+    // ── Console Summary ───────────────────────────────────────────────────────
+    if (!WHATSAPP) {
+        console.log(`\n${'═'.repeat(60)}`);
+        console.log(`  RESULTS`);
+        console.log(`${'═'.repeat(60)}`);
+        for (const [cat, r] of Object.entries(categoryResults)) {
+            const t = r.pass + r.fail;
+            const pct = Math.round(r.pass / t * 100);
+            const bar = '█'.repeat(Math.round(pct/10)) + '░'.repeat(10 - Math.round(pct/10));
+            console.log(`  ${cat.padEnd(22)} ${bar} ${r.pass}/${t} (${pct}%)`);
+        }
+        console.log(`${'─'.repeat(60)}`);
+        console.log(`  Score:    ${totalPassed}/${total} passed (${overallPct}%)`);
+        console.log(`  Latency:  avg ${avgLatency}ms, max ${maxLatency}ms${slowTests > 0 ? `, ${slowTests} slow (>5s)` : ''}`);
+        console.log('');
+        console.log(`  ${verdict}`);
+        if (failedTests.length > 0) {
+            console.log(`\n  Failed tests: ${failedTests.map(f => f.id).join(', ')}`);
+        }
+        console.log(`${'═'.repeat(60)}\n`);
     }
 
-    console.log(`${'═'.repeat(60)}\n`);
+    // ── WhatsApp-Friendly Output (for Andy to forward) ────────────────────────
+    if (WHATSAPP) {
+        const lines = [
+            `*EzyBot Eval Report*`,
+            `Score: ${totalPassed}/${total} (${overallPct}%) — ${verdict}`,
+            `Latency: avg ${avgLatency}ms, max ${maxLatency}ms`,
+            ``,
+        ];
+        for (const [cat, r] of Object.entries(categoryResults)) {
+            const t = r.pass + r.fail;
+            const icon = r.fail === 0 ? '✅' : r.pass === 0 ? '❌' : '⚠️';
+            lines.push(`${icon} ${cat}: ${r.pass}/${t}`);
+        }
+        if (failedTests.length > 0) {
+            lines.push('');
+            lines.push('*Failed:*');
+            for (const f of failedTests) {
+                const firstFail = f.results.find(r => !r.pass);
+                const reason = firstFail?.failures[0] || 'error';
+                lines.push(`• ${f.id}: ${reason}`);
+            }
+        }
+        lines.push('');
+        lines.push(overallPct >= 90
+            ? '✅ Ready for production'
+            : overallPct >= 70
+            ? '⚠️ Fix failures before go-live'
+            : '❌ Not ready — significant issues');
+        console.log(lines.join('\n'));
+    }
+
+    // ── JSON Output (for saving results) ─────────────────────────────────────
+    if (jsonOutput) {
+        const report = {
+            timestamp: new Date().toISOString(),
+            url: BASE_URL,
+            score: { passed: totalPassed, total, pct: overallPct },
+            latency: { avg: avgLatency, max: maxLatency, slowTests },
+            categories: categoryResults,
+            failedTests: failedTests.map(f => ({ id: f.id, name: f.name, category: f.category })),
+            verdict,
+        };
+        const fs = await import('fs');
+        const fname = `eval-results-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+        fs.writeFileSync(fname, JSON.stringify(report, null, 2));
+        console.log(`\nResults saved to ${fname}`);
+    }
 
     process.exit(totalFailed > 0 ? 1 : 0);
 }

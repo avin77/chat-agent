@@ -9,7 +9,9 @@
     "lint": "eslint",
     "eval": "node eval.js",
     "eval:prod": "node eval.js --url=https://chat-agent-three.vercel.app",
-    "eval:verbose": "node eval.js --verbose"
+    "eval:verbose": "node eval.js --verbose",
+    "eval:whatsapp": "node eval.js --url=https://chat-agent-three.vercel.app --whatsapp",
+    "eval:json": "node eval.js --url=https://chat-agent-three.vercel.app --json"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",
