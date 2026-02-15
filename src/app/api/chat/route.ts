@@ -36,21 +36,16 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg'
         return 'general';
     }
 
+    // Check strong action intents FIRST (before question check)
+    // These override even if message has a question mark
+    if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
+    if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook/.test(lower)) return 'maid_hire';
+    if (/need.*job|want.*work|looking for.*job|i am.*maid|i am.*helper|register.*helper|i am.*cook|looking for work/.test(lower)) return 'helper_reg';
+
     // Question patterns → general (user is asking, not actively hiring/registering)
-    // e.g. "do you have 24hr maid?", "can you provide cook?", "is there any service?"
     const isQuestion = /\?/.test(lower) ||
         /^(do you|can you|is there|are there|what|how|tell me|i want to know|will you|would you|could you|should i|where|when|why|which|have you|do they)/.test(lower.trim());
-    if (isQuestion) {
-        // Even questions can be complaints or registrations — check those first
-        if (/complaint|issue|problem|angry|upset|bad service/.test(lower)) return 'complaint';
-        if (/need.*job|want.*work|looking for.*job|i am.*maid|i am.*helper|register.*helper|i am.*cook/.test(lower)) return 'helper_reg';
-        return 'general'; // All other questions → FAQ/general handling
-    }
-
-    // Positive action patterns (clear hiring/complaint/registration intent)
-    if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
-    if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid/.test(lower)) return 'maid_hire';
-    if (/need.*job|want.*work|looking for.*job|i am.*maid|i am.*helper|register.*helper|i am.*cook/.test(lower)) return 'helper_reg';
+    if (isQuestion) return 'general';
     return 'general';
 }
 
