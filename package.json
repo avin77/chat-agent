@@ -11,7 +11,10 @@
     "eval:prod": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app",
     "eval:verbose": "node eval.js --verbose",
     "eval:whatsapp": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app --whatsapp",
-    "eval:json": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app --json"
+    "eval:json": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app --json",
+    "golden:generate": "node scripts/generate-golden-dataset.js",
+    "golden:generate:hire": "node scripts/generate-golden-dataset.js --intent=maid_hire",
+    "golden:build": "node scripts/build-eval-from-golden.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",
