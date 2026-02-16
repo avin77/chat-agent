@@ -178,6 +178,100 @@ systemctl --user restart nanoclaw.service  # Restart if not responding
 journalctl --user -u nanoclaw.service -f   # Live logs
 ```
 
+## All Commands Reference
+
+### Development
+```bash
+npm run dev                    # Start local dev server (port 3000)
+npm run build                  # Production build
+npm run lint                   # ESLint check
+```
+
+### Eval — Test Chatbot Quality
+```bash
+# From WSL Ubuntu or Windows PowerShell (cd to project first)
+npm run eval                   # Run against local dev server (start npm run dev first)
+npm run eval:prod              # Run against live Vercel URL
+npm run eval:verbose           # Same as prod but shows full conversation output
+npm run eval:whatsapp          # Compact output — Andy uses this to report to you on WhatsApp
+npm run eval:json              # Saves full results to timestamped JSON file
+```
+**Ask Andy on WhatsApp:** *"run eval"* → Andy runs eval:whatsapp and sends score + failures
+
+**Verdict thresholds:** ≥90% = Production Ready | 70-89% = Needs Improvement | <70% = Not Ready
+
+**Metrics tracked:** Pass rate, avg/max response latency (ms), per-category breakdown
+
+### Golden Dataset — Build Ground Truth for Evals
+```bash
+# Generate conversations (calls Gemini API — uses GOOGLE_GENERATIVE_AI_API_KEY)
+npm run golden:csv             # Generate all 20 scenarios → saves data/golden-review.csv
+npm run golden:csv:hire        # Only maid hire scenarios (10 conversations)
+
+# On Windows PowerShell (after git pull):
+node scripts/golden-to-csv.js
+node scripts/golden-to-csv.js --intent=maid_hire --count=10
+
+# After you review the CSV and mark APPROVE? column:
+npm run golden:build           # Converts approved records → data/golden-eval-cases.js
+```
+
+**Review workflow:**
+1. Run `npm run golden:csv` → opens `data/golden-review.csv` in Excel
+2. Each conversation = multiple rows (one per turn), grouped together
+3. Fill in `APPROVE? (yes/no)` column for each conversation
+4. Add `Notes` if a bot response needs fixing
+5. Run `npm run golden:build` to convert into eval test cases
+
+**Open Excel directly on Windows:**
+```powershell
+cd C:\Coding\EzyBot\ezybot
+git pull
+node scripts/golden-to-csv.js
+start data\golden-review.csv    # opens in Excel
+```
+
+### Playwright UI Eval (Andy runs from container)
+```bash
+# Andy runs this from /workspace/group inside his container
+cd /workspace/group
+npx playwright test chatbot-eval.spec.js --reporter=line
+```
+Tests 14 scenarios by opening the real Vercel URL in a browser, typing messages, checking visible responses, and saving screenshots to `/workspace/group/eval-screenshots/`.
+
+**Ask Andy on WhatsApp:** *"run playwright eval"* → Andy runs UI tests and sends screenshot summary
+
+### Deploy
+```bash
+bash deploy.sh "feat: description"   # build → commit → push → Vercel auto-deploys
+git push origin main                  # push only (Vercel auto-deploys)
+```
+
+### Andy (NanoClaw) — WSL / Windows
+```bash
+# WSL Ubuntu
+systemctl --user status nanoclaw.service    # Check if Andy is running
+systemctl --user restart nanoclaw.service   # Restart Andy
+journalctl --user -u nanoclaw.service -f    # Live logs
+
+# Windows PowerShell
+wsl systemctl --user status nanoclaw.service
+wsl systemctl --user restart nanoclaw.service
+wsl journalctl --user -u nanoclaw.service -f
+.\start-andy.ps1                            # Full startup (Docker + nanoclaw + sleep fix)
+
+# Prevent laptop sleep (so Andy doesn't go offline):
+powercfg /change standby-timeout-ac 0
+powercfg /change standby-timeout-dc 0
+```
+
+### Vercel / Production
+```
+Live URL:      https://chat-agent-three.vercel.app
+Vercel:        vercel.com/ezysrs-projects/chat-agent
+Auto-deploys:  on every git push to main
+```
+
 ## Roadmap (see PLAN.md)
 
 - [x] Fix safety net (generateText instead of streamText)
