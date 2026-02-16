@@ -16,7 +16,9 @@
     "golden:generate:hire": "node scripts/generate-golden-dataset.js --intent=maid_hire",
     "golden:build": "node scripts/build-eval-from-golden.js",
     "golden:csv": "node scripts/golden-to-csv.js",
-    "golden:csv:hire": "node scripts/golden-to-csv.js --intent=maid_hire"
+    "golden:csv:hire": "node scripts/golden-to-csv.js --intent=maid_hire",
+    "capture": "node scripts/capture-real-responses.js",
+    "capture:local": "node scripts/capture-real-responses.js --url=http://localhost:3000"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",

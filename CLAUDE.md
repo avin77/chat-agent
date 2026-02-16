@@ -203,33 +203,45 @@ npm run eval:json              # Saves full results to timestamped JSON file
 **Metrics tracked:** Pass rate, avg/max response latency (ms), per-category breakdown
 
 ### Golden Dataset — Build Ground Truth for Evals
+
+**Two types of datasets — understand the difference:**
+
+| Script | What it contains | Use for |
+|---|---|---|
+| `golden:csv` | Gemini-imagined *ideal* bot responses | Defining what the bot SHOULD say |
+| `capture` | Your *real* bot's actual responses | Evaluating what the bot ACTUALLY says |
+
+**Type A — Ideal responses (Gemini-generated):**
 ```bash
-# Generate conversations (calls Gemini API — uses GOOGLE_GENERATIVE_AI_API_KEY)
-npm run golden:csv             # Generate all 20 scenarios → saves data/golden-review.csv
-npm run golden:csv:hire        # Only maid hire scenarios (10 conversations)
-
-# On Windows PowerShell (after git pull):
-node scripts/golden-to-csv.js
-node scripts/golden-to-csv.js --intent=maid_hire --count=10
-
-# After you review the CSV and mark APPROVE? column:
-npm run golden:build           # Converts approved records → data/golden-eval-cases.js
+npm run golden:csv             # All 20 scenarios → data/golden-review.csv
+npm run golden:csv:hire        # Only maid hire (10 conversations)
+npm run golden:build           # After review: converts to eval test cases
 ```
+Gemini imagines how the perfect EzyBot should respond.
+You review and approve/reject each conversation.
 
-**Review workflow:**
-1. Run `npm run golden:csv` → opens `data/golden-review.csv` in Excel
-2. Each conversation = multiple rows (one per turn), grouped together
-3. Fill in `APPROVE? (yes/no)` column for each conversation
-4. Add `Notes` if a bot response needs fixing
-5. Run `npm run golden:build` to convert into eval test cases
+**Type B — Real bot responses (your actual live bot):**
+```bash
+npm run capture                # Hits live Vercel bot → data/real-responses-review.csv
+npm run capture:local          # Hits localhost:3000 instead
+```
+Sends real customer messages to your actual bot and captures exactly what it says.
+You review: was that response correct?
 
-**Open Excel directly on Windows:**
+**On Windows PowerShell (after git pull):**
 ```powershell
 cd C:\Coding\EzyBot\ezybot
 git pull
-node scripts/golden-to-csv.js
-start data\golden-review.csv    # opens in Excel
+node scripts/capture-real-responses.js      # real bot responses
+node scripts/golden-to-csv.js              # ideal responses
+start data\real-responses-review.csv        # opens in Excel
 ```
+
+**Review workflow (both files):**
+1. Open CSV in Excel
+2. Each conversation = multiple rows (one per turn)
+3. For real-responses: fill `CORRECT? (yes/no)` + `What should it have said?` + `Score (1-5)`
+4. For golden: fill `APPROVE? (yes/no)` + `Notes`
 
 ### Playwright UI Eval (Andy runs from container)
 ```bash
