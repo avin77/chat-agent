@@ -14,7 +14,9 @@
     "eval:json": "node eval.js --url=https://chat-agent-ezysrs-projects.vercel.app --json",
     "golden:generate": "node scripts/generate-golden-dataset.js",
     "golden:generate:hire": "node scripts/generate-golden-dataset.js --intent=maid_hire",
-    "golden:build": "node scripts/build-eval-from-golden.js"
+    "golden:build": "node scripts/build-eval-from-golden.js",
+    "golden:csv": "node scripts/golden-to-csv.js",
+    "golden:csv:hire": "node scripts/golden-to-csv.js --intent=maid_hire"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",
