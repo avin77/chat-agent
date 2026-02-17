@@ -1,56 +1,132 @@
-// Maid Hiring Flow - For customers looking to hire
-import { BaseFlow, FlowStep, SessionState } from './BaseFlow';
+// Maid Hiring Flow - Deterministic 8-step state machine
+import { BaseFlow, FlowState, CollectedData, StepDefinition } from './BaseFlow';
 import { isValidPhone } from '../extractors/dataExtractor';
+
+// Known Bengaluru areas for location validation
+const BENGALURU_AREAS = [
+  'koramangala', 'indiranagar', 'whitefield', 'marathahalli', 'btm',
+  'hsr', 'hsr layout', 'electronic city', 'jp nagar', 'jayanagar',
+  'malleshwaram', 'rajajinagar', 'yeshwanthpur', 'hebbal', 'bannerghatta',
+  'sarjapur', 'bellandur', 'kormangala', 'mg road', 'mgroad', 'brigade road',
+  'yelahanka', 'rt nagar', 'basavanagudi', 'vijayanagar', 'banashankari',
+  'sadashivanagar', 'frazer town', 'cox town', 'ulsoor', 'richmond town',
+  'wilson garden', 'bommanahalli', 'begur', 'arekere', 'kudlu gate',
+  'kengeri', 'nagarbhavi', 'peenya', 'dasarahalli', 'rr nagar',
+  'domlur', 'hal', 'old airport road', 'cunningham road', 'residency road',
+  'lavelle road', 'church street', 'majestic', 'shivajinagar', 'gandhi nagar',
+  'chamrajpet', 'chickpet', 'kalasipalya', 'kr market', 'city market',
+  'bangalore', 'bengaluru', 'blr',
+];
+
+// Valid service types
+const SERVICE_TYPES = ['cooking', 'cleaning', 'baby care', 'babysitting', 'elderly care', 'baby', 'elderly', 'cook', 'clean', 'both'];
+
+// Valid schedule types
+const SCHEDULE_TYPES = ['full-time', 'fulltime', 'full time', 'part-time', 'parttime', 'part time', 'live-in', 'live in'];
+
+function validateLocation(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  return BENGALURU_AREAS.some(area => lower.includes(area)) || lower.length >= 2;
+}
+
+function validateServiceType(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  return SERVICE_TYPES.some(t => lower.includes(t));
+}
+
+function validateSchedule(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  return SCHEDULE_TYPES.some(t => lower.includes(t));
+}
+
+// Optional fields accept any non-empty value
+function acceptAny(value: string | null | undefined): boolean {
+  return !!value && value.trim().length > 0;
+}
 
 export class MaidHiringFlow extends BaseFlow {
   defineSteps(): void {
     this.steps = [
       {
-        id: 'get_phone',
-        question: "I can help you find the perfect domestic help! Please share your 10-digit mobile number.",
-        dataField: 'phone',
-        validator: (phone) => phone && isValidPhone(phone),
-        errorMessage: "That doesn't look like a valid 10-digit mobile number. Please try again (e.g., 9876543210).",
-        nextStep: 'get_location',
+        state: FlowState.ASK_PHONE,
+        slotName: 'phone',
+        question: "Please share your 10-digit mobile number.",
+        errorMessage: "That doesn't look like a valid 10-digit mobile number. Please share a valid number (e.g., 9876543210).",
+        required: true,
+        validator: (v) => !!v && isValidPhone(v),
+        nextState: FlowState.ASK_LOCATION,
       },
       {
-        id: 'get_location',
-        question: "Great! Which area in Bengaluru are you looking for help?",
-        dataField: 'location',
-        validator: (loc) => loc && loc.length > 0,
-        errorMessage: "Please share your locality or area in Bengaluru (e.g., Koramangala, Indiranagar).",
-        nextStep: 'get_work_type',
+        state: FlowState.ASK_LOCATION,
+        slotName: 'location',
+        question: "Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+        errorMessage: "Which area in Bengaluru do you need help? Please share your locality.",
+        required: true,
+        validator: validateLocation,
+        nextState: FlowState.ASK_SERVICE,
       },
       {
-        id: 'get_work_type',
-        question: "What type of help do you need? (Cooking / Cleaning / Babysitting / Elderly Care)",
-        dataField: 'workType',
-        validator: (type) => type && type.length > 0,
-        errorMessage: "Please specify the type of work (e.g., Cooking, Cleaning, or Both).",
-        nextStep: 'get_requirements',
+        state: FlowState.ASK_SERVICE,
+        slotName: 'service_type',
+        question: "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        errorMessage: "Please choose from: Cooking, Cleaning, Baby Care, or Elderly Care.",
+        required: true,
+        validator: validateServiceType,
+        nextState: FlowState.ASK_SCHEDULE,
       },
       {
-        id: 'get_requirements',
-        question: "Would you prefer full-time or part-time help?",
-        dataField: 'requirements',
-        validator: (req) => req && req.length > 0,
-        errorMessage: "Please let me know if you need full-time or part-time help.",
-        nextStep: 'complete',
+        state: FlowState.ASK_SCHEDULE,
+        slotName: 'schedule',
+        question: "Would you prefer Full-time or Part-time help?",
+        errorMessage: "Please let us know — Full-time or Part-time?",
+        required: true,
+        validator: validateSchedule,
+        nextState: FlowState.ASK_SALARY,
+      },
+      {
+        state: FlowState.ASK_SALARY,
+        slotName: 'salary_range',
+        question: "What is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
+        errorMessage: "Any salary range in mind? You can also say 'skip' and our team will discuss it.",
+        required: false,
+        validator: acceptAny,
+        nextState: FlowState.ASK_FAMILY,
+      },
+      {
+        state: FlowState.ASK_FAMILY,
+        slotName: 'family_size',
+        question: "How many family members are in your household?",
+        errorMessage: "How many people are in your family? (You can say 'skip' if you prefer)",
+        required: false,
+        validator: acceptAny,
+        nextState: FlowState.ASK_EXPERIENCE,
+      },
+      {
+        state: FlowState.ASK_EXPERIENCE,
+        slotName: 'has_experience',
+        question: "Have you hired a maid or domestic helper before?",
+        errorMessage: "Have you had a maid before? Yes, No, or any details are fine.",
+        required: false,
+        validator: acceptAny,
+        nextState: FlowState.COMPLETE,
       },
     ];
   }
 
-  protected generateCompletionMessage(state: SessionState): string {
-    const { phone, location, workType, requirements } = state.collectedData;
-    return `Perfect! ✅
+  protected getCompletionInstruction(data: CollectedData): string {
+    const summary = [
+      data.phone ? `Phone: ${data.phone}` : null,
+      data.location ? `Location: ${data.location}` : null,
+      data.service_type ? `Service: ${data.service_type}` : null,
+      data.schedule ? `Schedule: ${data.schedule}` : null,
+      data.salary_range && data.salary_range !== 'skipped' ? `Salary: ${data.salary_range}` : null,
+      data.family_size && data.family_size !== 'skipped' ? `Family: ${data.family_size}` : null,
+      data.has_experience && data.has_experience !== 'skipped' ? `Experience: ${data.has_experience}` : null,
+    ].filter(Boolean).join(', ');
 
-*Your Requirements:*
-• Location: ${location}
-• Service: ${workType}
-• Type: ${requirements}
-
-We'll send 3 verified profiles to *${phone}* within 2 hours.
-
-Our team will call you to discuss further details. Thank you for choosing EzyHelpers!`;
+    return `All details collected! Summarize: ${summary}. Say: "Thank you! Our team will call you at ${data.phone} within 2 hours with verified profiles matching your requirements." Do NOT ask any more questions. [ESCALATE]`;
   }
 }

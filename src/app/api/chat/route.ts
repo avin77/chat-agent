@@ -8,6 +8,13 @@ import { sendEmail } from '@/lib/email';
 import { geminiRateLimiter } from '@/lib/rateLimiter';
 import { createClient } from '@supabase/supabase-js';
 
+// State machine imports
+import { FlowState, FailureType, SessionState, createSessionState } from '@/flows/BaseFlow';
+import { MaidHiringFlow } from '@/flows/MaidHiringFlow';
+import {
+    extractAllSlots, detectFAQ, detectWrongCity, detectGibberish, detectBacktrack,
+} from '@/extractors/dataExtractor';
+
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -16,40 +23,65 @@ const supabase = createClient(
 export const maxDuration = 30;
 export const runtime = 'nodejs';
 
-// Trim messages to fit token limit
-// NOTE: Gemini does NOT support system messages mid-conversation — only keep user/assistant messages
+// Singleton flow instance
+const maidHiringFlow = new MaidHiringFlow();
+
+// ─── State Machine System Prompt ─────────────────────────────────────────────
+// This is a NARROW prompt — tells the LLM exactly what to say, not open-ended.
+function buildStateMachinePrompt(llmInstruction: string, collectedSoFar: Record<string, string | undefined>): string {
+    const collected = Object.entries(collectedSoFar)
+        .filter(([, v]) => v && v !== 'skipped')
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
+
+    return `ROLE: EzyBot (Domestic Help Intake) for EzyHelpers.com — domestic help service in Bengaluru.
+
+YOU ARE IN A GUIDED CONVERSATION. Follow the instruction below EXACTLY.
+
+COLLECTED SO FAR: ${collected || 'Nothing yet'}
+
+INSTRUCTION: ${llmInstruction}
+
+STRICT RULES:
+- Follow the INSTRUCTION above. Do NOT deviate.
+- Do NOT ask questions that aren't in the instruction.
+- Keep response to 1-2 sentences max.
+- NO PRICES — say "Our team will discuss pricing when they call you" if user asks.
+- Do NOT describe yourself or say "You are EzyBot".
+- Do NOT output "." alone.
+- Be conversational and friendly.
+- If instruction says [ESCALATE], include [ESCALATE] at the end of your response.`;
+}
+
+// ─── Trim messages ───────────────────────────────────────────────────────────
 function trimMessages(messages: any[]): any[] {
     if (messages.length <= 12) return messages;
-    // Keep first 2 + last 10, no system message in middle (Gemini rejects it)
     return [
         ...messages.slice(0, 2),
         ...messages.slice(-10)
     ];
 }
 
+// ─── Intent Detection ────────────────────────────────────────────────────────
 function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg' | 'general' {
     if (!message) return 'general';
     const lower = message.toLowerCase();
 
-    // Negative patterns — always general
     if (/don't|do not|doesn't|never|stop|my friend|my neighbor/.test(lower)) {
         return 'general';
     }
 
-    // Check strong action intents FIRST (before question check)
-    // These override even if message has a question mark
     if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
     if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook/.test(lower)) return 'maid_hire';
     if (/need.*job|want.*work|looking for.*job|i am.*maid|i am.*helper|register.*helper|i am.*cook|looking for work/.test(lower)) return 'helper_reg';
 
-    // Question patterns → general (user is asking, not actively hiring/registering)
     const isQuestion = /\?/.test(lower) ||
         /^(do you|can you|is there|are there|what|how|tell me|i want to know|will you|would you|could you|should i|where|when|why|which|have you|do they)/.test(lower.trim());
     if (isQuestion) return 'general';
     return 'general';
 }
 
-// Session management: Detect intent ONCE per conversation
+// ─── Session Management ──────────────────────────────────────────────────────
 async function getOrCreateSession(conversationId: string, latestMessage: string) {
     try {
         const { data: existingSession, error } = await supabase
@@ -58,26 +90,27 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
             .eq('conversation_id', conversationId)
             .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is 'not found'
+        if (error && error.code !== 'PGRST116') {
             try { fs.appendFileSync('chat_debug.log', `[DB Select Error] ${JSON.stringify(error)}\n`); } catch (e) { }
         }
 
         if (existingSession && !error) {
-            // Check if user is switching context
             const newIntent = detectIntent(latestMessage);
             const currentIntent = existingSession.detected_intent;
 
-            // If new intent is detected AND it's different AND it's not 'general' (unless we want to allow resetting)
             if (newIntent !== 'general' && newIntent !== currentIntent) {
                 console.log(`[Session] Switching intent from ${currentIntent} to ${newIntent}`);
                 await supabase
                     .from('conversation_sessions')
                     .update({
                         detected_intent: newIntent,
+                        current_state: 'START',
+                        collected_data: {},
+                        attempts: 0,
                         last_activity: new Date().toISOString()
                     })
                     .eq('conversation_id', conversationId);
-                return newIntent;
+                return { intent: newIntent, session: existingSession };
             }
 
             await supabase
@@ -85,7 +118,10 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                 .update({ last_activity: new Date().toISOString() })
                 .eq('conversation_id', conversationId);
 
-            return existingSession.detected_intent as 'complaint' | 'maid_hire' | 'helper_reg' | 'general';
+            return {
+                intent: existingSession.detected_intent as 'complaint' | 'maid_hire' | 'helper_reg' | 'general',
+                session: existingSession,
+            };
         }
 
         const intent = detectIntent(latestMessage);
@@ -94,19 +130,158 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
             .insert({
                 conversation_id: conversationId,
                 detected_intent: intent,
+                current_state: intent === 'maid_hire' ? 'START' : null,
+                collected_data: intent === 'maid_hire' ? {} : null,
+                attempts: 0,
             });
 
         if (insertError) {
             try { fs.appendFileSync('chat_debug.log', `[DB Insert Error] ${JSON.stringify(insertError)}\n`); } catch (e) { }
         }
 
-        return intent;
+        return { intent, session: null };
     } catch (err) {
         try { fs.appendFileSync('chat_debug.log', `[Session Error] ${JSON.stringify(err)}\n`); } catch (e) { }
-        return detectIntent(latestMessage);
+        return { intent: detectIntent(latestMessage), session: null };
     }
 }
 
+// ─── Load state machine session from DB ──────────────────────────────────────
+function loadStateMachineSession(conversationId: string, dbSession: any): SessionState {
+    if (dbSession && dbSession.current_state) {
+        return {
+            conversationId,
+            intent: 'maid_hire',
+            currentState: (dbSession.current_state as FlowState) || FlowState.START,
+            collectedData: dbSession.collected_data || {},
+            attempts: dbSession.attempts || 0,
+            lastMessage: '',
+            createdAt: dbSession.created_at || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+    }
+    return createSessionState(conversationId, 'maid_hire');
+}
+
+// ─── Save state machine session to DB ────────────────────────────────────────
+async function saveStateMachineSession(conversationId: string, state: FlowState, collectedData: Record<string, any>, attempts: number) {
+    try {
+        await supabase
+            .from('conversation_sessions')
+            .update({
+                current_state: state,
+                collected_data: collectedData,
+                attempts,
+                last_activity: new Date().toISOString(),
+            })
+            .eq('conversation_id', conversationId);
+    } catch (err) {
+        try { fs.appendFileSync('chat_debug.log', `[State Save Error] ${JSON.stringify(err)}\n`); } catch (e) { }
+    }
+}
+
+// ─── Handle maid_hire via state machine ──────────────────────────────────────
+async function handleMaidHireStateMachine(
+    conversationId: string,
+    latestMessage: string,
+    coreMessages: any[],
+    dbSession: any,
+): Promise<{ displayText: string; shouldEscalate: boolean; collectedData: Record<string, any>; tookMs: number; systemPrompt: string; rawResponse: string }> {
+    const startTime = Date.now();
+
+    // 1. Load session state
+    const session = loadStateMachineSession(conversationId, dbSession);
+
+    // 2. Extract all possible slots from user message
+    const extractedSlots = extractAllSlots(latestMessage);
+
+    // 3. Detect special conditions
+    const faqDetected = detectFAQ(latestMessage);
+    const wrongCity = detectWrongCity(latestMessage);
+    const isGibberish = detectGibberish(latestMessage);
+    const backtrackSlot = detectBacktrack(latestMessage);
+
+    // 4. Run state machine
+    const result = maidHiringFlow.processMessage(
+        session,
+        latestMessage,
+        extractedSlots as unknown as Record<string, string | null>,
+        faqDetected,
+        wrongCity,
+        isGibberish,
+        backtrackSlot,
+    );
+
+    // 5. Check force escalate (too many attempts)
+    if (maidHiringFlow.shouldForceEscalate(result.attempts)) {
+        const forceText = "I'm having trouble understanding. Let me connect you with our team. They'll call you shortly to help.";
+        await saveStateMachineSession(conversationId, result.newState, result.collectedData, result.attempts);
+        return {
+            displayText: forceText,
+            shouldEscalate: true,
+            collectedData: result.collectedData,
+            tookMs: Date.now() - startTime,
+            systemPrompt: 'FORCE_ESCALATE',
+            rawResponse: forceText,
+        };
+    }
+
+    // 6. Build narrow prompt for LLM
+    const systemPrompt = buildStateMachinePrompt(result.llmInstruction, result.collectedData);
+
+    // 7. Call LLM with narrow prompt
+    let llmText: string;
+    try {
+        const trimmedMessages = trimMessages(coreMessages);
+        const { text } = await generateText({
+            model: google('gemma-3-27b-it'),
+            system: systemPrompt,
+            messages: trimmedMessages,
+        });
+        llmText = text;
+    } catch (llmError: any) {
+        // Fallback: use the instruction directly as a template
+        console.error('[State Machine] LLM call failed, using fallback:', llmError.message);
+        llmText = result.llmInstruction
+            .replace(/^.*?Say:?\s*"?/i, '')
+            .replace(/"?\s*Then.*$/i, '')
+            .replace(/\[ESCALATE\]/gi, '');
+    }
+
+    // 8. Safety net for empty/broken responses
+    if (!llmText || llmText.trim().length < 4 || /^[\.\,\!\?\s]+$/.test(llmText)) {
+        const step = maidHiringFlow.getStepForState(result.newState);
+        llmText = step ? step.question : "Could you please share your details so we can help you?";
+    }
+
+    // 9. Apply guardrails
+    const cleaned = applyStrictGuardrails(llmText);
+
+    // 10. Save state to DB
+    await saveStateMachineSession(conversationId, result.newState, result.collectedData, result.attempts);
+
+    // 11. Log state transition
+    try {
+        fs.appendFileSync('chat_debug.log',
+            `[STATE] ${session.currentState} → ${result.newState} | ` +
+            `failure=${result.failureType} | slots=${JSON.stringify(result.slotsExtracted)} | ` +
+            `advance=${result.shouldAdvance} | escalate=${result.shouldEscalate}\n`
+        );
+    } catch (e) { }
+
+    const displayText = cleaned.replace(/\[?ESCALATE\]?/gi, '').trim();
+
+    return {
+        displayText,
+        shouldEscalate: result.shouldEscalate || result.isComplete,
+        collectedData: result.collectedData,
+        tookMs: Date.now() - startTime,
+        systemPrompt,
+        rawResponse: llmText,
+    };
+}
+
+// ─── Main POST Handler ───────────────────────────────────────────────────────
 export async function POST(req: Request) {
     try {
         const json = await req.json();
@@ -134,7 +309,6 @@ export async function POST(req: Request) {
 
         const lastMsg = messages[messages.length - 1];
         const latestMessage = lastMsg?.content || lastMsg?.parts?.find((p: any) => p.type === 'text')?.text || '';
-        // Build full conversation text for intent detection (use all user messages)
         const fullConversationText = messages
             .filter((m: any) => m.role === 'user')
             .map((m: any) => m.content || m.parts?.find((p: any) => p.type === 'text')?.text || '')
@@ -145,32 +319,134 @@ export async function POST(req: Request) {
             fs.appendFileSync('chat_debug.log', `DEBUG_SESSION: ResolvedID: ${conversationId} BodyID: ${id} HeaderID: ${req.headers.get('x-conversation-id')}\n`);
         } catch (e) { }
 
-        // Get intent from session - pass full conversation for better intent detection
-        const intent = await getOrCreateSession(conversationId, fullConversationText);
-        let systemPrompt = ENHANCED_PROMPTS[intent] || ENHANCED_PROMPTS.general;
+        // Get intent from session
+        const { intent, session: dbSession } = await getOrCreateSession(conversationId, fullConversationText);
 
-        // Smart Prompt Injection for reliability
-        if (/\b\d{5,9}\b/.test(latestMessage) && !/\b\d{10}\b/.test(latestMessage)) {
-            systemPrompt += "\n\nSYSTEM ALERT: Input contains INVALID phone (5-9 digits). REJECT IT. Ask for 10-digit number.";
-        }
-        // For maid_hire, don't override — let the multi-step prompt handle phone naturally
-        if (/\b\d{10}\b/.test(latestMessage) && intent !== 'maid_hire') {
-            systemPrompt += "\n\nSYSTEM ALERT: Input contains VALID 10-digit phone. EXTRACT IT and acknowledge it.";
-        }
-
-        // Sanitize and trim messages - handle both content string and parts array (AI SDK v3+)
+        // Sanitize messages
         const coreMessages = messages.map((m: any) => ({
             role: m.role,
             content: m.content || m.parts?.find((p: any) => p.type === 'text')?.text || '.',
         }));
 
-        const trimmedMessages = trimMessages(coreMessages);
+        // ═══════════════════════════════════════════════════════════════════════
+        // MAID HIRE: Use deterministic state machine
+        // ═══════════════════════════════════════════════════════════════════════
+        if (intent === 'maid_hire') {
+            try {
+                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse } =
+                    await handleMaidHireStateMachine(conversationId, latestMessage, coreMessages, dbSession);
 
+                // Log to Supabase
+                try {
+                    await logLLMInteraction({
+                        conversationId,
+                        intent: 'maid_hire',
+                        systemPrompt,
+                        userMessage: latestMessage,
+                        fullHistory: trimMessages(coreMessages),
+                        rawResponse,
+                        cleanedResponse: displayText,
+                        tookMs,
+                    });
+                } catch (logError) {
+                    console.error('Logging failed:', logError);
+                }
+
+                // Escalation: save lead to DB + send email
+                if (shouldEscalate) {
+                    let alreadyEscalated = false;
+                    try {
+                        const { data } = await supabase.from('leads').select('id').eq('conversation_id', conversationId).maybeSingle();
+                        alreadyEscalated = !!data;
+                    } catch { }
+
+                    if (!alreadyEscalated) {
+                        try {
+                            const { error: dbError } = await supabase.from('leads').insert({
+                                name: collectedData.name || null,
+                                phone: collectedData.phone || null,
+                                location: collectedData.location || null,
+                                service_type: collectedData.service_type || null,
+                                schedule: collectedData.schedule || null,
+                                salary_expectation: collectedData.salary_range || null,
+                                family_size_text: collectedData.family_size || null,
+                                has_prior_experience: collectedData.has_experience || null,
+                                conversation_id: conversationId,
+                                full_conversation: coreMessages,
+                                collected_via: 'state_machine',
+                            });
+
+                            if (dbError) {
+                                console.error('Lead insert failed:', dbError);
+                                try { fs.appendFileSync('chat_debug.log', `[LEAD DB ERROR] ${JSON.stringify(dbError)}\n`); } catch (e) { }
+                            } else {
+                                console.log('Lead saved via state machine');
+                            }
+
+                            // Send email
+                            const esc = (s: string | null | undefined) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                            if (process.env.ADMIN_EMAIL) {
+                                try {
+                                    await sendEmail({
+                                        to: process.env.ADMIN_EMAIL,
+                                        subject: `New Maid Hire Lead: ${collectedData.name || 'Unknown'} - ${collectedData.phone || 'No phone'}`,
+                                        html: `
+                                            <h2>New Maid Hire Lead (State Machine)</h2>
+                                            <p><strong>Phone:</strong> ${esc(collectedData.phone)}</p>
+                                            <p><strong>Location:</strong> ${esc(collectedData.location)}</p>
+                                            <p><strong>Service:</strong> ${esc(collectedData.service_type)}</p>
+                                            <p><strong>Schedule:</strong> ${esc(collectedData.schedule)}</p>
+                                            <p><strong>Salary:</strong> ${esc(collectedData.salary_range)}</p>
+                                            <p><strong>Family Size:</strong> ${esc(collectedData.family_size)}</p>
+                                            <p><strong>Experience:</strong> ${esc(collectedData.has_experience)}</p>
+                                            <p><strong>Name:</strong> ${esc(collectedData.name)}</p>
+                                            <hr>
+                                            <p><strong>Conversation ID:</strong> ${esc(conversationId)}</p>
+                                        `
+                                    });
+                                } catch (emailError) {
+                                    console.error('Email failed (non-fatal):', emailError);
+                                }
+                            }
+                        } catch (escalationError) {
+                            console.error('Escalation failed:', escalationError);
+                        }
+                    }
+                }
+
+                // Return response
+                const textId = crypto.randomUUID();
+                const uiStream = createUIMessageStream({
+                    execute: ({ writer }) => {
+                        writer.write({ type: 'text-start', id: textId });
+                        writer.write({ type: 'text-delta', delta: displayText, id: textId });
+                        writer.write({ type: 'text-end', id: textId });
+                    },
+                });
+                return createUIMessageStreamResponse({ stream: uiStream });
+            } catch (smError: any) {
+                console.error('[State Machine Error] Falling back to LLM-only:', smError);
+                // Fall through to standard LLM flow below
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ALL OTHER INTENTS: Standard LLM flow (complaint, helper_reg, general)
+        // ═══════════════════════════════════════════════════════════════════════
+        let systemPrompt = ENHANCED_PROMPTS[intent] || ENHANCED_PROMPTS.general;
+
+        if (/\b\d{5,9}\b/.test(latestMessage) && !/\b\d{10}\b/.test(latestMessage)) {
+            systemPrompt += "\n\nSYSTEM ALERT: Input contains INVALID phone (5-9 digits). REJECT IT. Ask for 10-digit number.";
+        }
+        if (/\b\d{10}\b/.test(latestMessage) && intent !== 'maid_hire') {
+            systemPrompt += "\n\nSYSTEM ALERT: Input contains VALID 10-digit phone. EXTRACT IT and acknowledge it.";
+        }
+
+        const trimmedMessages = trimMessages(coreMessages);
         const startTime = Date.now();
 
         try {
-            // Use generateText so we can apply safety net BEFORE sending response
-            const { text, usage, finishReason } = await generateText({
+            const { text } = await generateText({
                 model: google('gemma-3-27b-it'),
                 system: systemPrompt,
                 messages: trimmedMessages,
@@ -178,7 +454,7 @@ export async function POST(req: Request) {
 
             const tookMs = Date.now() - startTime;
 
-            // SAFETY NET: Catch truncated/empty responses
+            // SAFETY NET
             let finalText = text;
             if (!text || text.trim().length < 4 || /^[\.\,\!\?\s]+$/.test(text) || text.trim() === 'failed') {
                 console.warn('[SAFETY NET] Detected truncated response:', text);
@@ -187,7 +463,7 @@ export async function POST(req: Request) {
                 const name = extractName(latestMessage);
                 const hasShortPhone = /\b\d{5,9}\b/.test(latestMessage);
 
-                if (intent === 'maid_hire' || intent === 'complaint' || intent === 'helper_reg') {
+                if (intent === 'complaint' || intent === 'helper_reg') {
                     if (phone && !name) {
                         finalText = "Thank you for the number. What is your Name?";
                     } else if (name && hasShortPhone && !phone) {
@@ -210,12 +486,10 @@ export async function POST(req: Request) {
 
             const cleaned = applyStrictGuardrails(finalText);
 
-            // Debug log
             try {
                 fs.appendFileSync('chat_debug.log', `[Finish] ${JSON.stringify({ text: cleaned, intent }, null, 2)}\n---\n`);
             } catch (e) { }
 
-            // Console log (dev)
             if (process.env.NODE_ENV === 'development') {
                 logToConsole({
                     intent,
@@ -226,7 +500,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // Log to Supabase
             try {
                 await logLLMInteraction({
                     conversationId,
@@ -242,21 +515,16 @@ export async function POST(req: Request) {
                 console.error('Logging failed:', logError);
             }
 
-            // Extract data for escalation
+            // Escalation logic for non-maid_hire intents
             const phone = validatePhone(latestMessage);
             const name = extractName(latestMessage);
-
-            // Escalation: for maid_hire, only escalate when LLM explicitly signals [ESCALATE]
-            // (after all questions answered). For complaint/helper_reg, escalate on phone collected.
             const llmTriggeredEscalation = /\[?ESCALATE\]?/i.test(text);
             const phoneCollected = !!phone;
 
-            // Check if this conversation was already escalated (prevent duplicate emails)
             let alreadyEscalated = false;
             try {
                 const tableMap: Record<string, string> = {
                     complaint: 'complaints',
-                    maid_hire: 'leads',
                     helper_reg: 'helper_registrations',
                 };
                 const table = tableMap[intent];
@@ -271,20 +539,12 @@ export async function POST(req: Request) {
 
             if (shouldEscalate) {
                 try {
-                    console.log(`[ESCALATE] Attempting DB Insert for Intent: ${intent} (LLM: ${llmTriggeredEscalation}, Phone: ${phoneCollected})`);
                     let dbError = null;
 
                     if (intent === 'complaint') {
                         const { error } = await supabase.from('complaints').insert({
                             name, phone,
                             issue_description: latestMessage,
-                            conversation_id: conversationId,
-                            full_conversation: coreMessages
-                        });
-                        dbError = error;
-                    } else if (intent === 'maid_hire') {
-                        const { error } = await supabase.from('leads').insert({
-                            name, phone,
                             conversation_id: conversationId,
                             full_conversation: coreMessages
                         });
@@ -306,29 +566,22 @@ export async function POST(req: Request) {
                     }
 
                     if (dbError) {
-                        console.error(`❌ DB INSERT FAILED (${intent}):`, dbError);
-                        try { fs.appendFileSync('chat_debug.log', `[DB ERROR] ${JSON.stringify(dbError)}\n`); } catch (e) { }
-                    } else {
-                        console.log(`✅ DB Insert Success for ${intent}`);
+                        console.error(`DB INSERT FAILED (${intent}):`, dbError);
                     }
 
-                    // HTML-escape user data in email to prevent XSS
                     const esc = (s: string | null | undefined) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-                    // Only send email if ADMIN_EMAIL is configured
                     if (process.env.ADMIN_EMAIL) {
                         try {
                             await sendEmail({
                                 to: process.env.ADMIN_EMAIL,
-                                subject: `🚨 ${intent.toUpperCase()} ESCALATION: ${name || 'Unknown'}`,
+                                subject: `${intent.toUpperCase()} ESCALATION: ${name || 'Unknown'}`,
                                 html: `
                                     <h2>New ${esc(intent.replace('_', ' ').toUpperCase())} Lead</h2>
                                     <p><strong>Name:</strong> ${esc(name)}</p>
                                     <p><strong>Phone:</strong> ${esc(phone)}</p>
                                     <p><strong>Conversation ID:</strong> ${esc(conversationId)}</p>
-                                    <p><strong>Intent:</strong> ${esc(intent)}</p>
                                     <hr>
-                                    <h3>Full Conversation:</h3>
                                     <pre>${esc(JSON.stringify(coreMessages, null, 2))}</pre>
                                 `
                             });
@@ -336,12 +589,8 @@ export async function POST(req: Request) {
                             console.error('Email send failed (non-fatal):', emailError);
                         }
                     }
-
-                    console.log('✅ Escalation processed:', intent, name, phone);
-                    try { fs.appendFileSync('chat_debug.log', `[ESCALATION SUCCESS] Intent: ${intent}, Name: ${name}, Phone: ${phone}\n`); } catch (e) { }
                 } catch (escalationError) {
                     console.error('Escalation failed:', escalationError);
-                    try { fs.appendFileSync('chat_debug.log', `[ESCALATION FAILED] ${escalationError}\n`); } catch (e) { }
                 }
             } else if (intent === 'general') {
                 try {
@@ -355,10 +604,8 @@ export async function POST(req: Request) {
                 }
             }
 
-            // Strip [ESCALATE] tag server-side before sending to client
             const displayText = cleaned.replace(/\[?ESCALATE\]?/gi, '').trim();
 
-            // Return as UI Message Stream response for useChat compatibility (ai SDK v6)
             const textId = crypto.randomUUID();
             const uiStream = createUIMessageStream({
                 execute: ({ writer }) => {
@@ -370,7 +617,7 @@ export async function POST(req: Request) {
 
             return createUIMessageStreamResponse({ stream: uiStream });
         } catch (apiError: any) {
-            console.error("🔥 GEMINI EXECUTION ERROR:", apiError);
+            console.error("GEMINI EXECUTION ERROR:", apiError);
 
             if (apiError.message?.includes('429') || apiError.status === 429) {
                 await logLLMInteraction({

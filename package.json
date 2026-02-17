@@ -18,7 +18,12 @@
     "golden:csv": "node scripts/golden-to-csv.js",
     "golden:csv:hire": "node scripts/golden-to-csv.js --intent=maid_hire",
     "capture": "node scripts/capture-real-responses.js",
-    "capture:local": "node scripts/capture-real-responses.js --url=http://localhost:3000"
+    "capture:local": "node scripts/capture-real-responses.js --url=http://localhost:3000",
+    "golden:state": "node scripts/generate-state-golden.js",
+    "eval:state": "node scripts/eval-state-machine.js",
+    "eval:state:prod": "node scripts/eval-state-machine.js --url=https://chat-agent-three.vercel.app",
+    "eval:state:verbose": "node scripts/eval-state-machine.js --verbose",
+    "eval:state:json": "node scripts/eval-state-machine.js --json"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",

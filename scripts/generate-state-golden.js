@@ -1,0 +1,425 @@
+#!/usr/bin/env node
+/**
+ * State Machine Golden Dataset Generator
+ * Generates 30+ conversations with state transition columns for eval.
+ *
+ * Usage:
+ *   node scripts/generate-state-golden.js
+ *
+ * Output:
+ *   data/state-golden-review.csv  — open in Excel to review
+ *   data/state-golden-dataset.json — machine-readable
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const DATA_DIR = path.join(__dirname, '../data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const CSV_PATH = path.join(DATA_DIR, 'state-golden-review.csv');
+const JSON_PATH = path.join(DATA_DIR, 'state-golden-dataset.json');
+
+// ─── CSV Helpers ─────────────────────────────────────────────────────────────
+function csvCell(val) {
+    const str = String(val ?? '').replace(/"/g, '""');
+    return `"${str}"`;
+}
+
+function csvRow(...cells) {
+    return cells.map(csvCell).join(',') + '\r\n';
+}
+
+// ─── Golden Conversations ────────────────────────────────────────────────────
+// Each conversation has turns with expected state transitions.
+const CONVERSATIONS = [
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Happy path — step by step (3 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c01', category: 'happy_path', notes: 'Perfect step-by-step flow',
+        turns: [
+            { user: 'I want to hire a maid', bot: 'Sure! Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Got it! Which area in Bengaluru are you looking for help?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'Koramangala', bot: 'What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Koramangala', valid: true, advance: true, failure: '' },
+            { user: 'Cooking', bot: 'Would you prefer Full-time or Part-time help?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cooking', valid: true, advance: true, failure: '' },
+            { user: 'Full-time', bot: 'What is your expected salary range?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SALARY', slot: 'schedule', slot_value: 'Full-time', valid: true, advance: true, failure: '' },
+            { user: '15-20k', bot: 'How many family members are in your household?', current_state: 'ASK_SALARY', expected_state: 'ASK_FAMILY', slot: 'salary_range', slot_value: '15-20k', valid: true, advance: true, failure: '' },
+            { user: '4', bot: 'Have you hired a maid or domestic helper before?', current_state: 'ASK_FAMILY', expected_state: 'ASK_EXPERIENCE', slot: 'family_size', slot_value: '4', valid: true, advance: true, failure: '' },
+            { user: 'Yes, 2 years ago', bot: 'Thank you! Our team will call you at 9876543210 with verified profiles.', current_state: 'ASK_EXPERIENCE', expected_state: 'COMPLETE', slot: 'has_experience', slot_value: 'Yes, 2 years ago', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c02', category: 'happy_path', notes: 'With skips on optional fields',
+        turns: [
+            { user: 'I need a cook', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9123456789', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9123456789', valid: true, advance: true, failure: '' },
+            { user: 'Indiranagar', bot: 'What type of help? Cooking / Cleaning / Baby Care / Elderly Care', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Indiranagar', valid: true, advance: true, failure: '' },
+            { user: 'Cooking', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cooking', valid: true, advance: true, failure: '' },
+            { user: 'Part-time', bot: 'Expected salary range?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SALARY', slot: 'schedule', slot_value: 'Part-time', valid: true, advance: true, failure: '' },
+            { user: 'skip', bot: 'How many family members?', current_state: 'ASK_SALARY', expected_state: 'ASK_FAMILY', slot: 'salary_range', slot_value: 'skipped', valid: true, advance: true, failure: 'SLOT_SKIP' },
+            { user: 'skip', bot: 'Have you hired a maid before?', current_state: 'ASK_FAMILY', expected_state: 'ASK_EXPERIENCE', slot: 'family_size', slot_value: 'skipped', valid: true, advance: true, failure: 'SLOT_SKIP' },
+            { user: 'No', bot: 'Thank you! Our team will call you.', current_state: 'ASK_EXPERIENCE', expected_state: 'COMPLETE', slot: 'has_experience', slot_value: 'No', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c03', category: 'happy_path', notes: 'Baby care with details',
+        turns: [
+            { user: 'Looking for someone to take care of my baby', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '8765432109', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '8765432109', valid: true, advance: true, failure: '' },
+            { user: 'HSR Layout', bot: 'What type of help? Cooking / Cleaning / Baby Care / Elderly Care', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Hsr', valid: true, advance: true, failure: '' },
+            { user: 'Baby care', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Baby Care', valid: true, advance: true, failure: '' },
+            { user: 'Full time live in', bot: 'Expected salary range?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SALARY', slot: 'schedule', slot_value: 'Full-time', valid: true, advance: true, failure: '' },
+            { user: '20000', bot: 'How many family members?', current_state: 'ASK_SALARY', expected_state: 'ASK_FAMILY', slot: 'salary_range', slot_value: '20000', valid: true, advance: true, failure: '' },
+            { user: '3', bot: 'Have you hired a maid before?', current_state: 'ASK_FAMILY', expected_state: 'ASK_EXPERIENCE', slot: 'family_size', slot_value: '3', valid: true, advance: true, failure: '' },
+            { user: 'Yes had one for 3 years', bot: 'Thank you! Our team will call you.', current_state: 'ASK_EXPERIENCE', expected_state: 'COMPLETE', slot: 'has_experience', slot_value: 'Yes had one for 3 years', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Happy path — bulk info (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c04', category: 'multi_slot', notes: 'User gives 4 slots in one message',
+        turns: [
+            { user: 'I need a cook in Koramangala full-time 9876543210', bot: 'Great! What is your expected salary range?', current_state: 'START', expected_state: 'ASK_SALARY', slot: 'phone|location|service_type|schedule', slot_value: '9876543210|Koramangala|Cooking|Full-time', valid: true, advance: true, failure: 'MULTI_SLOT' },
+            { user: '10-15k per month', bot: 'How many family members?', current_state: 'ASK_SALARY', expected_state: 'ASK_FAMILY', slot: 'salary_range', slot_value: '10-15k per month', valid: true, advance: true, failure: '' },
+            { user: '2', bot: 'Have you hired a maid before?', current_state: 'ASK_FAMILY', expected_state: 'ASK_EXPERIENCE', slot: 'family_size', slot_value: '2', valid: true, advance: true, failure: '' },
+            { user: 'No first time', bot: 'Thank you! Our team will call you.', current_state: 'ASK_EXPERIENCE', expected_state: 'COMPLETE', slot: 'has_experience', slot_value: 'No', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c05', category: 'multi_slot', notes: 'User gives location + service in one message',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9988776655', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9988776655', valid: true, advance: true, failure: '' },
+            { user: 'Whitefield, need a cook', bot: 'Full-time or Part-time?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SCHEDULE', slot: 'location|service_type', slot_value: 'Whitefield|Cooking', valid: true, advance: true, failure: 'MULTI_SLOT' },
+            { user: 'Part-time', bot: 'Expected salary range?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SALARY', slot: 'schedule', slot_value: 'Part-time', valid: true, advance: true, failure: '' },
+            { user: 'skip', bot: 'How many family members?', current_state: 'ASK_SALARY', expected_state: 'ASK_FAMILY', slot: 'salary_range', slot_value: 'skipped', valid: true, advance: true, failure: 'SLOT_SKIP' },
+            { user: '5', bot: 'Have you hired a maid before?', current_state: 'ASK_FAMILY', expected_state: 'ASK_EXPERIENCE', slot: 'family_size', slot_value: '5', valid: true, advance: true, failure: '' },
+            { user: 'yes', bot: 'Thank you! Our team will call you.', current_state: 'ASK_EXPERIENCE', expected_state: 'COMPLETE', slot: 'has_experience', slot_value: 'Yes', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Invalid phone (3 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c06', category: 'invalid_phone', notes: '5-digit phone then correct',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '98765', bot: "That doesn't look complete. Please share a valid 10-digit number.", current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '98765', valid: false, advance: false, failure: 'INVALID_SLOT' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c07', category: 'invalid_phone', notes: 'Letters instead of phone',
+        turns: [
+            { user: 'I need a cleaner', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: 'my number is abc', bot: "Please share a valid 10-digit mobile number.", current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: false, advance: false, failure: 'INVALID_SLOT' },
+            { user: '7654321098', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '7654321098', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c08', category: 'invalid_phone', notes: 'Phone starts with wrong digit',
+        turns: [
+            { user: 'Need a maid for cooking', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '1234567890', bot: "That doesn't look valid. Numbers should start with 6-9.", current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '1234567890', valid: false, advance: false, failure: 'INVALID_SLOT' },
+            { user: '9234567890', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9234567890', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: FAQ mid-flow (4 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c09', category: 'faq_mid_flow', notes: 'FAQ at ASK_PHONE state',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: 'do you have 24hr maid?', bot: 'Yes! We have full-time live-in helpers. Could you share your 10-digit mobile number?', current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: false, advance: false, failure: 'FAQ_MID_FLOW' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c10', category: 'faq_mid_flow', notes: 'Price question at ASK_LOCATION',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'How much does a cook cost?', bot: 'Our team will discuss pricing when they call you. Which area in Bengaluru?', current_state: 'ASK_LOCATION', expected_state: 'ASK_LOCATION', slot: 'location', slot_value: '', valid: false, advance: false, failure: 'FAQ_MID_FLOW' },
+            { user: 'Koramangala', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Koramangala', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c11', category: 'faq_mid_flow', notes: 'Verification question at ASK_SERVICE',
+        turns: [
+            { user: 'I want to hire a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9988776655', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9988776655', valid: true, advance: true, failure: '' },
+            { user: 'BTM Layout', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Btm', valid: true, advance: true, failure: '' },
+            { user: 'Are your maids background verified?', bot: 'Yes, all helpers are background verified. What type of help do you need?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SERVICE', slot: 'service_type', slot_value: '', valid: false, advance: false, failure: 'FAQ_MID_FLOW' },
+            { user: 'Cleaning', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cleaning', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c12', category: 'faq_mid_flow', notes: 'FAQ at START (before flow begins)',
+        turns: [
+            { user: 'Do you have 24 hour maids? I want to hire one', bot: 'Yes we have full-time helpers! Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: 'FAQ_MID_FLOW' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Wrong city (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c13', category: 'wrong_city', notes: 'Mumbai at START',
+        turns: [
+            { user: 'I need a maid in Mumbai', bot: 'We currently operate in Bengaluru only. Share your number and we will reach out!', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: 'WRONG_CITY' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c14', category: 'wrong_city', notes: 'Delhi at ASK_LOCATION',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: "I'm in Delhi", bot: 'We only operate in Bengaluru currently. Which area in Bengaluru?', current_state: 'ASK_LOCATION', expected_state: 'ASK_LOCATION', slot: 'location', slot_value: '', valid: false, advance: false, failure: 'WRONG_CITY' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Off-topic (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c15', category: 'off_topic', notes: 'Weather question at ASK_PHONE',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: "What's the weather today?", bot: 'I can help with domestic help services. Could you share your 10-digit mobile number?', current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: false, advance: false, failure: 'OFF_TOPIC' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c16', category: 'off_topic', notes: 'Random question at ASK_SERVICE',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'Koramangala', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Koramangala', valid: true, advance: true, failure: '' },
+            { user: 'Who is the prime minister?', bot: 'I can help with domestic help services. Cooking / Cleaning / Baby Care / Elderly Care?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SERVICE', slot: 'service_type', slot_value: '', valid: false, advance: false, failure: 'OFF_TOPIC' },
+            { user: 'Cooking', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cooking', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Hinglish (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c17', category: 'hinglish', notes: 'Hindi-English mix',
+        turns: [
+            { user: 'mujhe ek maid chahiye cooking ke liye', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: 'mera number hai 9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'Koramangala mein', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Koramangala', valid: true, advance: true, failure: '' },
+            { user: 'khana banana ke liye', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cooking', valid: true, advance: true, failure: '' },
+            { user: 'pura din full time', bot: 'Expected salary range?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SALARY', slot: 'schedule', slot_value: 'Full-time', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c18', category: 'hinglish', notes: 'Mix of Hindi responses',
+        turns: [
+            { user: 'maid hire karna hai', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '8899776655', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '8899776655', valid: true, advance: true, failure: '' },
+            { user: 'Whitefield', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Whitefield', valid: true, advance: true, failure: '' },
+            { user: 'safai ke liye', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cleaning', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Spelling mistakes (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c19', category: 'spelling', notes: 'Heavy typos that should still work',
+        turns: [
+            { user: 'i nead a made for cookin', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'kormangla', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Kormangala', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c20', category: 'spelling', notes: 'Typos in service type',
+        turns: [
+            { user: 'hire made', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'Jayanagar', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Jayanagar', valid: true, advance: true, failure: '' },
+            { user: 'cookin and cleanin', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cooking & Cleaning', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Backtrack (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c21', category: 'backtrack', notes: 'User changes area after providing it',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'Koramangala', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Koramangala', valid: true, advance: true, failure: '' },
+            { user: 'wait I want to change my area to Indiranagar', bot: 'Sure! Which area in Bengaluru?', current_state: 'ASK_SERVICE', expected_state: 'ASK_LOCATION', slot: 'location', slot_value: '', valid: '', advance: false, failure: 'BACKTRACK' },
+            { user: 'Indiranagar', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Indiranagar', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c22', category: 'backtrack', notes: 'User wants to change service type',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'HSR', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Hsr', valid: true, advance: true, failure: '' },
+            { user: 'Cooking', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cooking', valid: true, advance: true, failure: '' },
+            { user: 'Actually I want to change the service to cleaning', bot: 'Sure! What type of help?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SERVICE', slot: 'service_type', slot_value: '', valid: '', advance: false, failure: 'BACKTRACK' },
+            { user: 'Cleaning', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cleaning', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Gibberish/empty (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c23', category: 'gibberish', notes: 'Random characters',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: 'asdfghjkl', bot: "I didn't catch that. Please share your 10-digit mobile number.", current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: false, advance: false, failure: 'GIBBERISH' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c24', category: 'gibberish', notes: 'Special characters only',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '!!!???...', bot: "I didn't catch that. Please share your 10-digit mobile number.", current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: false, advance: false, failure: 'GIBBERISH' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Multi-intent (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c25', category: 'multi_intent', notes: 'Hire + register in same message',
+        turns: [
+            { user: 'I need a maid and I also want to register as a helper', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: 'MULTI_INTENT' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c26', category: 'multi_intent', notes: 'Hire + complaint',
+        turns: [
+            { user: 'I need a new maid, the old one was terrible', bot: 'Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Price asking (2 conversations)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c27', category: 'price_asking', notes: 'Price question at START',
+        turns: [
+            { user: 'I want to hire a maid, how much will it cost?', bot: 'Our team will discuss pricing. Please share your 10-digit mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: 'FAQ_MID_FLOW' },
+            { user: 'but just tell me the rough price', bot: 'Our team will share exact details on the call. Please share your mobile number.', current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: false, advance: false, failure: 'FAQ_MID_FLOW' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c28', category: 'price_asking', notes: 'Price question at ASK_SCHEDULE',
+        turns: [
+            { user: 'Need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: '9876543210', bot: 'Which area?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'Marathahalli', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Marathahalli', valid: true, advance: true, failure: '' },
+            { user: 'Cooking', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Cooking', valid: true, advance: true, failure: '' },
+            { user: 'What is the salary for full-time cook?', bot: 'Our team will discuss salary. Full-time or Part-time?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SCHEDULE', slot: 'schedule', slot_value: '', valid: false, advance: false, failure: 'FAQ_MID_FLOW' },
+            { user: 'Full-time', bot: 'Expected salary range?', current_state: 'ASK_SCHEDULE', expected_state: 'ASK_SALARY', slot: 'schedule', slot_value: 'Full-time', valid: true, advance: true, failure: '' },
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY: Additional edge cases (2 more to reach 30)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        id: 'c29', category: 'phone_upfront', notes: 'Phone provided in first message',
+        turns: [
+            { user: 'Hi, my number is 9988776655, I need a maid', bot: 'Which area in Bengaluru?', current_state: 'START', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9988776655', valid: true, advance: true, failure: '' },
+            { user: 'Electronic City', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Electronic City', valid: true, advance: true, failure: '' },
+            { user: 'Elderly care', bot: 'Full-time or Part-time?', current_state: 'ASK_SERVICE', expected_state: 'ASK_SCHEDULE', slot: 'service_type', slot_value: 'Elderly Care', valid: true, advance: true, failure: '' },
+        ]
+    },
+    {
+        id: 'c30', category: 'skip_required', notes: 'Try to skip required field',
+        turns: [
+            { user: 'I need a maid', bot: 'Please share your mobile number.', current_state: 'START', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: '', advance: false, failure: '' },
+            { user: 'skip', bot: 'This info is required. Please share your 10-digit mobile number.', current_state: 'ASK_PHONE', expected_state: 'ASK_PHONE', slot: 'phone', slot_value: '', valid: false, advance: false, failure: 'SLOT_SKIP' },
+            { user: '9876543210', bot: 'Which area in Bengaluru?', current_state: 'ASK_PHONE', expected_state: 'ASK_LOCATION', slot: 'phone', slot_value: '9876543210', valid: true, advance: true, failure: '' },
+            { user: 'skip', bot: 'This info is required. Which area in Bengaluru?', current_state: 'ASK_LOCATION', expected_state: 'ASK_LOCATION', slot: 'location', slot_value: '', valid: false, advance: false, failure: 'SLOT_SKIP' },
+            { user: 'HSR', bot: 'What type of help?', current_state: 'ASK_LOCATION', expected_state: 'ASK_SERVICE', slot: 'location', slot_value: 'Hsr', valid: true, advance: true, failure: '' },
+        ]
+    },
+];
+
+// ─── Main ────────────────────────────────────────────────────────────────────
+function main() {
+    console.log(`\nGenerating State Machine Golden Dataset...`);
+    console.log(`Conversations: ${CONVERSATIONS.length}\n`);
+
+    // CSV header
+    let csv = csvRow(
+        'convo_id', 'turn', 'user_input', 'bot_response',
+        'current_state', 'expected_state', 'required_slot', 'slot_value',
+        'slot_value_valid', 'should_advance', 'failure_type', 'notes'
+    );
+
+    let totalTurns = 0;
+
+    // Count by category
+    const categories = {};
+
+    for (const conv of CONVERSATIONS) {
+        categories[conv.category] = (categories[conv.category] || 0) + 1;
+
+        for (let i = 0; i < conv.turns.length; i++) {
+            const t = conv.turns[i];
+            totalTurns++;
+
+            csv += csvRow(
+                i === 0 ? conv.id : '',
+                i + 1,
+                t.user,
+                t.bot,
+                t.current_state,
+                t.expected_state,
+                t.slot,
+                t.slot_value,
+                t.valid === '' ? '' : t.valid ? 'true' : 'false',
+                t.advance ? 'true' : 'false',
+                t.failure || '',
+                i === 0 ? conv.notes : ''
+            );
+        }
+
+        // Blank row between conversations
+        csv += csvRow('', '', '', '', '', '', '', '', '', '', '', '');
+    }
+
+    // Write CSV
+    fs.writeFileSync(CSV_PATH, '\uFEFF' + csv);
+
+    // Write JSON
+    fs.writeFileSync(JSON_PATH, JSON.stringify(CONVERSATIONS, null, 2));
+
+    console.log(`Generated ${CONVERSATIONS.length} conversations, ${totalTurns} total turns`);
+    console.log(`\nCategories:`);
+    for (const [cat, count] of Object.entries(categories)) {
+        console.log(`  ${cat}: ${count}`);
+    }
+    console.log(`\nOutput:`);
+    console.log(`  CSV:  ${CSV_PATH}`);
+    console.log(`  JSON: ${JSON_PATH}`);
+    console.log(`\nNext: Review in Excel, then run: npm run eval:state\n`);
+}
+
+main();

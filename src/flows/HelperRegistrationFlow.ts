@@ -1,55 +1,43 @@
 // Helper Registration Flow - For people looking for work
-import { BaseFlow, FlowStep, SessionState } from './BaseFlow';
+// NOTE: Currently not used in route.ts (helper_reg uses LLM-only flow)
+// This exists for future state machine integration of helper registration.
+import { BaseFlow, FlowState, CollectedData } from './BaseFlow';
 import { isValidPhone } from '../extractors/dataExtractor';
 
 export class HelperRegistrationFlow extends BaseFlow {
   defineSteps(): void {
     this.steps = [
       {
-        id: 'get_name',
-        question: "Welcome! We'd love to help you find work. What's your name?",
-        dataField: 'name',
-        validator: (name) => name && name.length >= 2,
-        errorMessage: "Please share your name.",
-        nextStep: 'get_phone',
-      },
-      {
-        id: 'get_phone',
+        state: FlowState.ASK_PHONE,
+        slotName: 'phone',
         question: "Thank you! Please share your 10-digit mobile number.",
-        dataField: 'phone',
-        validator: (phone) => phone && isValidPhone(phone),
         errorMessage: "Please provide a valid 10-digit mobile number (e.g., 9876543210).",
-        nextStep: 'get_work_type',
+        required: true,
+        validator: (phone) => !!phone && isValidPhone(phone),
+        nextState: FlowState.ASK_SERVICE,
       },
       {
-        id: 'get_work_type',
+        state: FlowState.ASK_SERVICE,
+        slotName: 'service_type',
         question: "What kind of work do you do? (Cooking / Cleaning / Babysitting / Elderly Care)",
-        dataField: 'workType',
-        validator: (type) => type && type.length > 0,
-        errorMessage: "Please tell us what type of work you can do (e.g., Cooking, Cleaning).",
-        nextStep: 'get_location',
+        errorMessage: "Please tell us what type of work you can do.",
+        required: true,
+        validator: (type) => !!type && type.length > 0,
+        nextState: FlowState.ASK_LOCATION,
       },
       {
-        id: 'get_location',
+        state: FlowState.ASK_LOCATION,
+        slotName: 'location',
         question: "Which areas in Bengaluru can you work in?",
-        dataField: 'location',
-        validator: (loc) => loc && loc.length > 0,
-        errorMessage: "Please share the areas where you can work (e.g., Koramangala, HSR Layout).",
-        nextStep: 'complete',
+        errorMessage: "Please share the areas where you can work.",
+        required: true,
+        validator: (loc) => !!loc && loc.length > 0,
+        nextState: FlowState.COMPLETE,
       },
     ];
   }
 
-  protected generateCompletionMessage(state: SessionState): string {
-    const { name, phone, workType, location } = state.collectedData;
-    return `Thank you, ${name}! ✅
-
-*Your Profile:*
-• Name: ${name}
-• Phone: ${phone}
-• Skills: ${workType}
-• Areas: ${location}
-
-We'll verify your details and call you within 24 hours to help you find work. Welcome to EzyHelpers!`;
+  protected getCompletionInstruction(data: CollectedData): string {
+    return `Helper registered. Say: "Thank you! We have registered your number ${data.phone}. We'll verify your details and call you within 24 hours to help you find work. Welcome to EzyHelpers!" [ESCALATE]`;
   }
 }
