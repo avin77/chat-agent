@@ -1,7 +1,7 @@
-// Rate limiter for Gemini API (20 requests per minute)
+// Rate limiter for Gemini API (30 requests per minute for Gemma 3 27B free tier)
 class GeminiRateLimiter {
     private requests: number[] = [];
-    private readonly maxRequests = 20;
+    private readonly maxRequests = 30;
     private readonly windowMs = 60 * 1000; // 1 minute
 
     canMakeRequest(): { allowed: boolean; waitMs: number; requestCount: number } {

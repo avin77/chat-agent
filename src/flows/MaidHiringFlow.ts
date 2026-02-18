@@ -117,8 +117,13 @@ export class MaidHiringFlow extends BaseFlow {
   }
 
   protected getCompletionInstruction(data: CollectedData): string {
+    // Safety check: phone must always be present to complete
+    if (!data.phone) {
+      return `Phone number is missing. Say: "I need your 10-digit mobile number to proceed. Could you please share it?"`;
+    }
+
     const summary = [
-      data.phone ? `Phone: ${data.phone}` : null,
+      `Phone: ${data.phone}`,
       data.location ? `Location: ${data.location}` : null,
       data.service_type ? `Service: ${data.service_type}` : null,
       data.schedule ? `Schedule: ${data.schedule}` : null,
@@ -127,6 +132,6 @@ export class MaidHiringFlow extends BaseFlow {
       data.has_experience && data.has_experience !== 'skipped' ? `Experience: ${data.has_experience}` : null,
     ].filter(Boolean).join(', ');
 
-    return `All details collected! Summarize: ${summary}. Say: "Thank you! Our team will call you at ${data.phone} within 2 hours with verified profiles matching your requirements." Do NOT ask any more questions. [ESCALATE]`;
+    return `All details collected! Summary: ${summary}. Say: "Thank you! Our team will call you at ${data.phone} within 2 hours with verified profiles matching your requirements." Do NOT ask any more questions. [ESCALATE]`;
   }
 }

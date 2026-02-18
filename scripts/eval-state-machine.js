@@ -33,8 +33,32 @@ if (!fs.existsSync(GOLDEN_PATH)) {
 
 const CONVERSATIONS = JSON.parse(fs.readFileSync(GOLDEN_PATH, 'utf-8'));
 
-// ─── Call Real Bot ───────────────────────────────────────────────────────────
-async function callBot(messages, convId) {
+// ─── Rate Limiter ───────────────────────────────────────────────────────────
+class RateLimiter {
+    constructor(requestsPerMinute = 30) {
+        this.requestsPerMinute = requestsPerMinute;
+        this.minIntervalMs = (60 * 1000) / requestsPerMinute;
+        this.lastRequestTime = 0;
+    }
+
+    async wait() {
+        const now = Date.now();
+        const timeSinceLastRequest = now - this.lastRequestTime;
+        if (timeSinceLastRequest < this.minIntervalMs) {
+            const waitTime = this.minIntervalMs - timeSinceLastRequest;
+            process.stdout.write(`⏳ Rate limit: waiting ${Math.ceil(waitTime)}ms...\n`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        this.lastRequestTime = Date.now();
+    }
+}
+
+const rateLimiter = new RateLimiter(30); // Gemini allows 30 RPM
+
+// ─── Call Real Bot with Retry Logic ───────────────────────────────────────────
+async function callBot(messages, convId, attempt = 1) {
+    await rateLimiter.wait();
+
     const start = Date.now();
     const res = await fetch(`${BOT_URL}/api/chat`, {
         method: 'POST',
@@ -43,6 +67,19 @@ async function callBot(messages, convId) {
     });
 
     const latencyMs = Date.now() - start;
+
+    // Handle rate limiting with retry
+    if (res.status === 429 && attempt <= 3) {
+        const body = await res.text();
+        let waitMs = 2000;
+        const waitMatch = body.match(/"waitMs":(\d+)/);
+        if (waitMatch) {
+            waitMs = parseInt(waitMatch[1]) + 500;
+        }
+        console.log(`[429] Attempt ${attempt}: Rate limited. Waiting ${waitMs}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+        return callBot(messages, convId, attempt + 1);
+    }
 
     if (!res.ok) {
         const text = await res.text();

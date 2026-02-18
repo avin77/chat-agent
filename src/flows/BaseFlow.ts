@@ -175,7 +175,13 @@ export abstract class BaseFlow {
 
       if (slotCount > 1) {
         // Multi-slot: jump to next unfilled
-        const nextState = this.findNextUnfilledStep(newCollected);
+        let nextState = this.findNextUnfilledStep(newCollected);
+
+        // Safety: if no phone, redirect to ASK_PHONE
+        if (!newCollected.phone && nextState !== FlowState.ASK_PHONE) {
+          nextState = FlowState.ASK_PHONE;
+        }
+
         const nextStep = this.getStepForState(nextState);
         return {
           newState: nextState,
@@ -356,6 +362,21 @@ export abstract class BaseFlow {
       const nextStep = this.getStepForState(nextState);
 
       if (nextState === FlowState.COMPLETE || !nextStep) {
+        // Safety check: ensure phone is present before completing
+        if (!newCollected.phone) {
+          return {
+            newState: FlowState.ASK_PHONE,
+            collectedData: newCollected,
+            failureType: FailureType.NONE,
+            slotsExtracted: { [currentStep.slotName]: currentSlotValue },
+            shouldAdvance: true,
+            shouldEscalate: false,
+            isComplete: false,
+            llmInstruction: `User provided ${currentStep.slotName}: "${currentSlotValue}". Acknowledge it. But first, we need a phone number. Ask: "Could you please share your 10-digit mobile number?"`,
+            attempts: 0,
+          };
+        }
+
         return {
           newState: FlowState.COMPLETE,
           collectedData: newCollected,
@@ -388,6 +409,21 @@ export abstract class BaseFlow {
       newCollected[currentStep.slotName] = 'skipped';
       const nextState = currentStep.nextState;
       const nextStep = this.getStepForState(nextState);
+
+      // Safety: if no phone yet, don't complete
+      if ((nextState === FlowState.COMPLETE || !nextStep) && !newCollected.phone) {
+        return {
+          newState: FlowState.ASK_PHONE,
+          collectedData: newCollected,
+          failureType: FailureType.SLOT_SKIP,
+          slotsExtracted: { [currentStep.slotName]: 'skipped' },
+          shouldAdvance: true,
+          shouldEscalate: false,
+          isComplete: false,
+          llmInstruction: `User skipped ${currentStep.slotName}. That's fine! But we need your phone number. Ask: "Could you please share your 10-digit mobile number?"`,
+          attempts: 0,
+        };
+      }
 
       if (nextState === FlowState.COMPLETE || !nextStep) {
         return {
