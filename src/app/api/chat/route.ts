@@ -98,6 +98,24 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
             const newIntent = detectIntent(latestMessage);
             const currentIntent = existingSession.detected_intent;
 
+            // Bug fix: Reset completed flows so users can re-engage
+            if (existingSession.current_state === 'COMPLETE') {
+                console.log(`[Session] Resetting COMPLETE session for ${conversationId}`);
+                await supabase
+                    .from('conversation_sessions')
+                    .update({
+                        current_state: 'START',
+                        collected_data: {},
+                        attempts: 0,
+                        last_activity: new Date().toISOString()
+                    })
+                    .eq('conversation_id', conversationId);
+                return {
+                    intent: currentIntent as 'complaint' | 'maid_hire' | 'helper_reg' | 'general',
+                    session: { ...existingSession, current_state: 'START', collected_data: {}, attempts: 0 },
+                };
+            }
+
             if (newIntent !== 'general' && newIntent !== currentIntent) {
                 console.log(`[Session] Switching intent from ${currentIntent} to ${newIntent}`);
                 await supabase
@@ -110,7 +128,8 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                         last_activity: new Date().toISOString()
                     })
                     .eq('conversation_id', conversationId);
-                return { intent: newIntent, session: existingSession };
+                // Bug fix: Return corrected session data, not stale pre-update data
+                return { intent: newIntent, session: { ...existingSession, detected_intent: newIntent, current_state: 'START', collected_data: {}, attempts: 0 } };
             }
 
             await supabase

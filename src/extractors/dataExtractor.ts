@@ -143,11 +143,15 @@ export function extractSalaryRange(text: string): string | null {
     return 'Team will discuss';
   }
 
+  // Don't match phone numbers (10-digit numbers starting with 6-9)
+  const trimmed = text.replace(/[^\d]/g, '');
+  if (/^[6-9]\d{9}$/.test(trimmed)) return null;
+
   // Match salary patterns: "10k", "10000", "10,000", "Rs 10000", "15-20k"
   const salaryPatterns = [
     /(\d+)\s*-\s*(\d+)\s*k/i,
     /(\d+)\s*k\s*(?:to|[-–])\s*(\d+)\s*k/i,
-    /(?:rs\.?|₹|inr)?\s*(\d[\d,]*)/i,
+    /(?:rs\.?|₹|inr)\s*(\d[\d,]*)/i,  // Currency prefix is now REQUIRED (not optional)
     /(\d+)\s*k/i,
     /(\d+)\s*(?:thousand|hazar)/i,
   ];

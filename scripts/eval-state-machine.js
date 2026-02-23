@@ -201,6 +201,57 @@ function checkWrongCity(botResponse, failureType) {
     };
 }
 
+// ─── Clean up old eval sessions from Supabase ──────────────────────────────
+async function cleanupEvalSessions() {
+    let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    let supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    // Try loading from .env.local if env vars not set
+    if (!supabaseUrl || !supabaseKey) {
+        try {
+            const envPath = path.join(__dirname, '../.env.local');
+            if (fs.existsSync(envPath)) {
+                const envContent = fs.readFileSync(envPath, 'utf-8');
+                for (const line of envContent.split('\n')) {
+                    const match = line.match(/^([^#=]+)=(.*)$/);
+                    if (match) {
+                        const key = match[1].trim();
+                        const val = match[2].trim();
+                        if (key === 'NEXT_PUBLIC_SUPABASE_URL') supabaseUrl = val;
+                        if (key === 'SUPABASE_SERVICE_ROLE_KEY') supabaseKey = val;
+                    }
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    if (!supabaseUrl || !supabaseKey) {
+        console.warn('  Skipping session cleanup (no Supabase credentials)');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${supabaseUrl}/rest/v1/conversation_sessions?conversation_id=like.eval_*`, {
+            method: 'DELETE',
+            headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Prefer': 'return=representation',
+            },
+        });
+        if (res.ok) {
+            const deleted = await res.json().catch(() => []);
+            console.log(`  Cleaned up ${deleted.length} old eval sessions from Supabase.`);
+        } else {
+            console.warn(`  Session cleanup returned ${res.status}`);
+        }
+    } catch (e) {
+        console.warn('  Could not clean eval sessions:', e.message);
+    }
+}
+
 // ─── Main Eval ───────────────────────────────────────────────────────────────
 async function main() {
     console.log(`\n${'═'.repeat(60)}`);
@@ -208,6 +259,9 @@ async function main() {
     console.log(`  ${CONVERSATIONS.length} conversations`);
     console.log(`  Bot URL: ${BOT_URL}`);
     console.log(`${'═'.repeat(60)}\n`);
+
+    // Clean up stale eval sessions before starting
+    await cleanupEvalSessions();
 
     // Check bot is reachable
     try {
