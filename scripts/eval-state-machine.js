@@ -113,7 +113,7 @@ function checkStateTransition(botResponse, expectedState) {
         'ASK_PHONE': ['phone', 'mobile', 'number', '10-digit', 'contact'],
         'ASK_LOCATION': ['area', 'bengaluru', 'bangalore', 'location', 'where', 'locality'],
         'ASK_SERVICE': ['type', 'cooking', 'cleaning', 'baby', 'elderly', 'help', 'service'],
-        'ASK_SCHEDULE': ['full-time', 'part-time', 'schedule', 'prefer'],
+        'ASK_SCHEDULE': ['full-time', 'part-time', 'schedule', 'prefer', 'live-in', '24-hour', '12-hour', 'day maid'],
         'ASK_SALARY': ['salary', 'range', 'budget', 'expect', 'pay'],
         'ASK_FAMILY': ['family', 'member', 'household', 'people'],
         'ASK_EXPERIENCE': ['hired', 'experience', 'before', 'maid before', 'helper before'],
@@ -145,6 +145,21 @@ function checkFAQHandling(botResponse, failureType, currentState) {
     if (failureType !== 'FAQ_MID_FLOW') return { pass: true, reason: 'Not FAQ' };
 
     const lower = botResponse.toLowerCase();
+
+    // For START state, FAQ + advance to ASK_PHONE is the expected behavior
+    // Don't check for START keywords (there's no "START question" to re-ask)
+    if (currentState === 'START') {
+        const hasContent = botResponse.length > 20;
+        // Should answer the FAQ and then ask for phone (the next step)
+        const phoneKeywords = ['phone', 'mobile', 'number', '10-digit'];
+        const askedPhone = phoneKeywords.some(kw => lower.includes(kw));
+        return {
+            pass: hasContent && askedPhone,
+            reason: hasContent && askedPhone
+                ? 'FAQ answered at START + asked for phone'
+                : !askedPhone ? 'FAQ at START but did not ask for phone' : 'Response too short',
+        };
+    }
 
     // Should contain some answer AND re-ask the current question
     const stateKeywords = {
@@ -291,6 +306,32 @@ async function main() {
     let totalTurns = 0;
     const convResults = [];
 
+    // ─── Prompt Quality Metrics ─────────────────────────────────────────────
+    const promptMetrics = {
+        totalResponseWords: 0,
+        keywordFallbackNeeded: 0,   // LLM didn't have right keywords (needed correction)
+        wrongQuestionCount: 0,      // LLM asked a question from a DIFFERENT state
+        safetyNetTriggers: 0,       // Empty/broken responses
+        totalLatencyMs: 0,
+        latencies: [],
+        responseWordsByState: {},    // { ASK_PHONE: [12, 15], ASK_LOCATION: [8, 10] }
+        turnsToComplete: {},        // { c01: 8, c02: 7 }
+        completedConvs: 0,
+        latencyByState: {},         // { ASK_PHONE: [120, 150], ... }
+    };
+
+    // All state keywords for wrong-question detection
+    const ALL_STATE_KEYWORDS = {
+        'ASK_PHONE': ['phone', 'mobile', 'number', '10-digit', 'contact'],
+        'ASK_LOCATION': ['area', 'bengaluru', 'bangalore', 'location', 'where', 'locality'],
+        'ASK_SERVICE': ['type', 'cooking', 'cleaning', 'baby', 'elderly', 'service'],
+        'ASK_SCHEDULE': ['full-time', 'part-time', 'schedule', 'prefer', 'live-in', '24-hour', '12-hour', 'day maid'],
+        'ASK_SALARY': ['salary', 'range', 'budget', 'expect', 'pay'],
+        'ASK_FAMILY': ['family', 'member', 'household', 'people'],
+        'ASK_EXPERIENCE': ['hired', 'experience', 'before', 'maid before', 'helper before'],
+        'COMPLETE': ['team', 'call', 'profile', 'thank', 'within'],
+    };
+
     for (const conv of CONVERSATIONS) {
         const chatHistory = [];
         const turnResults = [];
@@ -433,6 +474,56 @@ async function main() {
                 turnPassFail.failures.push(`PRICE: ${priceCheck.reason}`);
             }
 
+            // ─── Prompt Quality Tracking ──────────────────────────────────
+            const wordCount = botReply.split(/\s+/).filter(w => w.length > 0).length;
+            promptMetrics.totalResponseWords += wordCount;
+            promptMetrics.totalLatencyMs += latencyMs;
+            promptMetrics.latencies.push(latencyMs);
+
+            // Track response words by expected state
+            if (turn.expected_state) {
+                if (!promptMetrics.responseWordsByState[turn.expected_state]) {
+                    promptMetrics.responseWordsByState[turn.expected_state] = [];
+                }
+                promptMetrics.responseWordsByState[turn.expected_state].push(wordCount);
+            }
+
+            // Track latency by expected state
+            if (turn.expected_state) {
+                if (!promptMetrics.latencyByState[turn.expected_state]) {
+                    promptMetrics.latencyByState[turn.expected_state] = [];
+                }
+                promptMetrics.latencyByState[turn.expected_state].push(latencyMs);
+            }
+
+            // Safety net detection: response is broken/empty
+            if (botReply.length < 4 || botReply.trim() === '.' || /^[\.\,\!\?\s]+$/.test(botReply)) {
+                promptMetrics.safetyNetTriggers++;
+            }
+
+            // Keyword fallback detection: expected state keywords missing from response
+            if (turn.expected_state && turn.expected_state !== 'START') {
+                const expectedKeywords = ALL_STATE_KEYWORDS[turn.expected_state] || [];
+                const lowerReply = botReply.toLowerCase();
+                const hasExpectedKeyword = expectedKeywords.some(kw => lowerReply.includes(kw));
+                if (!hasExpectedKeyword && expectedKeywords.length > 0) {
+                    promptMetrics.keywordFallbackNeeded++;
+                }
+            }
+
+            // Wrong question detection: response contains keywords for a DIFFERENT state
+            if (turn.expected_state && turn.advance && !stCheck.pass) {
+                const lowerReply = botReply.toLowerCase();
+                for (const [state, kws] of Object.entries(ALL_STATE_KEYWORDS)) {
+                    if (state === turn.expected_state || state === 'COMPLETE') continue;
+                    const hasWrongKeyword = kws.some(kw => lowerReply.includes(kw));
+                    if (hasWrongKeyword) {
+                        promptMetrics.wrongQuestionCount++;
+                        break; // count once per turn
+                    }
+                }
+            }
+
             // Track failures
             if (!turnPassFail.pass) {
                 failedTurns.push({
@@ -468,6 +559,13 @@ async function main() {
         }
 
         convResults.push({ id: conv.id, category: conv.category, notes: conv.notes, turns: turnResults, failed: convFailed });
+
+        // Track turns to complete
+        const lastTurn = conv.turns[conv.turns.length - 1];
+        if (lastTurn && lastTurn.expected_state === 'COMPLETE') {
+            promptMetrics.turnsToComplete[conv.id] = conv.turns.length;
+            promptMetrics.completedConvs++;
+        }
 
         const convPass = turnResults.every(t => t.pass);
         console.log(convPass ? '✅' : '❌');
@@ -512,6 +610,35 @@ async function main() {
         console.log(`  ${cat.padEnd(20)} ${s.pass}/${s.total} (${pct}%)`);
     }
 
+    // Prompt Quality Metrics
+    const avgWords = totalTurns > 0 ? Math.round(promptMetrics.totalResponseWords / totalTurns) : 0;
+    const instructionCompliance = totalTurns > 0
+        ? Math.round(((totalTurns - promptMetrics.keywordFallbackNeeded - promptMetrics.safetyNetTriggers) / totalTurns) * 100) : 100;
+    const avgLatency = totalTurns > 0 ? Math.round(promptMetrics.totalLatencyMs / totalTurns) : 0;
+    promptMetrics.latencies.sort((a, b) => a - b);
+    const p50 = promptMetrics.latencies.length > 0 ? promptMetrics.latencies[Math.floor(promptMetrics.latencies.length * 0.5)] : 0;
+    const p95 = promptMetrics.latencies.length > 0 ? promptMetrics.latencies[Math.floor(promptMetrics.latencies.length * 0.95)] : 0;
+
+    const avgTurnsToComplete = promptMetrics.completedConvs > 0
+        ? (Object.values(promptMetrics.turnsToComplete).reduce((s, v) => s + v, 0) / promptMetrics.completedConvs).toFixed(1)
+        : '—';
+
+    console.log(`\nPrompt Quality Metrics:`);
+    console.log(`  Instruction Compliance ${String(instructionCompliance).padStart(3)}%  (LLM followed prompt without correction)`);
+    console.log(`  Keyword Fallback Needed ${String(promptMetrics.keywordFallbackNeeded).padStart(3)}/${totalTurns}  (LLM asked wrong question)`);
+    console.log(`  Wrong Question Count    ${String(promptMetrics.wrongQuestionCount).padStart(3)}/${totalTurns}  (asked a different state's question)`);
+    console.log(`  Safety Net Triggers     ${String(promptMetrics.safetyNetTriggers).padStart(3)}/${totalTurns}  (empty/broken responses)`);
+    console.log(`  Avg Response Words      ${String(avgWords).padStart(3)}  (target: 10-25)`);
+    console.log(`  Avg Latency             ${avgLatency}ms  (p50: ${p50}ms, p95: ${p95}ms)`);
+    console.log(`  Avg Turns to Complete   ${avgTurnsToComplete}  (${promptMetrics.completedConvs} completed conversations)`);
+
+    // Response words by state
+    console.log(`\n  Words by State:`);
+    for (const [state, words] of Object.entries(promptMetrics.responseWordsByState)) {
+        const avg = Math.round(words.reduce((s, v) => s + v, 0) / words.length);
+        console.log(`    ${state.padEnd(18)} avg ${avg} words (${words.length} turns)`);
+    }
+
     // Failed turns
     if (failedTurns.length > 0) {
         console.log(`\nFailed Turns (${failedTurns.length}):`);
@@ -528,6 +655,16 @@ async function main() {
 
     // JSON output
     if (JSON_OUTPUT) {
+        // Compute avg words per state for JSON
+        const avgWordsByState = {};
+        for (const [state, words] of Object.entries(promptMetrics.responseWordsByState)) {
+            avgWordsByState[state] = Math.round(words.reduce((s, v) => s + v, 0) / words.length);
+        }
+        const avgLatencyByState = {};
+        for (const [state, lats] of Object.entries(promptMetrics.latencyByState)) {
+            avgLatencyByState[state] = Math.round(lats.reduce((s, v) => s + v, 0) / lats.length);
+        }
+
         const jsonOut = {
             timestamp: new Date().toISOString(),
             botUrl: BOT_URL,
@@ -540,6 +677,23 @@ async function main() {
             verdict,
             categoryScores,
             failedTurns,
+            promptMetrics: {
+                instructionCompliance: instructionCompliance,
+                keywordFallbackNeeded: promptMetrics.keywordFallbackNeeded,
+                wrongQuestionCount: promptMetrics.wrongQuestionCount,
+                safetyNetTriggers: promptMetrics.safetyNetTriggers,
+                avgResponseWords: avgWords,
+                avgLatencyMs: avgLatency,
+                p50LatencyMs: p50,
+                p95LatencyMs: p95,
+                avgTurnsToComplete: promptMetrics.completedConvs > 0
+                    ? parseFloat((Object.values(promptMetrics.turnsToComplete).reduce((s, v) => s + v, 0) / promptMetrics.completedConvs).toFixed(1))
+                    : null,
+                completedConversations: promptMetrics.completedConvs,
+                turnsToComplete: promptMetrics.turnsToComplete,
+                avgWordsByState,
+                avgLatencyByState,
+            },
             conversations: convResults,
         };
 

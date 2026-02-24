@@ -22,7 +22,8 @@ const BENGALURU_AREAS = [
 const SERVICE_TYPES = ['cooking', 'cleaning', 'baby care', 'babysitting', 'elderly care', 'baby', 'elderly', 'cook', 'clean', 'both'];
 
 // Valid schedule types
-const SCHEDULE_TYPES = ['full-time', 'fulltime', 'full time', 'part-time', 'parttime', 'part time', 'live-in', 'live in'];
+const SCHEDULE_TYPES = ['24-hour live-in', '12-hour day', 'live-in', 'live in', 'full-time', 'fulltime', 'full time',
+                        'part-time', 'parttime', 'part time', '24 hour', '12 hour', 'day maid', 'morning', 'evening'];
 
 function validateLocation(value: string | null | undefined): boolean {
   if (!value) return false;
@@ -80,8 +81,8 @@ export class MaidHiringFlow extends BaseFlow {
       {
         state: FlowState.ASK_SCHEDULE,
         slotName: 'schedule',
-        question: "Would you prefer Full-time or Part-time help?",
-        errorMessage: "Please let us know — Full-time or Part-time?",
+        question: "Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+        errorMessage: "Please let us know — 24-hour Live-in maid or 12-hour Day maid?",
         required: true,
         validator: validateSchedule,
         nextState: FlowState.ASK_SALARY,

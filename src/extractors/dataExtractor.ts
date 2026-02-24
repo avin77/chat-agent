@@ -128,8 +128,10 @@ export function extractWorkType(text: string): string | null {
 export function extractSchedule(text: string): string | null {
   const lower = text.toLowerCase();
 
-  if (/full[\s-]?time|live[\s-]?in|24\s*(?:hr|hour)|stay\s*in|pura\s*din/i.test(lower)) return 'Full-time';
-  if (/part[\s-]?time|half[\s-]?day|few\s*hours/i.test(lower)) return 'Part-time';
+  // 24-hour live-in maid (stays at home)
+  if (/24\s*(?:hr|hour|hours|hrs)|live[\s-]?in|stay[\s-]?in|full[\s-]?time|fulltime|24\/7|pura\s*din/i.test(lower)) return '24-hour Live-in';
+  // 12-hour day maid (morning to evening)
+  if (/12\s*(?:hr|hour|hours|hrs)|part[\s-]?time|parttime|half[\s-]?day|day[\s-]?maid|morning|evening|few\s*hours/i.test(lower)) return '12-hour Day';
 
   return null;
 }
@@ -292,6 +294,9 @@ export function detectGibberish(text: string): boolean {
   // Empty or whitespace only
   if (trimmed.length === 0) return true;
 
+  // Pure numbers are always valid (family size, counts, etc.)
+  if (/^\d+$/.test(trimmed)) return false;
+
   // Very short with no vowels (likely random chars)
   if (trimmed.length <= 2 && !/[aeiouAEIOU]/.test(trimmed)) return true;
 
@@ -304,7 +309,7 @@ export function detectGibberish(text: string): boolean {
     if (letters.length >= 5) {
       const vowelCount = (letters.match(/[aeiouAEIOU]/g) || []).length;
       const vowelRatio = vowelCount / letters.length;
-      if (vowelRatio < 0.1) return true;
+      if (vowelRatio < 0.15) return true;
     }
   }
 

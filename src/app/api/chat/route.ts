@@ -34,23 +34,33 @@ function buildStateMachinePrompt(llmInstruction: string, collectedSoFar: Record<
         .map(([k, v]) => `${k}: ${v}`)
         .join(', ');
 
-    return `ROLE: EzyBot (Domestic Help Intake) for EzyHelpers.com — domestic help service in Bengaluru.
-
-YOU ARE IN A GUIDED CONVERSATION. Follow the instruction below EXACTLY.
+    return `ROLE: EzyBot — domestic help intake assistant for EzyHelpers.com, Bengaluru.
 
 COLLECTED SO FAR: ${collected || 'Nothing yet'}
 
 INSTRUCTION: ${llmInstruction}
 
-STRICT RULES:
-- Follow the INSTRUCTION above. Do NOT deviate.
-- Do NOT ask questions that aren't in the instruction.
-- Keep response to 1-2 sentences max.
-- NO PRICES — say "Our team will discuss pricing when they call you" if user asks.
-- Do NOT describe yourself or say "You are EzyBot".
-- Do NOT output "." alone.
-- Be conversational and friendly.
-- If instruction says [ESCALATE], include [ESCALATE] at the end of your response.`;
+ABSOLUTE RULES (violating any = failure):
+1. Your response MUST end with the EXACT question from the INSTRUCTION above. Copy it word-for-word.
+2. Do NOT ask any other questions. Only the question in the INSTRUCTION.
+3. Do NOT offer to call the user. Do NOT say "Would you like our team to call you?"
+4. Do NOT summarize or confirm collected data unless the instruction explicitly says to.
+5. Do NOT describe services, features, or capabilities unless the instruction says to.
+6. Keep response to 1-2 sentences MAXIMUM.
+7. NO PRICES — if user asks about cost, say "Our team will discuss pricing when they call you."
+8. If instruction says [ESCALATE], include [ESCALATE] at the end.
+9. Do NOT output "." alone.
+10. When acknowledging salary, ALWAYS write the full rupee amount: "15k" → "₹15,000 per month", "20000" → "₹20,000 per month". Say "Got it, ₹[AMOUNT] per month."
+
+EXAMPLES OF CORRECT RESPONSES:
+- Instruction: "Ask: Please share your 10-digit mobile number." → "Sure, I'd be happy to help! Please share your 10-digit mobile number."
+- Instruction: "Acknowledge phone. Ask: Which area in Bengaluru?" → "Thank you! Which area in Bengaluru are you looking for help?"
+- Instruction: "Acknowledge location. Ask: What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care" → "Great, Koramangala! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care"
+
+WRONG (never do this):
+- "Great! Could you tell me what kind of help you're looking for?" (wrong question)
+- "Thank you! Would you like our team to call you?" (premature completion)
+- "We provide verified helpers in Bengaluru!" (unsolicited info)`;
 }
 
 // ─── Trim messages ───────────────────────────────────────────────────────────
@@ -73,6 +83,15 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg'
 
     if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
     if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook/.test(lower)) return 'maid_hire';
+
+    // Broader maid_hire patterns — catch "cleaner", service roles, baby care, typos
+    if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help)\b/i.test(lower) &&
+        /\b(need|want|hire|book|get|looking|find|require|send)\b/i.test(lower)) return 'maid_hire';
+    if (/\b(maid|maids)\b/.test(lower) && /\b(hire|need|want|book|get|looking|find)\b/.test(lower)) return 'maid_hire';
+    if (/(looking for|need|want|find)\s+(?:a\s+)?(?:someone|person|lady|woman|man|worker|help)\s+.{0,30}(cook|clean|take care|care for|baby|elderly|elder)/i.test(lower)) return 'maid_hire';
+    if (/\b(hire|need|want|get)\b.{0,15}\b(made)\b/i.test(lower) ||
+        /\b(made)\b.{0,20}\b(cook|cookin|clean|care|baby|elder)\b/i.test(lower)) return 'maid_hire';
+
     if (/need.*job|want.*work|looking for.*job|i am.*maid|i am.*helper|register.*helper|i am.*cook|looking for work/.test(lower)) return 'helper_reg';
 
     const isQuestion = /\?/.test(lower) ||
@@ -248,14 +267,13 @@ async function handleMaidHireStateMachine(
     // 6. Build narrow prompt for LLM
     const systemPrompt = buildStateMachinePrompt(result.llmInstruction, result.collectedData);
 
-    // 7. Call LLM with narrow prompt
+    // 7. Call LLM with narrow prompt (only last message — full history makes LLM go off-script)
     let llmText: string;
     try {
-        const trimmedMessages = trimMessages(coreMessages);
         const { text } = await generateText({
             model: google('gemma-3-27b-it'),
             system: systemPrompt,
-            messages: trimmedMessages,
+            messages: [{ role: 'user', content: latestMessage }],
         });
         llmText = text;
     } catch (llmError: any) {
@@ -274,7 +292,34 @@ async function handleMaidHireStateMachine(
     }
 
     // 9. Apply guardrails
-    const cleaned = applyStrictGuardrails(llmText);
+    let cleaned = applyStrictGuardrails(llmText);
+
+    // 9b. Keyword fallback — if LLM didn't ask the right question, force-append it
+    if (result.newState !== FlowState.COMPLETE && result.newState !== FlowState.START) {
+        const stateKeywords: Record<string, string[]> = {
+            [FlowState.ASK_PHONE]: ['phone', 'mobile', 'number', '10-digit', 'contact'],
+            [FlowState.ASK_LOCATION]: ['area', 'bengaluru', 'bangalore', 'location', 'where', 'locality'],
+            [FlowState.ASK_SERVICE]: ['type', 'cooking', 'cleaning', 'baby', 'elderly', 'help', 'service'],
+            [FlowState.ASK_SCHEDULE]: ['full-time', 'part-time', 'schedule', 'prefer', 'live-in', '24-hour', '12-hour', 'day maid'],
+            [FlowState.ASK_SALARY]: ['salary', 'range', 'budget', 'expect', 'pay'],
+            [FlowState.ASK_FAMILY]: ['family', 'member', 'household', 'people'],
+            [FlowState.ASK_EXPERIENCE]: ['hired', 'experience', 'before', 'maid before', 'helper before'],
+        };
+
+        const keywords = stateKeywords[result.newState];
+        if (keywords) {
+            const lower = cleaned.toLowerCase();
+            const hasKeyword = keywords.some(kw => lower.includes(kw));
+            if (!hasKeyword) {
+                const step = maidHiringFlow.getStepForState(result.newState);
+                if (step) {
+                    // Remove trailing question mark section (wrong question) and append correct one
+                    cleaned = cleaned.replace(/\?[^?]*$/, '.').replace(/\.\s*$/, '. ') + step.question;
+                    console.log(`[Keyword Fallback] Appended correct question for ${result.newState}`);
+                }
+            }
+        }
+    }
 
     // 10. Save state to DB
     await saveStateMachineSession(conversationId, result.newState, result.collectedData, result.attempts);

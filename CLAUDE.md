@@ -40,7 +40,7 @@ User (ChatWidget) --> POST /api/chat --> Gemini AI (streaming)
 - **Response**: Uses `generateText()` (not streaming) so safety net fallbacks actually reach the user
 - **Guardrails**: Post-processing strips prices, validates phones, removes external links
 - **Escalation**: Deterministic (phone + action intent) OR LLM `[ESCALATE]` tag → saves to DB and sends email
-- **Dead code**: `src/flows/` and `src/extractors/` contain a state machine architecture not yet integrated
+- **State machine**: `src/flows/` and `src/extractors/` implement the deterministic maid_hire flow (fully integrated)
 
 ## Development
 
@@ -284,14 +284,38 @@ Vercel:        vercel.com/ezysrs-projects/chat-agent
 Auto-deploys:  on every git push to main
 ```
 
-## Roadmap (see PLAN.md)
+## Current Status (as of Feb 2026)
+
+**Eval Score:** 94% PRODUCTION READY (Feb 24, 2026)
+- Last eval: `data/eval-state-2026-02-24T07-27-42-329Z.json`
+- 28 conversations tested, 115 turns, 17 failures remain (being fixed in this session)
+
+**What's Working:**
+- State machine fully integrated (`BaseFlow.ts` + `MaidHiringFlow.ts`)
+- Keyword fallback in `route.ts` catches ~80% of LLM instruction failures
+- Dashboard at `/dashboard` with eval metrics, response quality, conversation health
+
+**Key Architecture Files:**
+| File | Role |
+|------|------|
+| `src/flows/BaseFlow.ts` | Deterministic state machine logic |
+| `src/flows/MaidHiringFlow.ts` | 8-step flow definition + validators |
+| `src/extractors/dataExtractor.ts` | Slot extraction + gibberish/FAQ/city detection |
+| `src/app/api/chat/route.ts` | Main entry: intent detection, LLM call, keyword fallback |
+| `scripts/eval-state-machine.js` | Golden dataset evaluation runner |
+| `data/state-golden-dataset.json` | 28 test conversations (ground truth) |
+| `src/app/dashboard/` | Analytics dashboard (Next.js server component) |
+
+**Schedule terminology:** 24-hour Live-in maid (stays at home) vs 12-hour Day maid (morning to evening)
+
+## Roadmap
 
 - [x] Fix safety net (generateText instead of streamText)
 - [x] Improve prompts with few-shot examples
 - [x] Deterministic escalation (phone + action intent)
 - [x] Guardrails bug fixes
-- [ ] Integrate dead code state machine (`src/flows/` + `src/extractors/`)
-- [ ] Multi-question flow for maid hiring (8 fields)
+- [x] Integrate state machine (`src/flows/` + `src/extractors/`)
+- [x] Multi-question flow for maid hiring (8 fields)
+- [x] Operations dashboard
 - [ ] Add vitest test framework
-- [ ] Operations dashboard
 - [ ] Semi-agentic upgrade (weighted intent scoring, field tracking)

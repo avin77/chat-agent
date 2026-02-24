@@ -120,24 +120,7 @@ export abstract class BaseFlow {
     isGibberish: boolean,
     backtrackSlot: string | null,
   ): ProcessResult {
-    const currentStep = this.getStepForState(session.currentState);
-
-    // Already complete
-    if (session.currentState === FlowState.COMPLETE || !currentStep) {
-      return {
-        newState: FlowState.COMPLETE,
-        collectedData: session.collectedData,
-        failureType: FailureType.NONE,
-        slotsExtracted: {},
-        shouldAdvance: false,
-        shouldEscalate: true,
-        isComplete: true,
-        llmInstruction: this.getCompletionInstruction(session.collectedData),
-        attempts: session.attempts,
-      };
-    }
-
-    // START state auto-advances to ASK_PHONE
+    // ─── START state auto-advances to ASK_PHONE ──────────────────────────────
     if (session.currentState === FlowState.START) {
       // But first check for wrong city
       if (wrongCity) {
@@ -245,6 +228,23 @@ export abstract class BaseFlow {
       };
     }
 
+    const currentStep = this.getStepForState(session.currentState);
+
+    // Already complete
+    if (session.currentState === FlowState.COMPLETE || !currentStep) {
+      return {
+        newState: FlowState.COMPLETE,
+        collectedData: session.collectedData,
+        failureType: FailureType.NONE,
+        slotsExtracted: {},
+        shouldAdvance: false,
+        shouldEscalate: true,
+        isComplete: true,
+        llmInstruction: this.getCompletionInstruction(session.collectedData),
+        attempts: session.attempts,
+      };
+    }
+
     // ─── Handle backtrack request ────────────────────────────────────────────
     if (backtrackSlot) {
       const targetStep = this.steps.find(s => s.slotName === backtrackSlot);
@@ -318,7 +318,8 @@ export abstract class BaseFlow {
     const slotCount = Object.keys(slotsFound).filter(k => k !== 'name').length;
 
     // ─── Handle FAQ mid-flow ─────────────────────────────────────────────────
-    if (faqDetected && slotCount === 0) {
+    // FAQ always takes priority — user is asking a question, not providing slot values
+    if (faqDetected) {
       return {
         newState: session.currentState,
         collectedData: session.collectedData,
