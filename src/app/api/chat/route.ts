@@ -277,12 +277,43 @@ async function handleMaidHireStateMachine(
         });
         llmText = text;
     } catch (llmError: any) {
-        // Fallback: use the instruction directly as a template
-        console.error('[State Machine] LLM call failed, using fallback:', llmError.message);
-        llmText = result.llmInstruction
-            .replace(/^.*?Say:?\s*"?/i, '')
-            .replace(/"?\s*Then.*$/i, '')
-            .replace(/\[ESCALATE\]/gi, '');
+        // LLM call failed — build clean fallback from state machine step definitions
+        console.error('[State Machine] LLM call failed:', llmError.message);
+
+        // Log the actual error to Supabase for debugging
+        try {
+            await logLLMInteraction({
+                conversationId,
+                intent: 'SYSTEM_ERROR',
+                systemPrompt: `LLM_FALLBACK: ${llmError.message?.substring(0, 500)}`,
+                userMessage: latestMessage,
+                fullHistory: [],
+                rawResponse: `ERROR: ${llmError.message?.substring(0, 500)}`,
+                cleanedResponse: '',
+                tookMs: Date.now() - startTime,
+            });
+        } catch { /* ignore logging errors */ }
+
+        // Build professional fallback from step definitions (no regex hacking)
+        const step = maidHiringFlow.getStepForState(result.newState);
+
+        if (result.isComplete) {
+            llmText = `Thank you! Our team will call you at ${result.collectedData.phone} within 2 hours with verified profiles matching your requirements.`;
+        } else if (result.newState === FlowState.ASK_PHONE && session.currentState === FlowState.START) {
+            llmText = `Welcome to EzyHelpers! I'd be happy to help you find domestic help. ${step?.question || "Please share your 10-digit mobile number."}`;
+        } else if (result.failureType === FailureType.FAQ_MID_FLOW) {
+            llmText = `Our team can help with that. ${step?.question || ''}`;
+        } else if (result.failureType === FailureType.WRONG_CITY) {
+            llmText = `We currently operate in Bengaluru only. We're expanding soon! ${step?.question || "Please share your 10-digit mobile number."}`;
+        } else if (result.failureType === FailureType.GIBBERISH) {
+            llmText = `I didn't catch that. ${step?.question || ''}`;
+        } else if (result.failureType === FailureType.INVALID_SLOT) {
+            llmText = step?.errorMessage || "I didn't understand that. Could you please try again?";
+        } else if (Object.keys(result.slotsExtracted).length > 0) {
+            llmText = `Got it! ${step?.question || ''}`;
+        } else {
+            llmText = step?.question || "Could you please share your details so we can help you?";
+        }
     }
 
     // 8. Safety net for empty/broken responses
@@ -683,16 +714,38 @@ export async function POST(req: Request) {
         } catch (apiError: any) {
             console.error("GEMINI EXECUTION ERROR:", apiError);
 
-            if (apiError.message?.includes('429') || apiError.status === 429) {
+            // Log the actual error to Supabase for debugging
+            try {
                 await logLLMInteraction({
                     conversationId, intent: 'SYSTEM_ERROR',
-                    systemPrompt: 'Resource Exhausted', userMessage: latestMessage,
-                    fullHistory: [], rawResponse: '429 Rate Limit',
-                    cleanedResponse: 'System is busy. Please try again later.', tookMs: 0
+                    systemPrompt: `GEMINI_ERROR: ${apiError.message?.substring(0, 500)}`,
+                    userMessage: latestMessage,
+                    fullHistory: [],
+                    rawResponse: `ERROR: ${apiError.message?.substring(0, 500)}`,
+                    cleanedResponse: '', tookMs: Date.now() - startTime,
                 });
+            } catch { /* ignore logging errors */ }
+
+            if (apiError.message?.includes('429') || apiError.status === 429) {
                 return new Response("System Busy (Rate Limit)", { status: 429 });
             }
-            throw apiError;
+
+            // Graceful fallback for all other API errors (no more 500s)
+            const fallbackText = intent === 'complaint'
+                ? "I understand you have a concern. Could you please share your name and 10-digit phone number so our team can help?"
+                : intent === 'helper_reg'
+                ? "Thank you for your interest in registering. Please share your name and 10-digit phone number."
+                : "I'm here to help with domestic help services in Bengaluru. Could you tell me more about what you're looking for?";
+
+            const textId = crypto.randomUUID();
+            const uiStream = createUIMessageStream({
+                execute: ({ writer }) => {
+                    writer.write({ type: 'text-start', id: textId });
+                    writer.write({ type: 'text-delta', delta: fallbackText, id: textId });
+                    writer.write({ type: 'text-end', id: textId });
+                },
+            });
+            return createUIMessageStreamResponse({ stream: uiStream });
         }
     } catch (error: any) {
         console.error('API Error:', error);

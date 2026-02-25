@@ -4,27 +4,33 @@
 export function applyStrictGuardrails(text: string): string {
     let cleaned = text;
 
-    // 1. PRICE BLOCKING (HIGHEST PRIORITY)
-    const pricePatterns = [
-        /₹\s*\d+/gi,
-        /Rs\.?\s*\d+/gi,
-        /\d+\s*rupees/gi,
-        /\d+\s*per\s*(month|day|hour)/gi,
-        /salary.*?(\d{3,})/gi,
-        /\d+k\s*per/gi,
-        // Extended patterns
-        /(?:five|ten|fifteen|twenty|thirty|fifty)\s*thousand/gi,
-        /\d+k(?!\w)/gi,
-        /\d+\s*lakh/gi,
-        /(?:one|two|three|four|five)\s*lakh/gi,
-    ];
+    // Skip price blocking for salary acknowledgments (user-provided amount being confirmed)
+    const isSalaryAck = /got it|noted|salary|budget/i.test(cleaned) &&
+                        /₹|per month|per\s+month/i.test(cleaned);
 
-    for (const pattern of pricePatterns) {
-        if (pattern.test(cleaned)) {
-            console.error('[GUARDRAIL] Price blocked:', cleaned.match(pattern));
-            // Reset lastIndex since .test() with /g flag advances it
-            pattern.lastIndex = 0;
-            cleaned = cleaned.replace(pattern, '**[Our team will contact you with pricing details]**');
+    // 1. PRICE BLOCKING (HIGHEST PRIORITY) — skip when confirming user's salary
+    if (!isSalaryAck) {
+        const pricePatterns = [
+            /₹\s*\d+/gi,
+            /Rs\.?\s*\d+/gi,
+            /\d+\s*rupees/gi,
+            /\d+\s*per\s*(month|day|hour)/gi,
+            /salary.*?(\d{3,})/gi,
+            /\d+k\s*per/gi,
+            // Extended patterns
+            /(?:five|ten|fifteen|twenty|thirty|fifty)\s*thousand/gi,
+            /\d+k(?!\w)/gi,
+            /\d+\s*lakh/gi,
+            /(?:one|two|three|four|five)\s*lakh/gi,
+        ];
+
+        for (const pattern of pricePatterns) {
+            if (pattern.test(cleaned)) {
+                console.error('[GUARDRAIL] Price blocked:', cleaned.match(pattern));
+                // Reset lastIndex since .test() with /g flag advances it
+                pattern.lastIndex = 0;
+                cleaned = cleaned.replace(pattern, '**[Our team will contact you with pricing details]**');
+            }
         }
     }
 

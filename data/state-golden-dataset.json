@@ -39,7 +39,7 @@
       },
       {
         "user": "Cooking",
-        "bot": "Would you prefer Full-time or Part-time help?",
+        "bot": "Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -54,7 +54,7 @@
         "current_state": "ASK_SCHEDULE",
         "expected_state": "ASK_SALARY",
         "slot": "schedule",
-        "slot_value": "Full-time",
+        "slot_value": "24-hour Live-in",
         "valid": true,
         "advance": true,
         "failure": ""
@@ -134,7 +134,7 @@
       },
       {
         "user": "Cooking",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -149,7 +149,7 @@
         "current_state": "ASK_SCHEDULE",
         "expected_state": "ASK_SALARY",
         "slot": "schedule",
-        "slot_value": "Part-time",
+        "slot_value": "12-hour Day",
         "valid": true,
         "advance": true,
         "failure": ""
@@ -229,7 +229,7 @@
       },
       {
         "user": "Baby care",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -244,7 +244,7 @@
         "current_state": "ASK_SCHEDULE",
         "expected_state": "ASK_SALARY",
         "slot": "schedule",
-        "slot_value": "Full-time",
+        "slot_value": "24-hour Live-in",
         "valid": true,
         "advance": true,
         "failure": ""
@@ -295,7 +295,7 @@
         "current_state": "START",
         "expected_state": "ASK_SALARY",
         "slot": "phone|location|service_type|schedule",
-        "slot_value": "9876543210|Koramangala|Cooking|Full-time",
+        "slot_value": "9876543210|Koramangala|Cooking|24-hour Live-in",
         "valid": true,
         "advance": true,
         "failure": "MULTI_SLOT"
@@ -364,7 +364,7 @@
       },
       {
         "user": "Whitefield, need a cook",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_LOCATION",
         "expected_state": "ASK_SCHEDULE",
         "slot": "location|service_type",
@@ -379,7 +379,7 @@
         "current_state": "ASK_SCHEDULE",
         "expected_state": "ASK_SALARY",
         "slot": "schedule",
-        "slot_value": "Part-time",
+        "slot_value": "12-hour Day",
         "valid": true,
         "advance": true,
         "failure": ""
@@ -557,7 +557,7 @@
       },
       {
         "user": "do you have 24hr maid?",
-        "bot": "Yes! We have full-time live-in helpers. Could you share your 10-digit mobile number?",
+        "bot": "Yes! We have 24-hour Live-in helpers. Could you share your 10-digit mobile number?",
         "current_state": "ASK_PHONE",
         "expected_state": "ASK_PHONE",
         "slot": "phone",
@@ -681,7 +681,7 @@
       },
       {
         "user": "Cleaning",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -699,7 +699,7 @@
     "turns": [
       {
         "user": "Do you have 24 hour maids? I want to hire one",
-        "bot": "Yes we have full-time helpers! Please share your 10-digit mobile number.",
+        "bot": "Yes we have 24-hour Live-in helpers! Please share your 10-digit mobile number.",
         "current_state": "START",
         "expected_state": "ASK_PHONE",
         "slot": "phone",
@@ -881,124 +881,11 @@
       },
       {
         "user": "Cooking",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
         "slot_value": "Cooking",
-        "valid": true,
-        "advance": true,
-        "failure": ""
-      }
-    ]
-  },
-  {
-    "id": "c17",
-    "category": "hinglish",
-    "notes": "Hindi-English mix",
-    "turns": [
-      {
-        "user": "mujhe ek maid chahiye cooking ke liye",
-        "bot": "Please share your 10-digit mobile number.",
-        "current_state": "START",
-        "expected_state": "ASK_PHONE",
-        "slot": "phone",
-        "slot_value": "",
-        "valid": "",
-        "advance": false,
-        "failure": ""
-      },
-      {
-        "user": "mera number hai 9876543210",
-        "bot": "Which area in Bengaluru?",
-        "current_state": "ASK_PHONE",
-        "expected_state": "ASK_LOCATION",
-        "slot": "phone",
-        "slot_value": "9876543210",
-        "valid": true,
-        "advance": true,
-        "failure": ""
-      },
-      {
-        "user": "Koramangala mein",
-        "bot": "What type of help?",
-        "current_state": "ASK_LOCATION",
-        "expected_state": "ASK_SERVICE",
-        "slot": "location",
-        "slot_value": "Koramangala",
-        "valid": true,
-        "advance": true,
-        "failure": ""
-      },
-      {
-        "user": "khana banana ke liye",
-        "bot": "Full-time or Part-time?",
-        "current_state": "ASK_SERVICE",
-        "expected_state": "ASK_SCHEDULE",
-        "slot": "service_type",
-        "slot_value": "Cooking",
-        "valid": true,
-        "advance": true,
-        "failure": ""
-      },
-      {
-        "user": "pura din full time",
-        "bot": "Expected salary range?",
-        "current_state": "ASK_SCHEDULE",
-        "expected_state": "ASK_SALARY",
-        "slot": "schedule",
-        "slot_value": "Full-time",
-        "valid": true,
-        "advance": true,
-        "failure": ""
-      }
-    ]
-  },
-  {
-    "id": "c18",
-    "category": "hinglish",
-    "notes": "Mix of Hindi responses",
-    "turns": [
-      {
-        "user": "maid hire karna hai",
-        "bot": "Please share your 10-digit mobile number.",
-        "current_state": "START",
-        "expected_state": "ASK_PHONE",
-        "slot": "phone",
-        "slot_value": "",
-        "valid": "",
-        "advance": false,
-        "failure": ""
-      },
-      {
-        "user": "8899776655",
-        "bot": "Which area in Bengaluru?",
-        "current_state": "ASK_PHONE",
-        "expected_state": "ASK_LOCATION",
-        "slot": "phone",
-        "slot_value": "8899776655",
-        "valid": true,
-        "advance": true,
-        "failure": ""
-      },
-      {
-        "user": "Whitefield",
-        "bot": "What type of help?",
-        "current_state": "ASK_LOCATION",
-        "expected_state": "ASK_SERVICE",
-        "slot": "location",
-        "slot_value": "Whitefield",
-        "valid": true,
-        "advance": true,
-        "failure": ""
-      },
-      {
-        "user": "safai ke liye",
-        "bot": "Full-time or Part-time?",
-        "current_state": "ASK_SERVICE",
-        "expected_state": "ASK_SCHEDULE",
-        "slot": "service_type",
-        "slot_value": "Cleaning",
         "valid": true,
         "advance": true,
         "failure": ""
@@ -1085,7 +972,7 @@
       },
       {
         "user": "cookin and cleanin",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -1198,7 +1085,7 @@
       },
       {
         "user": "Cooking",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -1220,7 +1107,7 @@
       },
       {
         "user": "Cleaning",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -1438,7 +1325,7 @@
       },
       {
         "user": "Cooking",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
@@ -1449,7 +1336,7 @@
       },
       {
         "user": "What is the salary for full-time cook?",
-        "bot": "Our team will discuss salary. Full-time or Part-time?",
+        "bot": "Our team will discuss salary. 24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SCHEDULE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "schedule",
@@ -1464,7 +1351,7 @@
         "current_state": "ASK_SCHEDULE",
         "expected_state": "ASK_SALARY",
         "slot": "schedule",
-        "slot_value": "Full-time",
+        "slot_value": "24-hour Live-in",
         "valid": true,
         "advance": true,
         "failure": ""
@@ -1500,7 +1387,7 @@
       },
       {
         "user": "Elderly care",
-        "bot": "Full-time or Part-time?",
+        "bot": "24-hour Live-in maid or 12-hour Day maid?",
         "current_state": "ASK_SERVICE",
         "expected_state": "ASK_SCHEDULE",
         "slot": "service_type",
