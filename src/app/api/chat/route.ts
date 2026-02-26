@@ -117,9 +117,11 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
             const newIntent = detectIntent(latestMessage);
             const currentIntent = existingSession.detected_intent;
 
-            // Bug fix: Reset completed flows so users can re-engage
-            if (existingSession.current_state === 'COMPLETE') {
-                console.log(`[Session] Resetting COMPLETE session for ${conversationId}`);
+            // Bug fix: Reset completed OR stuck (attempts >= 3) flows so users can re-engage
+            const isStuck = existingSession.current_state === 'COMPLETE' ||
+                (existingSession.detected_intent === 'maid_hire' && (existingSession.attempts ?? 0) >= 3);
+            if (isStuck) {
+                console.log(`[Session] Resetting ${existingSession.current_state === 'COMPLETE' ? 'COMPLETE' : 'stuck'} session (attempts=${existingSession.attempts}) for ${conversationId}`);
                 await supabase
                     .from('conversation_sessions')
                     .update({
