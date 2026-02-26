@@ -300,3 +300,45 @@ export async function getConversationHealthMetrics(days: number = 7) {
         avgFieldsCollected: data.length > 0 ? parseFloat((totalFields / data.length).toFixed(1)) : 0,
     };
 }
+
+// ─── LLM I/O Logs per Conversation ──────────────────────────────────────────
+export async function getConversationLLMLogs(conversationId: string) {
+    const { data, error } = await supabase
+        .from('llm_logs')
+        .select('created_at, intent, system_prompt, user_message, raw_llm_response, after_guardrails, took_ms')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+    if (error || !data) return [];
+    return data;
+}
+
+// ─── Recent Conversations with LLM log counts ──────────────────────────────
+export async function getConversationsWithLogCounts(limit: number = 50) {
+    // Get recent conversations
+    const { data: sessions, error: sessError } = await supabase
+        .from('conversation_sessions')
+        .select('conversation_id, detected_intent, current_state, collected_data, last_activity')
+        .order('last_activity', { ascending: false })
+        .limit(limit);
+
+    if (sessError || !sessions) return [];
+
+    // Get log counts per conversation in one query
+    const convIds = sessions.map((s: any) => s.conversation_id);
+    const { data: logs } = await supabase
+        .from('llm_logs')
+        .select('conversation_id')
+        .in('conversation_id', convIds);
+
+    const logCounts: Record<string, number> = {};
+    for (const log of (logs || [])) {
+        logCounts[log.conversation_id] = (logCounts[log.conversation_id] || 0) + 1;
+    }
+
+    return sessions.map((s: any) => ({
+        ...s,
+        log_count: logCounts[s.conversation_id] || 0,
+    }));
+}

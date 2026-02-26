@@ -1459,5 +1459,67 @@
         "failure": ""
       }
     ]
+  },
+  {
+    "id": "c31",
+    "category": "intent_detection",
+    "notes": "User says 'I need a helper' — should trigger maid_hire, not general",
+    "turns": [
+      {
+        "user": "I need a helper",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9123456789",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9123456789",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Whitefield",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Whitefield",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Cleaning",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cleaning",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "12-hour day",
+        "bot": "What salary range do you have in mind?",
+        "current_state": "ASK_SCHEDULE",
+        "expected_state": "ASK_SALARY",
+        "slot": "schedule",
+        "slot_value": "12-hour Day",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
   }
 ]

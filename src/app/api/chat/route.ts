@@ -82,10 +82,10 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg'
     }
 
     if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
-    if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook/.test(lower)) return 'maid_hire';
+    if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook|need.*helper|want.*helper|hire.*helper|looking for.*helper|i need a helper|need domestic help/.test(lower)) return 'maid_hire';
 
     // Broader maid_hire patterns — catch "cleaner", service roles, baby care, typos
-    if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help)\b/i.test(lower) &&
+    if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help|helper)\b/i.test(lower) &&
         /\b(need|want|hire|book|get|looking|find|require|send)\b/i.test(lower)) return 'maid_hire';
     if (/\b(maid|maids)\b/.test(lower) && /\b(hire|need|want|book|get|looking|find)\b/.test(lower)) return 'maid_hire';
     if (/(looking for|need|want|find)\s+(?:a\s+)?(?:someone|person|lady|woman|man|worker|help)\s+.{0,30}(cook|clean|take care|care for|baby|elderly|elder)/i.test(lower)) return 'maid_hire';
