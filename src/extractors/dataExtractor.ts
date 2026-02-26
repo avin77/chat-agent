@@ -177,7 +177,8 @@ export function extractFamilySize(text: string): string | null {
   const lower = text.toLowerCase();
 
   // Don't extract family size from salary-like strings (e.g., "15-20k", "Rs 20000")
-  if (/\d+\s*k|\d+\s*-\s*\d+\s*k|₹|rs\.?|salary|budget|pay|per\s*month|thousand|hazar|lakh/i.test(lower)) {
+  // Also block experience answers (e.g., "Yes, 2 years ago", "2 months experience")
+  if (/\d+\s*k|\d+\s*-\s*\d+\s*k|₹|rs\.?|salary|budget|pay|per\s*month|thousand|hazar|lakh|year|ago|experience|exp\b|months?\s*ago/i.test(lower)) {
     return null;
   }
 

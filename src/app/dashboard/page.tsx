@@ -138,9 +138,11 @@ export default function Dashboard() {
     const [activeTab, setActiveTab] = useState<'overview' | 'eval' | 'prompt_quality' | 'conversations' | 'llm_logs'>('overview');
     // LLM I/O state
     const [llmConversations, setLlmConversations] = useState<any[]>([]);
+    const [llmIntent, setLlmIntent] = useState<string>('all');
     const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
     const [llmLogs, setLlmLogs] = useState<any[]>([]);
     const [llmLogsLoading, setLlmLogsLoading] = useState(false);
+    const [llmListLoading, setLlmListLoading] = useState(false);
     const [expandedPrompts, setExpandedPrompts] = useState<Set<number>>(new Set());
 
     const fetchAll = useCallback(async () => {
@@ -172,12 +174,18 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [fetchAll]);
 
-    // Load conversation list when LLM I/O tab is activated
+    // Load conversation list when LLM I/O tab is activated, or when days/intent filter changes
     useEffect(() => {
-        if (activeTab === 'llm_logs' && llmConversations.length === 0) {
-            getConversationsWithLogCounts(50).then(setLlmConversations);
+        if (activeTab === 'llm_logs') {
+            setLlmListLoading(true);
+            setSelectedConvId(null);
+            setLlmLogs([]);
+            getConversationsWithLogCounts(50, days, llmIntent).then(data => {
+                setLlmConversations(data);
+                setLlmListLoading(false);
+            });
         }
-    }, [activeTab, llmConversations.length]);
+    }, [activeTab, days, llmIntent]);
 
     // Load LLM logs when a conversation is selected
     const loadConvLogs = useCallback(async (convId: string) => {
@@ -735,11 +743,32 @@ export default function Dashboard() {
                     <div className="flex gap-4" style={{ minHeight: '70vh' }}>
                         {/* Conversation List (left panel) */}
                         <div className="w-80 shrink-0 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
-                                <h3 className="text-xs font-semibold text-gray-600">Conversations ({llmConversations.length})</h3>
+                            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-semibold text-gray-600">
+                                        Conversations ({llmConversations.length}) · Last {days}d
+                                    </h3>
+                                    {llmListLoading && <span className="text-[10px] text-gray-400 animate-pulse">loading…</span>}
+                                </div>
+                                {/* Intent filter pills */}
+                                <div className="flex flex-wrap gap-1">
+                                    {(['all', 'maid_hire', 'complaint', 'general', 'helper_reg'] as const).map(intent => (
+                                        <button
+                                            key={intent}
+                                            onClick={() => setLlmIntent(intent)}
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition ${llmIntent === intent
+                                                ? 'bg-blue-600 text-white border-blue-600'
+                                                : 'bg-white text-gray-500 border-gray-300 hover:border-blue-400'}`}
+                                        >
+                                            {intent === 'all' ? 'All' : intent === 'maid_hire' ? 'Maid Hire' : intent === 'helper_reg' ? 'Helper Reg' : intent.charAt(0).toUpperCase() + intent.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <div className="overflow-y-auto flex-1">
-                                {llmConversations.length === 0 ? (
+                                {llmListLoading ? (
+                                    <p className="p-4 text-gray-400 text-sm text-center">Loading…</p>
+                                ) : llmConversations.length === 0 ? (
                                     <p className="p-4 text-gray-400 text-sm text-center">No conversations found.</p>
                                 ) : llmConversations.map((conv: any) => {
                                     const isSelected = selectedConvId === conv.conversation_id;
@@ -761,7 +790,11 @@ export default function Dashboard() {
                                                 </span>
                                                 <span className="text-[10px] text-gray-400">{conv.log_count} turns</span>
                                             </div>
-                                            <div className="font-mono text-[10px] text-gray-500 mt-1 truncate">{conv.conversation_id}</div>
+                                            <div className="font-mono text-[10px] text-gray-500 mt-1 truncate" title={conv.conversation_id}>
+                                                {conv.conversation_id.length > 20
+                                                    ? '…' + conv.conversation_id.slice(-18)
+                                                    : conv.conversation_id}
+                                            </div>
                                             <div className="text-[10px] text-gray-400 mt-0.5">
                                                 {conv.current_state || 'START'} · {conv.last_activity ? new Date(conv.last_activity).toLocaleDateString() : ''}
                                             </div>

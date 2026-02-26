@@ -21,6 +21,7 @@ const BOT_URL = process.argv.find(a => a.startsWith('--url='))?.split('=')[1]
     || 'http://localhost:3000';
 const VERBOSE = process.argv.includes('--verbose');
 const JSON_OUTPUT = process.argv.includes('--json');
+const RUN_ID = Date.now(); // Unique per eval run — prevents session reuse across runs
 
 const DATA_DIR = path.join(__dirname, '../data');
 const GOLDEN_PATH = path.join(DATA_DIR, 'state-golden-dataset.json');
@@ -354,7 +355,7 @@ async function main() {
             let latencyMs = 0;
 
             try {
-                const result = await callBot([...chatHistory], `eval_${conv.id}`);
+                const result = await callBot([...chatHistory], `eval_${conv.id}_${RUN_ID}`);
                 botReply = result.text;
                 latencyMs = result.latencyMs;
                 chatHistory.push({ role: 'assistant', content: botReply });

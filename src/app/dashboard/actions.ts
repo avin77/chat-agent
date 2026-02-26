@@ -315,13 +315,22 @@ export async function getConversationLLMLogs(conversationId: string) {
 }
 
 // ─── Recent Conversations with LLM log counts ──────────────────────────────
-export async function getConversationsWithLogCounts(limit: number = 50) {
-    // Get recent conversations
-    const { data: sessions, error: sessError } = await supabase
+export async function getConversationsWithLogCounts(limit: number = 50, days: number = 7, intent?: string) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    // Get recent conversations with date + optional intent filter
+    let query = supabase
         .from('conversation_sessions')
         .select('conversation_id, detected_intent, current_state, collected_data, last_activity')
+        .gte('last_activity', since)
         .order('last_activity', { ascending: false })
         .limit(limit);
+
+    if (intent && intent !== 'all') {
+        query = query.eq('detected_intent', intent);
+    }
+
+    const { data: sessions, error: sessError } = await query;
 
     if (sessError || !sessions) return [];
 
