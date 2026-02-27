@@ -11,7 +11,7 @@
 
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
-| 1 | LLM Extraction Integration | Wire LLM extractor into chat route with regex fallback | AGEX-01–04 | Pending |
+| 1 | LLM Extraction Integration | Wire LLM extractor into chat route with regex fallback | AGEX-01–04 | Planned |
 | 2 | Agentic Tool-Calling Flow | Replace state machine with LLM tool-calling behind feature flag | FLOW-01–06 | Pending |
 | 3 | Dashboard & Cost Tracking | Complete Product Health tab + token cost logging | COST-01–03, DASH-01–05 | Pending |
 | 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
@@ -23,6 +23,12 @@
 **Goal:** Wire `llmExtractor.ts` into the chat route so the LLM handles slot extraction first, with regex as a reliable fallback. Eval score must remain ≥95%.
 
 **Requirements:** AGEX-01, AGEX-02, AGEX-03, AGEX-04
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Fix llmExtractor bug + add ExtractionMeta type and conflict resolution functions + extend llm-logger
+- [ ] 01-02-PLAN.md — Supabase migration + wire LLM extraction into route.ts + eval verification
 
 **Files:**
 - `src/app/api/chat/route.ts` — Replace `extractAllSlots()` call with `extractAllSlotsWithLLM()`, add try/catch for regex fallback
@@ -109,4 +115,4 @@
 
 ---
 *Roadmap created: 2026-02-27*
-*Next: Phase 1 — LLM Extraction Integration*
+*Last updated: 2026-02-27 — Phase 1 planned (2 plans, 2 waves)*
