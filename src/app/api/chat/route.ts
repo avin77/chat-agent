@@ -14,6 +14,7 @@ import { MaidHiringFlow } from '@/flows/MaidHiringFlow';
 import {
     extractAllSlots, detectFAQ, detectWrongCity, detectGibberish, detectBacktrack,
 } from '@/extractors/dataExtractor';
+import { extractAllSlotsWithLLM, mergeWithConflictResolution, buildSourceMap, ExtractionMeta } from '@/extractors/llmExtractor';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -117,11 +118,21 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
             const newIntent = detectIntent(latestMessage);
             const currentIntent = existingSession.detected_intent;
 
-            // Bug fix: Reset completed OR stuck (attempts >= 3) flows so users can re-engage
+            // Reset COMPLETE, stuck (attempts >= 3), or stale partial sessions
+            const SESSION_RESUME_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hours
+            const lastActivity = new Date(existingSession.last_activity || existingSession.created_at).getTime();
+            const isStalePartial = existingSession.detected_intent === 'maid_hire' &&
+                existingSession.current_state !== 'START' &&
+                existingSession.current_state !== 'COMPLETE' &&
+                Date.now() - lastActivity > SESSION_RESUME_TIMEOUT_MS;
             const isStuck = existingSession.current_state === 'COMPLETE' ||
-                (existingSession.detected_intent === 'maid_hire' && (existingSession.attempts ?? 0) >= 3);
+                (existingSession.detected_intent === 'maid_hire' && (existingSession.attempts ?? 0) >= 3) ||
+                isStalePartial;
             if (isStuck) {
-                console.log(`[Session] Resetting ${existingSession.current_state === 'COMPLETE' ? 'COMPLETE' : 'stuck'} session (attempts=${existingSession.attempts}) for ${conversationId}`);
+                const reason = existingSession.current_state === 'COMPLETE' ? 'COMPLETE'
+                    : (existingSession.attempts ?? 0) >= 3 ? `stuck(attempts=${existingSession.attempts})`
+                    : `stale(${Math.round((Date.now() - lastActivity) / 3600000)}h old)`;
+                console.log(`[Session] Resetting ${reason} session for ${conversationId}`);
                 await supabase
                     .from('conversation_sessions')
                     .update({
@@ -226,14 +237,50 @@ async function handleMaidHireStateMachine(
     latestMessage: string,
     coreMessages: any[],
     dbSession: any,
-): Promise<{ displayText: string; shouldEscalate: boolean; collectedData: Record<string, any>; tookMs: number; systemPrompt: string; rawResponse: string }> {
+): Promise<{ displayText: string; shouldEscalate: boolean; collectedData: Record<string, any>; tookMs: number; systemPrompt: string; rawResponse: string; extractionMeta: ExtractionMeta }> {
     const startTime = Date.now();
 
     // 1. Load session state
     const session = loadStateMachineSession(conversationId, dbSession);
 
-    // 2. Extract all possible slots from user message
-    const extractedSlots = extractAllSlots(latestMessage);
+    // 2. Extract all possible slots from user message — LLM first, regex fallback
+    const extractionStart = Date.now();
+    let extractedSlots: import('@/extractors/dataExtractor').ExtractedSlots;
+    let extractionMeta: ExtractionMeta;
+
+    try {
+        // Record rate limit usage for the extraction LLM call (second Gemini call per turn)
+        geminiRateLimiter.recordRequest();
+
+        // 10-second hard timeout — free Gemini 27B has 30 RPM limit
+        const llmPromise = extractAllSlotsWithLLM(latestMessage);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('LLM extraction timeout after 10s')), 10_000)
+        );
+
+        const llmSlots = await Promise.race([llmPromise, timeoutPromise]);
+        const regexSlots = extractAllSlots(latestMessage);
+        const latencyMs = Date.now() - extractionStart;
+
+        // Apply conflict resolution: phone→regex wins, all other fields→LLM wins on conflict
+        extractedSlots = mergeWithConflictResolution(llmSlots, regexSlots);
+
+        extractionMeta = {
+            sources: buildSourceMap(extractedSlots, llmSlots),
+            latency_ms: latencyMs,
+            llm_raw: llmSlots,
+            fallback_triggered: false,
+        };
+    } catch (err) {
+        console.error('[LLM Extraction] Fallback triggered:', (err as Error).message);
+        extractedSlots = extractAllSlots(latestMessage);
+        extractionMeta = {
+            sources: {},
+            latency_ms: Date.now() - extractionStart,
+            llm_raw: null,
+            fallback_triggered: true,
+        };
+    }
 
     // 3. Detect special conditions
     const faqDetected = detectFAQ(latestMessage);
@@ -263,6 +310,7 @@ async function handleMaidHireStateMachine(
             tookMs: Date.now() - startTime,
             systemPrompt: 'FORCE_ESCALATE',
             rawResponse: forceText,
+            extractionMeta,
         };
     }
 
@@ -375,6 +423,7 @@ async function handleMaidHireStateMachine(
         tookMs: Date.now() - startTime,
         systemPrompt,
         rawResponse: llmText,
+        extractionMeta,
     };
 }
 
@@ -430,7 +479,7 @@ export async function POST(req: Request) {
         // ═══════════════════════════════════════════════════════════════════════
         if (intent === 'maid_hire') {
             try {
-                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse } =
+                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta } =
                     await handleMaidHireStateMachine(conversationId, latestMessage, coreMessages, dbSession);
 
                 // Log to Supabase
@@ -444,6 +493,7 @@ export async function POST(req: Request) {
                         rawResponse,
                         cleanedResponse: displayText,
                         tookMs,
+                        extractionMeta,   // flows to extraction_meta column in llm_logs
                     });
                 } catch (logError) {
                     console.error('Logging failed:', logError);
