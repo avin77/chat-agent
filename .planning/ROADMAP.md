@@ -13,7 +13,7 @@
 |---|-------|------|--------------|--------|
 | 1 | LLM Extraction Integration | Complete    | 2026-02-27 | COMPLETE |
 | 2 | Agentic Tool-Calling Flow | Replace state machine with LLM tool-calling behind feature flag | FLOW-01–06 | Pending |
-| 3 | Dashboard & Cost Tracking | Complete Product Health tab + token cost logging | COST-01–03, DASH-01–05 | Pending |
+| 3 | Dashboard & Cost Tracking | Complete Product Health tab + token cost logging + shadow mode + conversation robustness + alerts | COST-01–03, DASH-01–05, SHADOW-01–04, CONV-01–04, ALERT-01–04 | Pending |
 | 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
 
 ---
@@ -65,23 +65,38 @@ Plans:
 
 ## Phase 3: Dashboard & Cost Tracking
 
-**Goal:** Complete the Product Health dashboard tab with lead funnel metrics, slot fill rates, and token cost tracking. Add token logging to llm_logs.
+**Goal:** Complete the Product Health dashboard tab with lead funnel metrics, slot fill rates, token cost tracking, shadow mode alignment infrastructure, conversation robustness, and alert thresholds.
 
-**Requirements:** COST-01, COST-02, COST-03, DASH-01, DASH-02, DASH-03, DASH-04, DASH-05
+**Requirements:** COST-01, COST-02, COST-03, DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, SHADOW-01, SHADOW-02, SHADOW-03, SHADOW-04, CONV-01, CONV-02, CONV-03, CONV-04, ALERT-01, ALERT-02, ALERT-03, ALERT-04
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Supabase migration: 4 token columns on llm_logs + shadow_logs table + system_alerts table
+- [ ] 03-02-PLAN.md — Extend llm-logger with token params + capture token usage from generateText() in route.ts
+- [ ] 03-03-PLAN.md — Intent classifier (intentClassifier.ts) + shadow handler (shadowHandler.ts) + confusion counter + wire into route.ts
+- [ ] 03-04-PLAN.md — Dashboard Product Health tab UI + new server actions (token cost, shadow metrics, system alerts)
+- [ ] 03-05-PLAN.md — Human verify: run Supabase migration + end-to-end validation
 
 **Files:**
+- `supabase-migration-phase3.sql` — New: all Phase 3 schema changes (idempotent)
 - `src/lib/llm-logger.ts` — Add promptTokens, completionTokens, totalTokens, estimatedCostUsd params
-- `src/app/api/chat/route.ts` — Capture `usage` from generateText(), pass to logger
-- `src/app/dashboard/actions.ts` — Complete `getProductHealthMetrics()` with fieldStats, session duration
-- `src/app/dashboard/page.tsx` — Add Product Health tab content (currently tab exists but empty)
-- Supabase migration — Add 4 columns to llm_logs: prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd
+- `src/app/api/chat/route.ts` — Capture usage from generateText(), integrate classifier, shadow fire-and-forget
+- `src/app/dashboard/actions.ts` — Extend getProductHealthMetrics() + add getTokenCostMetrics(), getShadowMetrics(), getSystemAlerts(), checkAndWriteAlerts()
+- `src/app/dashboard/page.tsx` — Add Product Health tab content (KPI cards, slot fill rates, token cost, shadow panel, alerts)
+- `src/extractors/intentClassifier.ts` — New: lightweight LLM message classification
+- `src/lib/shadowHandler.ts` — New: async shadow comparison against production decisions
+- `src/flows/BaseFlow.ts` — Add __confusion comment (no structural change needed)
 
 **Success Criteria:**
 1. `/dashboard` → Product Health tab shows data (not empty)
 2. Lead completion rate, lead quality score, effective escalation rate displayed with real numbers
-3. Slot fill rate shows salary_range as most-skipped field (based on existing data)
+3. Slot fill rate shows all 7 fields with filled/skipped/total counts
 4. After one chat conversation, a new llm_logs row has non-null token columns
-5. Session duration card shows avg session time for maid_hire conversations
+5. Session duration card shows avg + p50 session time for maid_hire conversations
+6. Shadow panel shows alignment % (or "no data yet" if no conversations run)
+7. After 2 consecutive off-topic messages, bot offers to restart or connect to support
+8. eval score remains ≥95% after Phase 3 changes
 
 ---
 
@@ -115,4 +130,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-02-27*
-*Last updated: 2026-02-27 — Phase 1 COMPLETE. Eval: 99% PRODUCTION READY (39 convs, 168 turns).*
+*Last updated: 2026-02-27 — Phase 3 planned (5 plans). Phase 1 COMPLETE. Eval: 99% PRODUCTION READY (39 convs, 168 turns).*
