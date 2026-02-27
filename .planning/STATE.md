@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Capture quality domestic help leads while maintaining natural, helpful conversation
-**Current focus:** Phase 1 — LLM Extraction Integration
+**Current focus:** Phase 3 — Dashboard & Cost Tracking (Phase 2 deferred)
 
 ## Current Status
 
@@ -29,6 +29,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Session Log
 
 - 2026-02-27: Project initialized. Codebase mapped. Requirements defined. Roadmap created (4 phases).
+- 2026-02-27: Phase 1 context gathered (CONTEXT.md committed). Phase 2 deferred by user. Phase 3 discussion next.
 
 ---
 *Last updated: 2026-02-27*
