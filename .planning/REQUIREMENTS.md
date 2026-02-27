@@ -7,10 +7,10 @@
 
 ### Agentic Extraction
 
-- [ ] **AGEX-01**: `extractAllSlotsWithLLM()` from `llmExtractor.ts` called first in chat route before regex extractors
+- [x] **AGEX-01**: `extractAllSlotsWithLLM()` from `llmExtractor.ts` called first in chat route before regex extractors
 - [x] **AGEX-02**: Regex extractors run as fallback for any field where LLM returned null
 - [x] **AGEX-03**: LLM extraction API errors (timeout, quota) fall back to regex gracefully — no user-visible failure
-- [ ] **AGEX-04**: Eval score ≥95% after integration (run `npm run eval:state` to verify)
+- [x] **AGEX-04**: Eval score ≥95% after integration (run `npm run eval:state` to verify) — achieved 99%
 
 ### Agentic Flow
 
