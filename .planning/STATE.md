@@ -14,7 +14,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 | Phase | Status |
 |-------|--------|
-| 1 — LLM Extraction Integration | Pending |
+| 1 — LLM Extraction Integration | In Progress (Plan 1/2 complete) |
 | 2 — Agentic Tool-Calling Flow | Pending |
 | 3 — Dashboard & Cost Tracking | Pending |
 | 4 — Data Flywheel Scripts | Pending |
@@ -26,6 +26,13 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 10 new eval edge cases (c32–c41) in `data/state-golden-dataset.json`
 - LLM extractor infrastructure: `src/extractors/llmExtractor.ts`
 
+## Decisions
+
+- 2026-02-27 [01-01]: phone→regex wins in mergeWithConflictResolution (deterministic digit extraction more reliable than LLM)
+- 2026-02-27 [01-01]: LLM wins for location/service_type/schedule/salary_range/family_size/has_experience fields
+- 2026-02-27 [01-01]: extractionMeta optional in logLLMInteraction — all existing callers unchanged
+- 2026-02-27 [01-01]: extraction_meta Supabase insert safe before migration — column added in plan 02
+
 ## Session Log
 
 - 2026-02-27: Project initialized. Codebase mapped. Requirements defined. Roadmap created (4 phases).
@@ -33,7 +40,8 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - Phase 3 expanded: Token logging + Dashboard + Shadow Mode Alignment + Conversation Robustness + Alert Thresholds.
 - Phase 4 (Flywheel) deferred to future milestone per user.
 - RESUME: /gsd:list-phase-assumptions 3 was invoked but not completed (context exhausted mid-read).
-- NEXT: /gsd:plan-phase 3 --prd .planning/phases/03-dashboard-cost-tracking/03-PRD.md
+- 2026-02-27: Completed Phase 1 Plan 01 — phone bug fixed, ExtractionMeta type + conflict-resolution merge functions added, llm-logger extended. Commits: 63fef22, b43d17e.
+- NEXT: Execute Phase 1 Plan 02 — wire mergeWithConflictResolution into route.ts maid_hire path, run Supabase migration for extraction_meta column.
 
 ---
 *Last updated: 2026-02-27*

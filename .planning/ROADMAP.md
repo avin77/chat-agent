@@ -11,7 +11,7 @@
 
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
-| 1 | LLM Extraction Integration | Wire LLM extractor into chat route with regex fallback | AGEX-01–04 | Planned |
+| 1 | 1/2 | In Progress|  | Planned |
 | 2 | Agentic Tool-Calling Flow | Replace state machine with LLM tool-calling behind feature flag | FLOW-01–06 | Pending |
 | 3 | Dashboard & Cost Tracking | Complete Product Health tab + token cost logging | COST-01–03, DASH-01–05 | Pending |
 | 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
@@ -24,7 +24,7 @@
 
 **Requirements:** AGEX-01, AGEX-02, AGEX-03, AGEX-04
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 01-01-PLAN.md — Fix llmExtractor bug + add ExtractionMeta type and conflict resolution functions + extend llm-logger
