@@ -36,16 +36,115 @@ COST-01, COST-02, COST-03, DASH-01, DASH-02, DASH-03, DASH-04, DASH-05 + new: SH
 
 ## Shadow Mode Alignment Testing
 
-**Purpose:** Validate how a future agentic handler would behave WITHOUT affecting production.
+**Purpose:** Before trusting the agentic handler with real users, run it silently alongside production to measure how often it would have made the same decision as the deterministic system. Only flip `USE_AGENTIC=true` once it proves ≥95% agreement for 7 straight days.
 
-**How it works:**
-- Deterministic state machine controls production flow (unchanged)
-- In parallel, experimental agentic handler runs in shadow mode
-- Shadow agent PROPOSES (but does NOT execute):
-  - Next state
-  - Tool calls
-  - Slot updates
-- System logs shadow decisions only
+---
+
+### Mental Model
+
+Think of it like a student shadowing a doctor.
+
+The doctor (deterministic state machine) makes all real decisions. The student (agentic handler) watches each case, writes down what they *would* have done, and hands it to the supervisor. Nobody acts on the student's notes yet. After enough cases, you check: does the student's judgment match the doctor's? If yes — the student is ready to treat patients.
+
+---
+
+### Exact Execution Flow Per Turn
+
+```
+User sends message
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  PRODUCTION PATH (always runs, controls the user)   │
+│                                                     │
+│  1. extractAllSlotsWithLLM()  ← Phase 1             │
+│  2. handleMaidHireStateMachine()                    │
+│  3. guardrails.ts                                   │
+│  4. Return response to user                         │
+└─────────────────────────────────────────────────────┘
+        │
+        │  after production response is sent
+        │  (does NOT block the user response)
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  SHADOW PATH (runs async, user never sees this)     │
+│                                                     │
+│  1. Same user message + same session state          │
+│  2. shadowAgenticHandler() — calls Gemini           │
+│     → proposes: next_state, tool_calls, slots       │
+│  3. Compare shadow proposal vs what production did  │
+│  4. Log to shadow_logs table:                       │
+│     { agreed: true/false, prod_decision,            │
+│       shadow_proposal, conversation_id, turn_ms }   │
+└─────────────────────────────────────────────────────┘
+```
+
+**Key constraint:** Shadow path runs AFTER the response is already sent to the user. Zero latency impact on production.
+
+---
+
+### What Gets Compared
+
+Each turn produces one comparison row:
+
+| What production decided | What shadow proposed | Agreement? |
+|------------------------|---------------------|-----------|
+| Move to ASK_SERVICE | Move to ASK_SERVICE | ✓ |
+| Extract location = "Koramangala" | Extract location = "Koramangala" | ✓ |
+| Stay at ASK_PHONE (invalid input) | Call collect_phone tool | ✓ |
+| Escalate (3 attempts reached) | Call escalate_lead tool | ✓ |
+| Stay at ASK_LOCATION | Move to ASK_SERVICE (wrong) | ✗ logged |
+
+---
+
+### New Supabase Table: `shadow_logs`
+
+```sql
+CREATE TABLE shadow_logs (
+  id              uuid DEFAULT gen_random_uuid(),
+  conversation_id text NOT NULL,
+  turn_number     int,
+  current_state   text,           -- state machine was in
+  user_message    text,
+  prod_next_state text,           -- what deterministic did
+  prod_slots      jsonb,          -- slots production extracted
+  shadow_proposal jsonb,          -- { next_state, tool_calls, slots }
+  agreed          boolean,        -- prod_next_state == shadow_proposal.next_state
+  shadow_latency_ms int,
+  created_at      timestamptz DEFAULT now()
+);
+```
+
+---
+
+### Dashboard: Shadow Alignment Panel
+
+New section in Product Health tab:
+
+| Metric | What it shows |
+|--------|---------------|
+| **Overall agreement %** | Agreed turns / total turns (last 7 days) |
+| **State transition agreement %** | How often shadow picks same next state |
+| **Slot extraction agreement %** | How often shadow extracts same field values |
+| **Escalation agreement %** | How often shadow agrees on escalate/don't escalate |
+| **7-day trend** | Is alignment improving, stable, or degrading? |
+| **Agentic readiness** | Green ✓ / Red ✗ — is ≥95% met for 7 consecutive days? |
+
+---
+
+### Gate Before Enabling USE_AGENTIC=true
+
+Only flip the feature flag when ALL conditions are true:
+
+1. Overall agreement ≥ 95% (measured over last 7 days)
+2. No single day below 90% in those 7 days
+3. No cost anomaly (shadow avg tokens < 2× production avg)
+4. No repeated invalid tool proposals (same wrong tool called > 3× in one day)
+5. Manual review of disagreement log (spot-check 10 disagreed turns)
+
+This is visible as a checklist in the dashboard Shadow Alignment panel.
+
+---
 
 **Alignment metrics to track:**
 - State transition agreement %
