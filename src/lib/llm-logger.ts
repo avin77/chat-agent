@@ -1,5 +1,6 @@
 // src/lib/llm-logger.ts
 import { createClient } from '@supabase/supabase-js';
+import type { ExtractionMeta } from '../extractors/llmExtractor';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,6 +16,7 @@ export async function logLLMInteraction(data: {
     rawResponse: string;
     cleanedResponse: string;
     tookMs: number;
+    extractionMeta?: ExtractionMeta;
 }) {
     try {
         await supabase.from('llm_logs').insert({
@@ -26,6 +28,7 @@ export async function logLLMInteraction(data: {
             raw_llm_response: data.rawResponse,
             after_guardrails: data.cleanedResponse,
             took_ms: data.tookMs,
+            extraction_meta: data.extractionMeta ?? null,
         });
 
         console.log('✅ LLM interaction logged to Supabase');
