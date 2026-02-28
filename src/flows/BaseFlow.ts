@@ -28,6 +28,12 @@ export enum FailureType {
 }
 
 // ─── Collected Data ──────────────────────────────────────────────────────────
+// NOTE: __confusion is a reserved internal key stored in collected_data.
+// Value is a string number (e.g. "0", "1", "2") representing consecutive
+// off-topic messages in the current state. Prefixed with __ to distinguish
+// from lead fields. Reset to "0" on successful slot collection.
+// MaidHiringFlow.ts does not need to know about this key — it is managed
+// in route.ts and stored via the existing index signature [key: string]: string | undefined.
 export interface CollectedData {
   name?: string;
   phone?: string;
