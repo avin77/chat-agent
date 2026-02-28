@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-02-28T06:25:47Z"
+last_updated: "2026-02-28T06:31:19Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # EzyBot — Project State
@@ -22,14 +22,14 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Status
 
-**Phase:** 3 of 4 (Phase 3, Plan 1 of 5 complete)
+**Phase:** 3 of 4 (Phase 3, Plan 3 of 5 complete)
 **Milestone:** v2.0 Agentic Architecture
 
 | Phase | Status |
 |-------|--------|
 | 1 — LLM Extraction Integration | COMPLETE (2/2 plans done) |
 | 2 — Agentic Tool-Calling Flow | Pending |
-| 3 — Dashboard & Cost Tracking | In Progress (1/5 plans done) |
+| 3 — Dashboard & Cost Tracking | In Progress (3/5 plans done) |
 | 4 — Data Flywheel Scripts | Pending |
 
 ## Already Shipped (This Cycle)
@@ -40,6 +40,8 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - LLM extractor infrastructure: `src/extractors/llmExtractor.ts`
 - Phase 1 complete: LLM-first extraction wired into maid_hire path, extractionMeta logged to Supabase (eval: 99% PRODUCTION READY)
 - Phase 3 Plan 01: `supabase-migration-phase3.sql` — token columns on llm_logs, shadow_logs table, system_alerts table (run in Supabase SQL Editor)
+- Phase 3 Plan 02: Token capture wired — `logLLMInteraction()` extended with 4 token params; `generateText()` usage captured at both call sites in route.ts
+- Phase 3 Plan 03: `intentClassifier.ts` + `shadowHandler.ts` — mid-flow intent classification, confusion tracking, async shadow comparison. Commits: 7dd3435, 087dbeb.
 
 ## Decisions
 
@@ -53,6 +55,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-27 [01-02]: buildSourceMap takes 2 params (mergedSlots, llmSlots) — plan spec had 3 params; used actual implementation signature
 - 2026-02-27 [01-02]: geminiRateLimiter.recordRequest() called twice per maid_hire turn (main LLM + extraction LLM) — accurate tracking
 - 2026-02-27 [01-02]: Promise.race 10s timeout on LLM extraction — fallback_triggered:true sets sentinel values on any error/timeout
+- [Phase 03-02]: AI SDK v6 usage property names: inputTokens/outputTokens — NOT v3 names promptTokens/completionTokens
+- [Phase 03-02]: estimatedCostUsd always 0 (Gemma 3 27B is free); PER_1K_TOKENS=0 placeholder ready for future pricing
+- 2026-02-28 [03-03]: __confusion stored in CollectedData via existing index signature — no DB migration, no MaidHiringFlow.ts change needed
+- 2026-02-28 [03-03]: Shadow handler fires before return with .catch() — fire-and-forget pattern protecting production latency
+- 2026-02-28 [03-03]: Classifier skips START and COMPLETE states — only runs mid-flow (ASK_PHONE through ASK_EXPERIENCE)
 
 ## Session Log
 
@@ -65,6 +72,8 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-27: Completed Phase 1 Plan 02 — LLM-first extraction wired into route.ts maid_hire path, extractionMeta flows to llm_logs. Eval: 99% PRODUCTION READY (39 convs, 168 turns). Commit: b1f77e7.
 - PHASE 1 COMPLETE. Next: Phase 2 (Agentic Tool-Calling) or Phase 3 (Dashboard & Cost Tracking) — user to decide.
 - 2026-02-28: Completed Phase 3 Plan 01 — supabase-migration-phase3.sql created. Adds token columns to llm_logs, creates shadow_logs and system_alerts tables. Commit: 48e512d.
+- 2026-02-28: Completed Phase 3 Plan 02 — Token logging wired. logLLMInteraction() extended with token params; token capture from all generateText() calls in route.ts. Commits: 80249f9, 497d2ed, b62cae7.
+- 2026-02-28: Completed Phase 3 Plan 03 — intentClassifier.ts + shadowHandler.ts created. Classifier integrated in route.ts with confusion tracking. Shadow fires async. Commits: 7dd3435, 087dbeb.
 
 ---
 *Last updated: 2026-02-28*

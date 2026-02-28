@@ -13,7 +13,7 @@
 |---|-------|------|--------------|--------|
 | 1 | LLM Extraction Integration | Complete    | 2026-02-27 | COMPLETE |
 | 2 | Agentic Tool-Calling Flow | Replace state machine with LLM tool-calling behind feature flag | FLOW-01–06 | Pending |
-| 3 | 1/5 | In Progress|  | Pending |
+| 3 | 3/5 | In Progress|  | Pending |
 | 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
 
 ---
@@ -69,7 +69,7 @@ Plans:
 
 **Requirements:** COST-01, COST-02, COST-03, DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, SHADOW-01, SHADOW-02, SHADOW-03, SHADOW-04, CONV-01, CONV-02, CONV-03, CONV-04, ALERT-01, ALERT-02, ALERT-03, ALERT-04
 
-**Plans:** 1/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — Supabase migration: 4 token columns on llm_logs + shadow_logs table + system_alerts table
