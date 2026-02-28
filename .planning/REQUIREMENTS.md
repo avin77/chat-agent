@@ -23,9 +23,9 @@
 
 ### Token Cost Tracking
 
-- [ ] **COST-01**: `generateText()` usage object captured — promptTokens, completionTokens, totalTokens stored
+- [x] **COST-01**: `generateText()` usage object captured — promptTokens, completionTokens, totalTokens stored
 - [x] **COST-02**: `llm_logs` table has new columns: `prompt_tokens` (int), `completion_tokens` (int), `total_tokens` (int), `estimated_cost_usd` (float8)
-- [ ] **COST-03**: `logLLMInteraction()` in `src/lib/llm-logger.ts` accepts and stores token fields
+- [x] **COST-03**: `logLLMInteraction()` in `src/lib/llm-logger.ts` accepts and stores token fields
 
 ### Product Health Dashboard
 
@@ -74,9 +74,9 @@
 | FLOW-04 | Phase 2 | Pending |
 | FLOW-05 | Phase 2 | Pending |
 | FLOW-06 | Phase 2 | Pending |
-| COST-01 | Phase 3 | Pending |
+| COST-01 | Phase 3 | Complete |
 | COST-02 | Phase 3 | Complete |
-| COST-03 | Phase 3 | Pending |
+| COST-03 | Phase 3 | Complete |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |
 | DASH-03 | Phase 3 | Pending |
