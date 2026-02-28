@@ -15,6 +15,8 @@ import {
     extractAllSlots, detectFAQ, detectWrongCity, detectGibberish, detectBacktrack,
 } from '@/extractors/dataExtractor';
 import { extractAllSlotsWithLLM, mergeWithConflictResolution, buildSourceMap, ExtractionMeta } from '@/extractors/llmExtractor';
+import { classifyMessage } from '@/extractors/intentClassifier';
+import { runShadowHandler } from '@/lib/shadowHandler';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -237,7 +239,7 @@ async function handleMaidHireStateMachine(
     latestMessage: string,
     coreMessages: any[],
     dbSession: any,
-): Promise<{ displayText: string; shouldEscalate: boolean; collectedData: Record<string, any>; tookMs: number; systemPrompt: string; rawResponse: string; extractionMeta: ExtractionMeta; promptTokens: number; completionTokens: number; totalTokens: number; estimatedCostUsd: number }> {
+): Promise<{ displayText: string; shouldEscalate: boolean; collectedData: Record<string, any>; tookMs: number; systemPrompt: string; rawResponse: string; extractionMeta: ExtractionMeta; promptTokens: number; completionTokens: number; totalTokens: number; estimatedCostUsd: number; newState: string }> {
     const startTime = Date.now();
 
     // 1. Load session state
@@ -288,6 +290,28 @@ async function handleMaidHireStateMachine(
     const isGibberish = detectGibberish(latestMessage);
     const backtrackSlot = detectBacktrack(latestMessage);
 
+    // 3.5 — Intent classification (for confusion tracking)
+    // Skip at START (haven't asked anything yet) and COMPLETE (flow done)
+    let classification = 'unknown';
+    if (session.currentState !== FlowState.START && session.currentState !== FlowState.COMPLETE) {
+        try {
+            geminiRateLimiter.recordRequest(); // Track this Gemini call
+            classification = await classifyMessage(latestMessage, session.currentState);
+        } catch {
+            classification = 'unknown'; // classifyMessage already catches internally, extra safety
+        }
+    }
+
+    // Update confusion counter in collectedData (stored as __confusion key)
+    const isIrrelevant = ['off_topic', 'new_intent', 'abusive'].includes(classification);
+    const currentConfusion = parseInt((session.collectedData as any).__confusion || '0', 10);
+    const newConfusion = isIrrelevant ? currentConfusion + 1 : 0;
+    // Store updated confusion count back to session so processMessage has it
+    (session.collectedData as any).__confusion = String(newConfusion);
+
+    // After 2+ consecutive irrelevant messages, we'll override the LLM instruction after processMessage
+    const triggerConfusionResponse = newConfusion >= 2;
+
     // 4. Run state machine
     const result = maidHiringFlow.processMessage(
         session,
@@ -298,6 +322,14 @@ async function handleMaidHireStateMachine(
         isGibberish,
         backtrackSlot,
     );
+
+    // 4.5 — Override instruction if confusion threshold reached
+    if (triggerConfusionResponse) {
+        result.llmInstruction = `The user has given ${newConfusion} off-topic or irrelevant responses in a row for ${session.currentState}. Gently say: "It looks like you might need a different kind of help. Would you like to start over with a new request, or shall I connect you with our support team?" Do NOT re-ask the current question.`;
+        // Reset confusion count after offering restart
+        (session.collectedData as any).__confusion = '0';
+        result.collectedData = { ...result.collectedData, __confusion: '0' };
+    }
 
     // 5. Check force escalate (too many attempts)
     if (maidHiringFlow.shouldForceEscalate(result.attempts)) {
@@ -315,6 +347,7 @@ async function handleMaidHireStateMachine(
             completionTokens: 0,
             totalTokens: 0,
             estimatedCostUsd: 0,
+            newState: result.newState,
         };
     }
 
@@ -442,6 +475,7 @@ async function handleMaidHireStateMachine(
         completionTokens,
         totalTokens,
         estimatedCostUsd,
+        newState: result.newState,
     };
 }
 
@@ -497,7 +531,7 @@ export async function POST(req: Request) {
         // ═══════════════════════════════════════════════════════════════════════
         if (intent === 'maid_hire') {
             try {
-                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd } =
+                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd, newState } =
                     await handleMaidHireStateMachine(conversationId, latestMessage, coreMessages, dbSession);
 
                 // Log to Supabase
@@ -592,7 +626,21 @@ export async function POST(req: Request) {
                         writer.write({ type: 'text-end', id: textId });
                     },
                 });
-                return createUIMessageStreamResponse({ stream: uiStream });
+                const response = createUIMessageStreamResponse({ stream: uiStream });
+
+                // Fire shadow handler async (fire and forget — zero latency impact)
+                // Pass pre-computed state data to avoid race condition from DB re-read
+                runShadowHandler(
+                    conversationId,
+                    (dbSession?.attempts ?? 0) + 1,
+                    latestMessage,
+                    dbSession?.current_state ?? 'START',   // state BEFORE this turn
+                    dbSession?.collected_data ?? {},        // slots BEFORE this turn
+                    newState,                               // prod decision: next state
+                    collectedData,                          // prod decision: slots after
+                ).catch(err => console.error('[Shadow] Failed:', (err as Error).message));
+
+                return response;
             } catch (smError: any) {
                 console.error('[State Machine Error] Falling back to LLM-only:', smError);
                 // Fall through to standard LLM flow below
