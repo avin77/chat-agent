@@ -17,6 +17,11 @@ export async function logLLMInteraction(data: {
     cleanedResponse: string;
     tookMs: number;
     extractionMeta?: ExtractionMeta;
+    // Token usage — optional, null if not captured (e.g. old calls, non-LLM paths)
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+    estimatedCostUsd?: number;
 }) {
     try {
         await supabase.from('llm_logs').insert({
@@ -29,6 +34,10 @@ export async function logLLMInteraction(data: {
             after_guardrails: data.cleanedResponse,
             took_ms: data.tookMs,
             extraction_meta: data.extractionMeta ?? null,
+            prompt_tokens: data.promptTokens ?? null,
+            completion_tokens: data.completionTokens ?? null,
+            total_tokens: data.totalTokens ?? null,
+            estimated_cost_usd: data.estimatedCostUsd ?? null,
         });
 
         console.log('✅ LLM interaction logged to Supabase');
