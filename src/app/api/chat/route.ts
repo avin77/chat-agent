@@ -237,7 +237,7 @@ async function handleMaidHireStateMachine(
     latestMessage: string,
     coreMessages: any[],
     dbSession: any,
-): Promise<{ displayText: string; shouldEscalate: boolean; collectedData: Record<string, any>; tookMs: number; systemPrompt: string; rawResponse: string; extractionMeta: ExtractionMeta }> {
+): Promise<{ displayText: string; shouldEscalate: boolean; collectedData: Record<string, any>; tookMs: number; systemPrompt: string; rawResponse: string; extractionMeta: ExtractionMeta; promptTokens: number; completionTokens: number; totalTokens: number; estimatedCostUsd: number }> {
     const startTime = Date.now();
 
     // 1. Load session state
@@ -311,6 +311,10 @@ async function handleMaidHireStateMachine(
             systemPrompt: 'FORCE_ESCALATE',
             rawResponse: forceText,
             extractionMeta,
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+            estimatedCostUsd: 0,
         };
     }
 
@@ -319,13 +323,23 @@ async function handleMaidHireStateMachine(
 
     // 7. Call LLM with narrow prompt (only last message — full history makes LLM go off-script)
     let llmText: string;
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let totalTokens = 0;
+    let estimatedCostUsd = 0;
     try {
-        const { text } = await generateText({
+        const { text, usage } = await generateText({
             model: google('gemma-3-27b-it'),
             system: systemPrompt,
             messages: [{ role: 'user', content: latestMessage }],
         });
         llmText = text;
+        promptTokens = usage?.inputTokens ?? 0;
+        completionTokens = usage?.outputTokens ?? 0;
+        totalTokens = usage?.totalTokens ?? (promptTokens + completionTokens);
+        // gemma-3-27b-it is FREE as of 2026-02. Placeholder formula for future pricing.
+        const PER_1K_TOKENS = 0;
+        estimatedCostUsd = (totalTokens / 1000) * PER_1K_TOKENS;
     } catch (llmError: any) {
         // LLM call failed — build clean fallback from state machine step definitions
         console.error('[State Machine] LLM call failed:', llmError.message);
@@ -424,6 +438,10 @@ async function handleMaidHireStateMachine(
         systemPrompt,
         rawResponse: llmText,
         extractionMeta,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        estimatedCostUsd,
     };
 }
 
@@ -479,7 +497,7 @@ export async function POST(req: Request) {
         // ═══════════════════════════════════════════════════════════════════════
         if (intent === 'maid_hire') {
             try {
-                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta } =
+                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd } =
                     await handleMaidHireStateMachine(conversationId, latestMessage, coreMessages, dbSession);
 
                 // Log to Supabase
@@ -494,6 +512,10 @@ export async function POST(req: Request) {
                         cleanedResponse: displayText,
                         tookMs,
                         extractionMeta,   // flows to extraction_meta column in llm_logs
+                        promptTokens,      // NEW
+                        completionTokens,  // NEW
+                        totalTokens,       // NEW
+                        estimatedCostUsd,  // NEW
                     });
                 } catch (logError) {
                     console.error('Logging failed:', logError);
@@ -593,13 +615,19 @@ export async function POST(req: Request) {
         const startTime = Date.now();
 
         try {
-            const { text } = await generateText({
+            const { text, usage } = await generateText({
                 model: google('gemma-3-27b-it'),
                 system: systemPrompt,
                 messages: trimmedMessages,
             });
 
             const tookMs = Date.now() - startTime;
+            const promptTokens = usage?.inputTokens ?? 0;
+            const completionTokens = usage?.outputTokens ?? 0;
+            const totalTokens = usage?.totalTokens ?? (promptTokens + completionTokens);
+            // gemma-3-27b-it is FREE as of 2026-02. Placeholder formula for future pricing.
+            const PER_1K_TOKENS = 0;
+            const estimatedCostUsd = (totalTokens / 1000) * PER_1K_TOKENS;
 
             // SAFETY NET
             let finalText = text;
@@ -656,7 +684,11 @@ export async function POST(req: Request) {
                     fullHistory: trimmedMessages,
                     rawResponse: text,
                     cleanedResponse: cleaned,
-                    tookMs
+                    tookMs,
+                    promptTokens,      // NEW
+                    completionTokens,  // NEW
+                    totalTokens,       // NEW
+                    estimatedCostUsd,  // NEW
                 });
             } catch (logError) {
                 console.error('Logging failed:', logError);
