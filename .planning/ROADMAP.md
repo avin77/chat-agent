@@ -13,7 +13,7 @@
 |---|-------|------|--------------|--------|
 | 1 | LLM Extraction Integration | Complete    | 2026-02-27 | COMPLETE |
 | 2 | Agentic Tool-Calling Flow | Replace state machine with LLM tool-calling behind feature flag | FLOW-01–06 | Pending |
-| 3 | 4/5 | In Progress|  | Pending |
+| 3 | Dashboard & Cost Tracking | COMPLETE | COST-01–03, DASH-01–05, SHADOW-02–04, CONV-01–04, ALERT-01–04 | COMPLETE |
 | 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
 
 ---
@@ -69,14 +69,14 @@ Plans:
 
 **Requirements:** COST-01, COST-02, COST-03, DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, SHADOW-01, SHADOW-02, SHADOW-03, SHADOW-04, CONV-01, CONV-02, CONV-03, CONV-04, ALERT-01, ALERT-02, ALERT-03, ALERT-04
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
-- [ ] 03-01-PLAN.md — Supabase migration: 4 token columns on llm_logs + shadow_logs table + system_alerts table
-- [ ] 03-02-PLAN.md — Extend llm-logger with token params + capture token usage from generateText() in route.ts
-- [ ] 03-03-PLAN.md — Intent classifier (intentClassifier.ts) + shadow handler (shadowHandler.ts) + confusion counter + wire into route.ts
-- [ ] 03-04-PLAN.md — Dashboard Product Health tab UI + new server actions (token cost, shadow metrics, system alerts)
-- [ ] 03-05-PLAN.md — Human verify: run Supabase migration + end-to-end validation
+- [x] 03-01-PLAN.md — Supabase migration: 4 token columns on llm_logs + shadow_logs table + system_alerts table (commit: 48e512d)
+- [x] 03-02-PLAN.md — Extend llm-logger with token params + capture token usage from generateText() in route.ts (commits: 80249f9, 497d2ed, b62cae7)
+- [x] 03-03-PLAN.md — Intent classifier (intentClassifier.ts) + shadow handler (shadowHandler.ts) + confusion counter + wire into route.ts (commits: 7dd3435, 087dbeb)
+- [x] 03-04-PLAN.md — Dashboard Product Health tab UI + new server actions (token cost, shadow metrics, system alerts) (commits: b424b5c, d1026e9)
+- [x] 03-05-PLAN.md — Human verify: Supabase migration applied, token logging confirmed, Product Health tab operational (human-approved 2026-02-28)
 
 **Files:**
 - `supabase-migration-phase3.sql` — New: all Phase 3 schema changes (idempotent)
@@ -130,4 +130,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-02-27*
-*Last updated: 2026-02-27 — Phase 3 planned (5 plans). Phase 1 COMPLETE. Eval: 99% PRODUCTION READY (39 convs, 168 turns).*
+*Last updated: 2026-02-28 — Phase 3 COMPLETE (5/5 plans, human-verified). Phase 1 COMPLETE. Eval: 99% PRODUCTION READY. Next: Phase 4 (Data Flywheel Scripts) or Phase 2 (Agentic Tool-Calling).*
