@@ -14,12 +14,12 @@
 
 ### Agentic Flow
 
-- [ ] **FLOW-01**: `handleMaidHireAgentic()` in `src/flows/agenticMaidHire.ts` implements LLM tool-calling with 8 tools: collect_phone, collect_location, collect_service, collect_schedule, collect_salary, collect_family, collect_experience, escalate_lead
+- [x] **FLOW-01**: `handleMaidHireAgentic()` in `src/flows/agenticMaidHire.ts` implements LLM tool-calling with 8 tools: collect_phone, collect_location, collect_service, collect_schedule, collect_salary, collect_family, collect_experience, escalate_lead
 - [ ] **FLOW-02**: `USE_AGENTIC=true` env var routes maid_hire to agentic handler; false/absent uses deterministic
 - [ ] **FLOW-03**: Agentic flow reads and writes session to Supabase (same `conversation_sessions` schema)
-- [ ] **FLOW-04**: Agentic flow applies guardrails.ts post-processing (price blocking, phone validation)
-- [ ] **FLOW-05**: Force-escalate triggered after 3 consecutive failed tool calls (same `shouldForceEscalate` threshold)
-- [ ] **FLOW-06**: Fallback to deterministic mode if same tool called 3+ times in one session (loop detection)
+- [x] **FLOW-04**: Agentic flow applies guardrails.ts post-processing (price blocking, phone validation)
+- [x] **FLOW-05**: Force-escalate triggered after 3 consecutive failed tool calls (same `shouldForceEscalate` threshold)
+- [x] **FLOW-06**: Fallback to deterministic mode if same tool called 3+ times in one session (loop detection)
 
 ### Token Cost Tracking
 
@@ -68,12 +68,12 @@
 | AGEX-02 | Phase 1 | Complete |
 | AGEX-03 | Phase 1 | Complete |
 | AGEX-04 | Phase 1 | Complete |
-| FLOW-01 | Phase 2 | Pending |
+| FLOW-01 | Phase 2 | Complete |
 | FLOW-02 | Phase 2 | Pending |
 | FLOW-03 | Phase 2 | Pending |
-| FLOW-04 | Phase 2 | Pending |
-| FLOW-05 | Phase 2 | Pending |
-| FLOW-06 | Phase 2 | Pending |
+| FLOW-04 | Phase 2 | Complete |
+| FLOW-05 | Phase 2 | Complete |
+| FLOW-06 | Phase 2 | Complete |
 | COST-01 | Phase 3 | Complete |
 | COST-02 | Phase 3 | Complete |
 | COST-03 | Phase 3 | Complete |

@@ -12,7 +12,7 @@
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
 | 1 | LLM Extraction Integration | Complete    | 2026-02-27 | COMPLETE |
-| 2 | Agentic Tool-Calling Flow | Replace state machine with LLM tool-calling behind feature flag | FLOW-01–06 | In Progress |
+| 2 | 1/3 | In Progress|  | In Progress |
 | 3 | Dashboard & Cost Tracking | COMPLETE | COST-01–03, DASH-01–05, SHADOW-02–04, CONV-01–04, ALERT-01–04 | COMPLETE |
 | 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
 
@@ -49,7 +49,7 @@ Plans:
 
 **Requirements:** FLOW-01, FLOW-02, FLOW-03, FLOW-04, FLOW-05, FLOW-06
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 02-01-PLAN.md — Create agenticMaidHire.ts: 8 tool definitions + handleMaidHireAgentic() with force-escalate, loop detection, guardrails

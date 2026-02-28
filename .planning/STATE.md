@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-28T07:42:20.578Z"
+last_updated: "2026-02-28T13:23:01.208Z"
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 10
+  completed_plans: 8
 ---
 
 # EzyBot — Project State
@@ -22,13 +22,13 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Status
 
-**Phase:** 3 of 4 (Phase 3, Plan 5 of 5 complete — PHASE 3 COMPLETE)
+**Phase:** 2 of 4 (Phase 2, Plan 1 of 3 complete — IN PROGRESS)
 **Milestone:** v2.0 Agentic Architecture
 
 | Phase | Status |
 |-------|--------|
 | 1 — LLM Extraction Integration | COMPLETE (2/2 plans done) |
-| 2 — Agentic Tool-Calling Flow | Pending |
+| 2 — Agentic Tool-Calling Flow | In Progress (1/3 plans done) |
 | 3 — Dashboard & Cost Tracking | COMPLETE (5/5 plans done) |
 | 4 — Data Flywheel Scripts | Pending |
 
@@ -67,6 +67,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-28 [03-04]: DAILY_TOKEN_BUDGET_USD env var defaults to 0 — cost alert never fires for Gemma (free tier) but logic present for future pricing
 - 2026-02-28 [03-05]: Supabase migration confirmed applied by human — token columns + shadow_logs + system_alerts tables live in production database
 - 2026-02-28 [03-05]: Phase 3 end-to-end verified — token logging, dashboard Product Health tab, and migration all confirmed operational
+- [Phase 02-agentic-tool-calling-flow]: Inline validator copies in agenticMaidHire.ts (not imported from MaidHiringFlow.ts) to avoid coupling
+- [Phase 02-agentic-tool-calling-flow]: toolChoice='auto' not 'required' — allows LLM text responses for FAQ handling without forcing tool calls
+- [Phase 02-agentic-tool-calling-flow]: Loop detection (FLOW-06) counts ALL tool calls per tool name including failures — 3+ calls triggers __loop_detected flag for deterministic fallback
 
 ## Session Log
 
@@ -83,6 +86,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-28: Completed Phase 3 Plan 03 — intentClassifier.ts + shadowHandler.ts created. Classifier integrated in route.ts with confusion tracking. Shadow fires async. Commits: 7dd3435, 087dbeb.
 - 2026-02-28: Completed Phase 3 Plan 04 — Product Health tab fully implemented in /dashboard. 4 new server actions, Product Health tab with KPI cards, slot fill rates, token cost, shadow panel with gate checklist. Commits: b424b5c, d1026e9.
 - 2026-02-28: Completed Phase 3 Plan 05 — Human verification checkpoint approved. Supabase migration applied, token logging confirmed live, Product Health tab operational. PHASE 3 COMPLETE.
+- 2026-02-28: Completed Phase 2 Plan 01 — agenticMaidHire.ts created. 8 tools (save_phone, save_location, save_service_type, save_schedule, save_salary_range, save_family_size, save_has_experience, escalate) + handleMaidHireAgentic() with force-escalate, loop detection, guardrails. Commit: deecb40.
 
 ---
-*Last updated: 2026-02-28T10:00:00Z — Phase 3 COMPLETE (5/5 plans). Next: Phase 4 (Data Flywheel Scripts) or Phase 2 (Agentic Tool-Calling).*
+*Last updated: 2026-02-28T13:21:38Z — Phase 2 Plan 01 COMPLETE (1/3 plans). Next: Phase 2 Plan 02 (feature flag routing in route.ts + Supabase migration).*
