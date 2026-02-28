@@ -29,11 +29,11 @@
 
 ### Product Health Dashboard
 
-- [ ] **DASH-01**: Product Health tab displays lead completion rate, lead quality score (0–100), effective escalation rate
-- [ ] **DASH-02**: Slot-by-slot fill rate bar visualization (% of maid_hire sessions that collected each of 7 fields)
-- [ ] **DASH-03**: Session duration shown: avg and p50 derived from existing `created_at`/`last_activity` columns
-- [ ] **DASH-04**: Token cost metrics visible: cost per conversation, daily token spend estimate
-- [ ] **DASH-05**: `getProductHealthMetrics()` in `actions.ts` returns `fieldStats` with filled/failed/skipped counts per field
+- [x] **DASH-01**: Product Health tab displays lead completion rate, lead quality score (0–100), effective escalation rate
+- [x] **DASH-02**: Slot-by-slot fill rate bar visualization (% of maid_hire sessions that collected each of 7 fields)
+- [x] **DASH-03**: Session duration shown: avg and p50 derived from existing `created_at`/`last_activity` columns
+- [x] **DASH-04**: Token cost metrics visible: cost per conversation, daily token spend estimate
+- [x] **DASH-05**: `getProductHealthMetrics()` in `actions.ts` returns `fieldStats` with filled/failed/skipped counts per field
 
 ### Data Flywheel
 
@@ -77,11 +77,11 @@
 | COST-01 | Phase 3 | Complete |
 | COST-02 | Phase 3 | Complete |
 | COST-03 | Phase 3 | Complete |
-| DASH-01 | Phase 3 | Pending |
-| DASH-02 | Phase 3 | Pending |
-| DASH-03 | Phase 3 | Pending |
-| DASH-04 | Phase 3 | Pending |
-| DASH-05 | Phase 3 | Pending |
+| DASH-01 | Phase 3 | Complete |
+| DASH-02 | Phase 3 | Complete |
+| DASH-03 | Phase 3 | Complete |
+| DASH-04 | Phase 3 | Complete |
+| DASH-05 | Phase 3 | Complete |
 | FLY-01 | Phase 4 | Pending |
 | FLY-02 | Phase 4 | Pending |
 | FLY-03 | Phase 4 | Pending |

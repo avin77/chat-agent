@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-02-28T06:31:19Z"
+last_updated: "2026-02-28T06:37:52Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # EzyBot — Project State
@@ -22,14 +22,14 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Status
 
-**Phase:** 3 of 4 (Phase 3, Plan 3 of 5 complete)
+**Phase:** 3 of 4 (Phase 3, Plan 4 of 5 complete)
 **Milestone:** v2.0 Agentic Architecture
 
 | Phase | Status |
 |-------|--------|
 | 1 — LLM Extraction Integration | COMPLETE (2/2 plans done) |
 | 2 — Agentic Tool-Calling Flow | Pending |
-| 3 — Dashboard & Cost Tracking | In Progress (3/5 plans done) |
+| 3 — Dashboard & Cost Tracking | In Progress (4/5 plans done) |
 | 4 — Data Flywheel Scripts | Pending |
 
 ## Already Shipped (This Cycle)
@@ -42,6 +42,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - Phase 3 Plan 01: `supabase-migration-phase3.sql` — token columns on llm_logs, shadow_logs table, system_alerts table (run in Supabase SQL Editor)
 - Phase 3 Plan 02: Token capture wired — `logLLMInteraction()` extended with 4 token params; `generateText()` usage captured at both call sites in route.ts
 - Phase 3 Plan 03: `intentClassifier.ts` + `shadowHandler.ts` — mid-flow intent classification, confusion tracking, async shadow comparison. Commits: 7dd3435, 087dbeb.
+- Phase 3 Plan 04: Product Health tab fully implemented. 4 new server actions (getTokenCostMetrics, getShadowMetrics, getSystemAlerts, checkAndWriteAlerts). getProductHealthMetrics() extended with fieldStats + p50. Commits: b424b5c, d1026e9.
 
 ## Decisions
 
@@ -60,6 +61,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-28 [03-03]: __confusion stored in CollectedData via existing index signature — no DB migration, no MaidHiringFlow.ts change needed
 - 2026-02-28 [03-03]: Shadow handler fires before return with .catch() — fire-and-forget pattern protecting production latency
 - 2026-02-28 [03-03]: Classifier skips START and COMPLETE states — only runs mid-flow (ASK_PHONE through ASK_EXPERIENCE)
+- 2026-02-28 [03-04]: errors state variable (not errorMetrics) is the correct name in page.tsx — plan spec used wrong name, corrected in implementation
+- 2026-02-28 [03-04]: checkAndWriteAlerts() called after setters complete with .catch() — fire-and-forget so alert writes do not delay page data display
+- 2026-02-28 [03-04]: DAILY_TOKEN_BUDGET_USD env var defaults to 0 — cost alert never fires for Gemma (free tier) but logic present for future pricing
 
 ## Session Log
 
@@ -74,6 +78,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-28: Completed Phase 3 Plan 01 — supabase-migration-phase3.sql created. Adds token columns to llm_logs, creates shadow_logs and system_alerts tables. Commit: 48e512d.
 - 2026-02-28: Completed Phase 3 Plan 02 — Token logging wired. logLLMInteraction() extended with token params; token capture from all generateText() calls in route.ts. Commits: 80249f9, 497d2ed, b62cae7.
 - 2026-02-28: Completed Phase 3 Plan 03 — intentClassifier.ts + shadowHandler.ts created. Classifier integrated in route.ts with confusion tracking. Shadow fires async. Commits: 7dd3435, 087dbeb.
+- 2026-02-28: Completed Phase 3 Plan 04 — Product Health tab fully implemented in /dashboard. 4 new server actions, Product Health tab with KPI cards, slot fill rates, token cost, shadow panel with gate checklist. Commits: b424b5c, d1026e9.
 
 ---
-*Last updated: 2026-02-28*
+*Last updated: 2026-02-28T06:37:52Z*
