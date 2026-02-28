@@ -24,7 +24,7 @@
 ### Token Cost Tracking
 
 - [ ] **COST-01**: `generateText()` usage object captured — promptTokens, completionTokens, totalTokens stored
-- [ ] **COST-02**: `llm_logs` table has new columns: `prompt_tokens` (int), `completion_tokens` (int), `total_tokens` (int), `estimated_cost_usd` (float8)
+- [x] **COST-02**: `llm_logs` table has new columns: `prompt_tokens` (int), `completion_tokens` (int), `total_tokens` (int), `estimated_cost_usd` (float8)
 - [ ] **COST-03**: `logLLMInteraction()` in `src/lib/llm-logger.ts` accepts and stores token fields
 
 ### Product Health Dashboard
@@ -64,10 +64,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGEX-01 | Phase 1 | Pending |
+| AGEX-01 | Phase 1 | Complete |
 | AGEX-02 | Phase 1 | Complete |
 | AGEX-03 | Phase 1 | Complete |
-| AGEX-04 | Phase 1 | Pending |
+| AGEX-04 | Phase 1 | Complete |
 | FLOW-01 | Phase 2 | Pending |
 | FLOW-02 | Phase 2 | Pending |
 | FLOW-03 | Phase 2 | Pending |
@@ -75,7 +75,7 @@
 | FLOW-05 | Phase 2 | Pending |
 | FLOW-06 | Phase 2 | Pending |
 | COST-01 | Phase 3 | Pending |
-| COST-02 | Phase 3 | Pending |
+| COST-02 | Phase 3 | Complete |
 | COST-03 | Phase 3 | Pending |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |

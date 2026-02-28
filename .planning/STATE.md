@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-02-27T14:23:43.989Z"
+status: in_progress
+last_updated: "2026-02-28T06:25:47Z"
 progress:
-  total_phases: 2
+  total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 7
+  completed_plans: 3
 ---
 
 # EzyBot — Project State
@@ -22,14 +22,14 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Status
 
-**Phase:** 1 of 4
+**Phase:** 3 of 4 (Phase 3, Plan 1 of 5 complete)
 **Milestone:** v2.0 Agentic Architecture
 
 | Phase | Status |
 |-------|--------|
 | 1 — LLM Extraction Integration | COMPLETE (2/2 plans done) |
 | 2 — Agentic Tool-Calling Flow | Pending |
-| 3 — Dashboard & Cost Tracking | Pending |
+| 3 — Dashboard & Cost Tracking | In Progress (1/5 plans done) |
 | 4 — Data Flywheel Scripts | Pending |
 
 ## Already Shipped (This Cycle)
@@ -39,9 +39,13 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 10 new eval edge cases (c32–c41) in `data/state-golden-dataset.json`
 - LLM extractor infrastructure: `src/extractors/llmExtractor.ts`
 - Phase 1 complete: LLM-first extraction wired into maid_hire path, extractionMeta logged to Supabase (eval: 99% PRODUCTION READY)
+- Phase 3 Plan 01: `supabase-migration-phase3.sql` — token columns on llm_logs, shadow_logs table, system_alerts table (run in Supabase SQL Editor)
 
 ## Decisions
 
+- 2026-02-28 [03-01]: Token columns on llm_logs are nullable with no DEFAULT — NULL distinguishes pre-Phase3 from post-Phase3 rows
+- 2026-02-28 [03-01]: shadow_logs schema taken verbatim from CONTEXT.md locked decision (10 columns + gen_random_uuid PRIMARY KEY)
+- 2026-02-28 [03-01]: system_alerts severity/alert_type enforced at application layer, not DB constraint (for flexibility)
 - 2026-02-27 [01-01]: phone→regex wins in mergeWithConflictResolution (deterministic digit extraction more reliable than LLM)
 - 2026-02-27 [01-01]: LLM wins for location/service_type/schedule/salary_range/family_size/has_experience fields
 - 2026-02-27 [01-01]: extractionMeta optional in logLLMInteraction — all existing callers unchanged
@@ -60,6 +64,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-27: Completed Phase 1 Plan 01 — phone bug fixed, ExtractionMeta type + conflict-resolution merge functions added, llm-logger extended. Commits: 63fef22, b43d17e.
 - 2026-02-27: Completed Phase 1 Plan 02 — LLM-first extraction wired into route.ts maid_hire path, extractionMeta flows to llm_logs. Eval: 99% PRODUCTION READY (39 convs, 168 turns). Commit: b1f77e7.
 - PHASE 1 COMPLETE. Next: Phase 2 (Agentic Tool-Calling) or Phase 3 (Dashboard & Cost Tracking) — user to decide.
+- 2026-02-28: Completed Phase 3 Plan 01 — supabase-migration-phase3.sql created. Adds token columns to llm_logs, creates shadow_logs and system_alerts tables. Commit: 48e512d.
 
 ---
-*Last updated: 2026-02-27*
+*Last updated: 2026-02-28*
