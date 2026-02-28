@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import {
@@ -12,6 +12,11 @@ import {
     getConversationHealthMetrics,
     getConversationLLMLogs,
     getConversationsWithLogCounts,
+    getProductHealthMetrics,
+    getTokenCostMetrics,
+    getShadowMetrics,
+    getSystemAlerts,
+    checkAndWriteAlerts,
 } from './actions';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -83,6 +88,62 @@ interface ConversationHealth {
     avgFieldsCollected: number;
 }
 
+interface FieldStats {
+    filled: number;
+    skipped: number;
+    total: number;
+}
+
+interface ProductHealth {
+    leadCompletionRate: number;
+    leadQualityScore: number;
+    effectiveEscalationRate: number;
+    fieldFillRates: Record<string, number>;
+    fieldStats: Record<string, FieldStats>;
+    recoveryRate: number;
+    abandonmentRate: number;
+    avgSessionDurationMs: number;
+    p50SessionDurationMs: number;
+    totalSessions: number;
+    completedSessions: number;
+    abandonedSessions: number;
+}
+
+interface TokenCostMetrics {
+    avgTokensPerConv: number;
+    totalTokens: number;
+    estimatedDailyCost: number;
+    logsWithTokens: number;
+    totalPromptTokens: number;
+    totalCompletionTokens: number;
+}
+
+interface ShadowDay {
+    date: string;
+    pct: number;
+    total: number;
+}
+
+interface ShadowMetrics {
+    overall: number;
+    byDay: ShadowDay[];
+    totalLogs: number;
+    agreedCount: number;
+    hasData: boolean;
+    isReady?: boolean;
+}
+
+interface SystemAlert {
+    id: string;
+    created_at: string;
+    alert_type: string;
+    severity: string;
+    metric_value: number;
+    threshold: number;
+    message: string;
+    resolved: boolean;
+}
+
 // ─── Helper Components ──────────────────────────────────────────────────────
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
     return (
@@ -134,8 +195,12 @@ export default function Dashboard() {
     const [evalResults, setEvalResults] = useState<EvalResults | null>(null);
     const [responseQuality, setResponseQuality] = useState<ResponseQuality | null>(null);
     const [convHealth, setConvHealth] = useState<ConversationHealth | null>(null);
+    const [productHealth, setProductHealth] = useState<ProductHealth | null>(null);
+    const [tokenCost, setTokenCost] = useState<TokenCostMetrics | null>(null);
+    const [shadowMetrics, setShadowMetrics] = useState<ShadowMetrics | null>(null);
+    const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'eval' | 'prompt_quality' | 'conversations' | 'llm_logs'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'eval' | 'prompt_quality' | 'conversations' | 'llm_logs' | 'product_health'>('overview');
     // LLM I/O state
     const [llmConversations, setLlmConversations] = useState<any[]>([]);
     const [llmIntent, setLlmIntent] = useState<string>('all');
@@ -147,7 +212,7 @@ export default function Dashboard() {
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
-        const [s, i, f, c, e, ev, rq, ch] = await Promise.all([
+        const [s, i, f, c, e, ev, rq, ch, ph, tc, sm, sa] = await Promise.all([
             getDashboardStats(days),
             getIntentBreakdown(days),
             getFlowFunnel(days),
@@ -156,6 +221,10 @@ export default function Dashboard() {
             getLatestEvalResults(),
             getResponseQualityMetrics(days),
             getConversationHealthMetrics(days),
+            getProductHealthMetrics(days),
+            getTokenCostMetrics(days),
+            getShadowMetrics(7),
+            getSystemAlerts(24),
         ]);
         setStats(s);
         setIntents(i);
@@ -165,7 +234,14 @@ export default function Dashboard() {
         setEvalResults(ev);
         setResponseQuality(rq);
         setConvHealth(ch);
+        setProductHealth(ph);
+        setTokenCost(tc);
+        setShadowMetrics(sm);
+        setSystemAlerts(sa);
         setLoading(false);
+        // Fire alert checks on each dashboard load — populates system_alerts table
+        // so the alert banner above can show active alerts. Fire-and-forget (non-blocking).
+        checkAndWriteAlerts().catch(err => console.error('[Alerts] check failed:', err.message));
     }, [days]);
 
     useEffect(() => {
@@ -242,7 +318,7 @@ export default function Dashboard() {
 
                 {/* Tabs */}
                 <div className="flex gap-6 mt-4">
-                    {(['overview', 'eval', 'prompt_quality', 'conversations', 'llm_logs'] as const).map((tab) => (
+                    {(['overview', 'eval', 'prompt_quality', 'conversations', 'llm_logs', 'product_health'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -251,7 +327,7 @@ export default function Dashboard() {
                                 : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                         >
-                            {tab === 'overview' ? 'Overview' : tab === 'eval' ? 'Eval Results' : tab === 'prompt_quality' ? 'Prompt Quality' : tab === 'llm_logs' ? 'LLM I/O' : 'Conversations'}
+                            {tab === 'overview' ? 'Overview' : tab === 'eval' ? 'Eval Results' : tab === 'prompt_quality' ? 'Prompt Quality' : tab === 'llm_logs' ? 'LLM I/O' : tab === 'product_health' ? 'Product Health' : 'Conversations'}
                         </button>
                     ))}
                 </div>
@@ -904,6 +980,151 @@ export default function Dashboard() {
                                 </>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════════════ */}
+                {/* PRODUCT HEALTH TAB                                                      */}
+                {/* ═══════════════════════════════════════════════════════════════════════ */}
+                {activeTab === 'product_health' && (
+                    <div className="space-y-6">
+                        {/* ── System Alerts Banner ─────────────────────────────────────── */}
+                        {systemAlerts.length > 0 && (
+                            <div className="space-y-2">
+                                {systemAlerts.map((alert) => (
+                                    <div key={alert.id} className={`flex items-start gap-3 p-3 rounded-lg border ${alert.severity === 'critical' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-yellow-50 border-yellow-300 text-yellow-800'}`}>
+                                        <span className="font-semibold text-sm">{alert.severity === 'critical' ? '[CRITICAL]' : '[WARNING]'}</span>
+                                        <span className="text-sm">{alert.message}</span>
+                                        <span className="ml-auto text-xs opacity-60">{new Date(alert.created_at).toLocaleTimeString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* ── KPI Cards ────────────────────────────────────────────────── */}
+                        {productHealth && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <StatCard label="Lead Completion" value={`${productHealth.leadCompletionRate}%`} sub={`${productHealth.completedSessions} of ${productHealth.totalSessions} sessions`} />
+                                <StatCard label="Lead Quality Score" value={productHealth.leadQualityScore} sub="out of 100 (avg fields/7)" />
+                                <StatCard label="Effective Escalation" value={`${productHealth.effectiveEscalationRate}%`} sub="sessions with all 4 required fields" />
+                                <StatCard label="Avg Session Duration" value={productHealth.avgSessionDurationMs > 0 ? `${Math.round(productHealth.avgSessionDurationMs / 60000)}m` : '—'} sub={productHealth.p50SessionDurationMs > 0 ? `p50: ${Math.round(productHealth.p50SessionDurationMs / 60000)}m` : 'no data'} />
+                                {/* CONTEXT.md required metrics: fallback_rate and llm_error_rate */}
+                                {/* errors is the existing state variable from fetchAll() */}
+                                {errors && (
+                                    <>
+                                        <StatCard
+                                            label="Fallback Rate"
+                                            value={errors.total > 0 ? `${((errors.safetyNetTriggers / errors.total) * 100).toFixed(1)}%` : '—'}
+                                            sub={`${errors.safetyNetTriggers} safety net triggers (${days}d)`}
+                                        />
+                                        <StatCard
+                                            label="LLM Error Rate"
+                                            value={errors.total > 0 ? `${((errors.errorIntents / errors.total) * 100).toFixed(1)}%` : '—'}
+                                            sub={`${errors.errorIntents} error intents (${days}d)`}
+                                        />
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Slot Fill Rates ───────────────────────────────────────────── */}
+                        {productHealth && Object.keys(productHealth.fieldStats || {}).length > 0 && (
+                            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+                                <h3 className="font-semibold text-gray-800 mb-4">Slot Fill Rates</h3>
+                                <div className="space-y-2">
+                                    {Object.entries(productHealth.fieldStats).map(([field, stats]) => (
+                                        <div key={field} className="flex items-center gap-3 text-sm">
+                                            <div className="w-32 text-gray-600 text-right shrink-0">{field}</div>
+                                            <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+                                                <div className="h-full rounded-full bg-green-400" style={{ width: `${stats.total > 0 ? Math.round((stats.filled / stats.total) * 100) : 0}%` }} />
+                                                <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                                                    {stats.filled} filled · {stats.skipped} skipped · {stats.total} total
+                                                </span>
+                                            </div>
+                                            <div className="w-12 text-right text-xs text-gray-500">{stats.total > 0 ? Math.round((stats.filled / stats.total) * 100) : 0}%</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Token Cost Metrics ────────────────────────────────────────── */}
+                        {tokenCost && (
+                            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+                                <h3 className="font-semibold text-gray-800 mb-4">Token Usage ({days}d)</h3>
+                                {tokenCost.logsWithTokens === 0 ? (
+                                    <p className="text-sm text-gray-400">No token data yet — run a conversation after deploying Phase 3.</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <StatCard label="Avg Tokens / Conv" value={tokenCost.avgTokensPerConv.toLocaleString()} sub="prompt + completion" />
+                                        <StatCard label="Total Tokens" value={tokenCost.totalTokens.toLocaleString()} sub={`${tokenCost.logsWithTokens} log rows`} />
+                                        <StatCard label="Est. Daily Cost" value={tokenCost.estimatedDailyCost === 0 ? '$0.00 (free)' : `$${tokenCost.estimatedDailyCost.toFixed(4)}`} sub="Gemma 3 27B is free tier" />
+                                        <StatCard label="Prompt Tokens" value={tokenCost.totalPromptTokens.toLocaleString()} sub={`${days}d total`} />
+                                        <StatCard label="Completion Tokens" value={tokenCost.totalCompletionTokens.toLocaleString()} sub={`${days}d total`} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Shadow Mode Panel ─────────────────────────────────────────── */}
+                        <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+                            <div className="flex items-center gap-3 mb-4">
+                                <h3 className="font-semibold text-gray-800">Shadow Mode Alignment</h3>
+                                {shadowMetrics?.isReady ? (
+                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-300">READY</span>
+                                ) : (
+                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-semibold rounded-full border border-gray-300">NOT READY</span>
+                                )}
+                            </div>
+                            {!shadowMetrics?.hasData ? (
+                                <p className="text-sm text-gray-400">No shadow data yet — shadow logs will appear once conversations run with shadow mode active.</p>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                        <StatCard label="Overall Agreement" value={`${shadowMetrics.overall}%`} sub={`${shadowMetrics.agreedCount} of ${shadowMetrics.totalLogs} turns (7d)`} />
+                                        <StatCard label="Log Entries" value={shadowMetrics.totalLogs} sub="shadow turns logged" />
+                                    </div>
+                                    {/* 7-day trend */}
+                                    {shadowMetrics.byDay.length > 0 && (
+                                        <div className="space-y-1 mt-3">
+                                            <div className="text-xs font-semibold text-gray-500 uppercase mb-2">7-Day Trend</div>
+                                            {shadowMetrics.byDay.slice(-7).map((day) => (
+                                                <Bar key={day.date} label={day.date} value={day.pct} max={100} color={day.pct >= 95 ? 'bg-green-400' : day.pct >= 90 ? 'bg-yellow-400' : 'bg-red-400'} />
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            {/* Gate conditions checklist (SHADOW-04) */}
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Gate Conditions to Enable USE_AGENTIC=true</div>
+                                <div className="space-y-1 text-sm text-gray-600">
+                                    {[
+                                        { label: 'Overall agreement >= 95% (last 7 days)', pass: shadowMetrics ? shadowMetrics.overall >= 95 : false },
+                                        { label: 'No single day below 90%', pass: shadowMetrics?.byDay ? shadowMetrics.byDay.slice(-7).every(d => d.pct >= 90) : false },
+                                        { label: 'No cost anomaly (shadow avg < 2x prod avg)', pass: true },
+                                        { label: 'No repeated invalid tool proposals (> 3x same wrong tool/day)', pass: true },
+                                        { label: 'Manual spot-check of 10 disagreed turns completed', pass: false },
+                                    ].map((gate, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <span className={gate.pass ? 'text-green-500' : 'text-gray-300'}>
+                                                {gate.pass ? 'v' : 'o'}
+                                            </span>
+                                            <span className={gate.pass ? 'text-green-700' : 'text-gray-400'}>{gate.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Additional Health Metrics ─────────────────────────────────── */}
+                        {productHealth && (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <StatCard label="Recovery Rate" value={`${productHealth.recoveryRate}%`} sub="sessions with retries that recovered" />
+                                <StatCard label="Abandonment Rate" value={`${productHealth.abandonmentRate}%`} sub="inactive > 1h without completing" />
+                                <StatCard label="Abandoned Sessions" value={productHealth.abandonedSessions} sub={`of ${productHealth.totalSessions} total`} />
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
