@@ -88,6 +88,10 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg'
     if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
     if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook|need.*helper|want.*helper|hire.*helper|looking for.*helper|i need a helper|need domestic help/.test(lower)) return 'maid_hire';
 
+    // Check helper_reg BEFORE broader maid_hire patterns — helper_reg signals take priority
+    // (e.g., "looking for work as a cook" should be helper_reg, not maid_hire)
+    if (/need.*job|want.*work|looking for.*job|looking for work|i am.*maid|i am.*helper|register.*helper|i am.*cook|i am a cook|i am a maid|i am a helper|i am looking for work/.test(lower)) return 'helper_reg';
+
     // Broader maid_hire patterns — catch "cleaner", service roles, baby care, typos
     if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help|helper)\b/i.test(lower) &&
         /\b(need|want|hire|book|get|looking|find|require|send)\b/i.test(lower)) return 'maid_hire';
@@ -519,7 +523,11 @@ export async function POST(req: Request) {
         } catch (e) { }
 
         // Get intent from session
-        const { intent, session: dbSession } = await getOrCreateSession(conversationId, fullConversationText);
+        // Use latestMessage (not fullConversationText) to avoid false intent switches:
+        // Combined history text can trigger maid_hire patterns on helper_reg or general sessions
+        // (e.g., "looking for work as a cook" → on turn 2, the combined text has "cook" + "looking"
+        // which matches the broader maid_hire pattern and incorrectly resets the session intent).
+        const { intent, session: dbSession } = await getOrCreateSession(conversationId, latestMessage);
 
         // Sanitize messages
         const coreMessages = messages.map((m: any) => ({
