@@ -17,6 +17,7 @@ import {
 import { extractAllSlotsWithLLM, mergeWithConflictResolution, buildSourceMap, ExtractionMeta } from '@/extractors/llmExtractor';
 import { classifyMessage } from '@/extractors/intentClassifier';
 import { runShadowHandler } from '@/lib/shadowHandler';
+import { handleMaidHireAgentic } from '@/flows/agenticMaidHire';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -527,13 +528,31 @@ export async function POST(req: Request) {
         }));
 
         // ═══════════════════════════════════════════════════════════════════════
-        // MAID HIRE: Use deterministic state machine
+        // MAID HIRE: Agentic (USE_AGENTIC=true) or deterministic state machine
         // ═══════════════════════════════════════════════════════════════════════
         if (intent === 'maid_hire') {
-            try {
-                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd, newState } =
-                    await handleMaidHireStateMachine(conversationId, latestMessage, coreMessages, dbSession);
+            const useAgentic = process.env.USE_AGENTIC === 'true';
+            // If loop was detected in a previous agentic turn, fall back to deterministic for this turn
+            const loopDetected = dbSession?.collected_data?.__loop_detected === 'true';
+            const useAgenticThisTurn = useAgentic && !loopDetected;
 
+            // ── Shared escalation + response helper ──────────────────────────
+            // Extracted to avoid duplicating the large escalation block in the catch.
+            const handleMaidHireSuccess = async (
+                displayText: string,
+                shouldEscalate: boolean,
+                collectedData: Record<string, any>,
+                tookMs: number,
+                systemPrompt: string,
+                rawResponse: string,
+                extractionMeta: ExtractionMeta,
+                promptTokens: number,
+                completionTokens: number,
+                totalTokens: number,
+                estimatedCostUsd: number,
+                newState: string,
+                collectedVia: 'agentic' | 'state_machine',
+            ) => {
                 // Log to Supabase
                 try {
                     await logLLMInteraction({
@@ -545,11 +564,11 @@ export async function POST(req: Request) {
                         rawResponse,
                         cleanedResponse: displayText,
                         tookMs,
-                        extractionMeta,   // flows to extraction_meta column in llm_logs
-                        promptTokens,      // NEW
-                        completionTokens,  // NEW
-                        totalTokens,       // NEW
-                        estimatedCostUsd,  // NEW
+                        extractionMeta,
+                        promptTokens,
+                        completionTokens,
+                        totalTokens,
+                        estimatedCostUsd,
                     });
                 } catch (logError) {
                     console.error('Logging failed:', logError);
@@ -576,14 +595,14 @@ export async function POST(req: Request) {
                                 has_prior_experience: collectedData.has_experience || null,
                                 conversation_id: conversationId,
                                 full_conversation: coreMessages,
-                                collected_via: 'state_machine',
+                                collected_via: collectedVia,
                             });
 
                             if (dbError) {
                                 console.error('Lead insert failed:', dbError);
                                 try { fs.appendFileSync('chat_debug.log', `[LEAD DB ERROR] ${JSON.stringify(dbError)}\n`); } catch (e) { }
                             } else {
-                                console.log('Lead saved via state machine');
+                                console.log(`Lead saved via ${collectedVia}`);
                             }
 
                             // Send email
@@ -594,7 +613,7 @@ export async function POST(req: Request) {
                                         to: process.env.ADMIN_EMAIL,
                                         subject: `New Maid Hire Lead: ${collectedData.name || 'Unknown'} - ${collectedData.phone || 'No phone'}`,
                                         html: `
-                                            <h2>New Maid Hire Lead (State Machine)</h2>
+                                            <h2>New Maid Hire Lead (${collectedVia === 'agentic' ? 'Agentic' : 'State Machine'})</h2>
                                             <p><strong>Phone:</strong> ${esc(collectedData.phone)}</p>
                                             <p><strong>Location:</strong> ${esc(collectedData.location)}</p>
                                             <p><strong>Service:</strong> ${esc(collectedData.service_type)}</p>
@@ -641,9 +660,43 @@ export async function POST(req: Request) {
                 ).catch(err => console.error('[Shadow] Failed:', (err as Error).message));
 
                 return response;
-            } catch (smError: any) {
-                console.error('[State Machine Error] Falling back to LLM-only:', smError);
-                // Fall through to standard LLM flow below
+            };
+
+            try {
+                const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd, newState } =
+                    useAgenticThisTurn
+                        ? await handleMaidHireAgentic(conversationId, latestMessage, coreMessages, dbSession)
+                        : await handleMaidHireStateMachine(conversationId, latestMessage, coreMessages, dbSession);
+
+                return await handleMaidHireSuccess(
+                    displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse,
+                    extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd, newState,
+                    useAgenticThisTurn ? 'agentic' : 'state_machine',
+                );
+            } catch (agenticError: any) {
+                if (useAgenticThisTurn) {
+                    // CONTEXT.md Failure & Fallback: Gemini API error (timeout/500) during agentic turn →
+                    // fall back to deterministic handler for this single turn only.
+                    // Agentic mode resumes on the next turn (session state is preserved by handleMaidHireAgentic
+                    // only on success, so no partial state corruption occurs).
+                    console.warn('[Agentic Error] Falling back to deterministic for this turn:', agenticError.message);
+                    try {
+                        const { displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse, extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd, newState } =
+                            await handleMaidHireStateMachine(conversationId, latestMessage, coreMessages, dbSession);
+
+                        return await handleMaidHireSuccess(
+                            displayText, shouldEscalate, collectedData, tookMs, systemPrompt, rawResponse,
+                            extractionMeta, promptTokens, completionTokens, totalTokens, estimatedCostUsd, newState,
+                            'state_machine',
+                        );
+                    } catch (smFallbackError: any) {
+                        console.error('[Fallback SM Error] Both agentic and deterministic handlers failed:', smFallbackError);
+                        // Fall through to standard LLM flow below
+                    }
+                } else {
+                    console.error('[Maid Hire Error] Falling back to LLM-only:', agenticError);
+                    // Fall through to standard LLM flow (unchanged behavior when useAgenticThisTurn=false)
+                }
             }
         }
 
