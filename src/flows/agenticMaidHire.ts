@@ -12,6 +12,7 @@ import { google } from '@ai-sdk/google';
 import { createClient } from '@supabase/supabase-js';
 import { applyStrictGuardrails } from '../lib/guardrails';
 import { isValidPhone, extractPhone, extractLocation, extractWorkType, extractSchedule } from '../extractors/dataExtractor';
+import { geminiRateLimiter } from '../lib/rateLimiter';
 import type { CollectedData } from './BaseFlow';
 import type { ExtractionMeta } from '../extractors/llmExtractor';
 
@@ -119,6 +120,63 @@ OUTPUT FORMAT — respond with exactly one JSON object, no other text:
 - To just reply without saving: {"action":"respond","message":"<your friendly reply>"}
 
 NEVER output plain text. ALWAYS output valid JSON on a single line.`;
+
+// ─── generateTextWithRetry ────────────────────────────────────────────────────
+// Wraps generateText with:
+//   1. geminiRateLimiter.recordRequest() — tracks this call in the shared rate window
+//   2. Retry-with-backoff on 429 (Gemini free-tier quota exceeded)
+//      - Reads the suggested wait time from the error message (e.g., "retry in 2.234s")
+//      - Falls back to DEFAULT_RETRY_WAIT_MS if no wait time found
+//      - Retries up to MAX_RETRIES times before re-throwing
+const MAX_RETRIES = 3;
+const DEFAULT_RETRY_WAIT_MS = 10_000; // 10s default backoff when Gemini doesn't specify
+
+async function generateTextWithRetry(
+  model: ReturnType<typeof google>,
+  system: string,
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+): Promise<Awaited<ReturnType<typeof generateText>>> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    // Record this request in the shared rate limiter (for observability and RPM tracking)
+    geminiRateLimiter.recordRequest();
+
+    try {
+      return await generateText({ model, system, messages });
+    } catch (err: any) {
+      lastError = err;
+
+      const is429 =
+        err?.message?.includes('429') ||
+        err?.status === 429 ||
+        err?.message?.toLowerCase().includes('quota') ||
+        err?.message?.toLowerCase().includes('rate limit');
+
+      if (!is429 || attempt === MAX_RETRIES) {
+        // Non-retryable error, or exhausted retries — re-throw
+        throw err;
+      }
+
+      // Extract suggested retry delay from Gemini's error message
+      // Format: "Please retry in 2.234752707s." or "retry in Xs"
+      let waitMs = DEFAULT_RETRY_WAIT_MS;
+      const waitMatch = err?.message?.match(/retry in\s+([\d.]+)\s*s/i);
+      if (waitMatch) {
+        waitMs = Math.ceil(parseFloat(waitMatch[1]) * 1000) + 500; // add 500ms buffer
+      }
+
+      console.warn(
+        `[Agentic] 429 rate limit hit (attempt ${attempt}/${MAX_RETRIES}). ` +
+        `Waiting ${waitMs}ms before retry...`
+      );
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+    }
+  }
+
+  // Should never reach here (loop always throws or returns), but TypeScript needs it
+  throw lastError;
+}
 
 // ─── Parsed response shape ────────────────────────────────────────────────────
 interface AgenticResponse {
@@ -468,12 +526,13 @@ export async function handleMaidHireAgentic(
   const systemPrompt = buildAgenticSystemPrompt(collectedData, extraAlerts);
 
   // 5. Call generateText() — no tools param (Gemma doesn't support native tool-calling)
-  //    Errors propagate to route.ts for single-turn deterministic fallback.
-  const result = await generateText({
-    model: google('gemma-3-27b-it'),
-    system: systemPrompt,
-    messages: [{ role: 'user', content: latestMessage }],
-  });
+  //    Uses retry-with-backoff on 429 (Gemini free-tier token quota).
+  //    Errors that exhaust retries propagate to route.ts for single-turn deterministic fallback.
+  const result = await generateTextWithRetry(
+    google('gemma-3-27b-it'),
+    systemPrompt,
+    [{ role: 'user', content: latestMessage }],
+  );
 
   // 6. Capture token usage
   const promptTokens = result.usage?.inputTokens ?? 0;
