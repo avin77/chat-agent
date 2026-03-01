@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-28T13:23:01.208Z"
+last_updated: "2026-03-01T05:14:00Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # EzyBot — Project State
@@ -22,13 +22,13 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Status
 
-**Phase:** 2 of 4 (Phase 2, Plan 1 of 3 complete — IN PROGRESS)
+**Phase:** 2 of 4 (Phase 2, Plan 2 of 3 complete — IN PROGRESS)
 **Milestone:** v2.0 Agentic Architecture
 
 | Phase | Status |
 |-------|--------|
 | 1 — LLM Extraction Integration | COMPLETE (2/2 plans done) |
-| 2 — Agentic Tool-Calling Flow | In Progress (1/3 plans done) |
+| 2 — Agentic Tool-Calling Flow | In Progress (2/3 plans done) |
 | 3 — Dashboard & Cost Tracking | COMPLETE (5/5 plans done) |
 | 4 — Data Flywheel Scripts | Pending |
 
@@ -70,6 +70,10 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - [Phase 02-agentic-tool-calling-flow]: Inline validator copies in agenticMaidHire.ts (not imported from MaidHiringFlow.ts) to avoid coupling
 - [Phase 02-agentic-tool-calling-flow]: toolChoice='auto' not 'required' — allows LLM text responses for FAQ handling without forcing tool calls
 - [Phase 02-agentic-tool-calling-flow]: Loop detection (FLOW-06) counts ALL tool calls per tool name including failures — 3+ calls triggers __loop_detected flag for deterministic fallback
+- 2026-03-01 [02-02]: USE_AGENTIC=true routes maid_hire to handleMaidHireAgentic(); false/unset keeps deterministic path 100% intact
+- 2026-03-01 [02-02]: handleMaidHireSuccess() helper deduplicates logging/escalation/response code instead of copy-pasting block into catch
+- 2026-03-01 [02-02]: Outer catch on useAgenticThisTurn=true calls handleMaidHireStateMachine() as single-turn fallback — not a text fallback
+- 2026-03-01 [02-02]: collected_via uses 'agentic' | 'state_machine' parameter passed to handleMaidHireSuccess()
 
 ## Session Log
 
@@ -87,6 +91,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-02-28: Completed Phase 3 Plan 04 — Product Health tab fully implemented in /dashboard. 4 new server actions, Product Health tab with KPI cards, slot fill rates, token cost, shadow panel with gate checklist. Commits: b424b5c, d1026e9.
 - 2026-02-28: Completed Phase 3 Plan 05 — Human verification checkpoint approved. Supabase migration applied, token logging confirmed live, Product Health tab operational. PHASE 3 COMPLETE.
 - 2026-02-28: Completed Phase 2 Plan 01 — agenticMaidHire.ts created. 8 tools (save_phone, save_location, save_service_type, save_schedule, save_salary_range, save_family_size, save_has_experience, escalate) + handleMaidHireAgentic() with force-escalate, loop detection, guardrails. Commit: deecb40.
+- 2026-03-01: Completed Phase 2 Plan 02 — USE_AGENTIC routing wired into route.ts. supabase-migration-phase2.sql created. handleMaidHireSuccess() helper added. TypeScript and build pass. Commits: 7ae043e, 64c7cad.
 
 ---
-*Last updated: 2026-02-28T13:21:38Z — Phase 2 Plan 01 COMPLETE (1/3 plans). Next: Phase 2 Plan 02 (feature flag routing in route.ts + Supabase migration).*
+*Last updated: 2026-03-01T05:14:00Z — Phase 2 Plan 02 COMPLETE (2/3 plans). Next: Phase 2 Plan 03 (human verification checkpoint — Supabase migration + end-to-end test).*

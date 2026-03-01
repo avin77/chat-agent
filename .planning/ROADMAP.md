@@ -12,7 +12,7 @@
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
 | 1 | LLM Extraction Integration | Complete    | 2026-02-27 | COMPLETE |
-| 2 | 1/3 | In Progress|  | In Progress |
+| 2 | 2/3 | In Progress|  | In Progress |
 | 3 | Dashboard & Cost Tracking | COMPLETE | COST-01–03, DASH-01–05, SHADOW-02–04, CONV-01–04, ALERT-01–04 | COMPLETE |
 | 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
 
@@ -49,11 +49,11 @@ Plans:
 
 **Requirements:** FLOW-01, FLOW-02, FLOW-03, FLOW-04, FLOW-05, FLOW-06
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
-- [ ] 02-01-PLAN.md — Create agenticMaidHire.ts: 8 tool definitions + handleMaidHireAgentic() with force-escalate, loop detection, guardrails
-- [ ] 02-02-PLAN.md — Supabase migration SQL + USE_AGENTIC routing in route.ts + agentic leads insert
+- [x] 02-01-PLAN.md — Create agenticMaidHire.ts: 8 tool definitions + handleMaidHireAgentic() with force-escalate, loop detection, guardrails (commit: deecb40)
+- [x] 02-02-PLAN.md — Supabase migration SQL + USE_AGENTIC routing in route.ts + agentic leads insert (commits: 7ae043e, 64c7cad)
 - [ ] 02-03-PLAN.md — Human verify: apply migration, test agentic flow end-to-end, eval ≥95%
 
 **Files:**
@@ -138,4 +138,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-02-27*
-*Last updated: 2026-02-28 — Phase 3 COMPLETE (5/5 plans, human-verified). Phase 1 COMPLETE. Phase 2 planned (3 plans). Eval: 99% PRODUCTION READY.*
+*Last updated: 2026-03-01 — Phase 3 COMPLETE (5/5 plans, human-verified). Phase 1 COMPLETE. Phase 2 in progress (2/3 plans). Eval: 99% PRODUCTION READY.*
