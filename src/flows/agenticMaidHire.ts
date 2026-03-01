@@ -1,12 +1,13 @@
 // src/flows/agenticMaidHire.ts
-// Phase 2: Agentic maid_hire handler using LLM tool-calling (Vercel AI SDK)
+// Phase 2: Agentic maid_hire handler — structured JSON prompting for Gemma 3 27B
 //
-// Replaces the deterministic state machine with an LLM-driven flow.
-// The LLM decides field collection order and phrasing; tools enforce validation.
+// Uses manual JSON parsing instead of Vercel AI SDK tool-calling, because
+// gemma-3-27b-it does not support the native function-calling protocol.
+// The model outputs a single JSON object per turn; we parse it and execute
+// the tool locally.  Interface to route.ts is unchanged.
 // Gated behind USE_AGENTIC=true env var in route.ts.
 
-import { tool, generateText } from 'ai';
-import { z } from 'zod';
+import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { createClient } from '@supabase/supabase-js';
 import { applyStrictGuardrails } from '../lib/guardrails';
@@ -20,9 +21,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ─── Inline validators (re-declared; NOT imported from MaidHiringFlow.ts) ────
-// These are module-private in MaidHiringFlow.ts, so we copy them here to avoid coupling.
-
+// ─── Inline validators ────────────────────────────────────────────────────────
 const BENGALURU_AREAS = [
   'koramangala', 'indiranagar', 'whitefield', 'marathahalli', 'btm',
   'hsr', 'hsr layout', 'electronic city', 'jp nagar', 'jayanagar', 'malleshwaram',
@@ -71,116 +70,119 @@ const CONSECUTIVE_FAILURE_THRESHOLD = 3;
 const TOOL_LOOP_THRESHOLD = 3;
 const PER_1K_TOKENS = 0; // Gemma 3 27B is free
 
-// ─── Agentic tool definitions ─────────────────────────────────────────────────
-// All 8 tools: 7 save_* tools + 1 escalate tool.
-// Each execute() validates the value and returns {success, field?, value?, error?}.
+// ─── Function definitions embedded in system prompt ───────────────────────────
+// Gemma 3 27B does not support the native tool-calling protocol.
+// We give it function definitions in text and tell it to output JSON.
+const FUNCTION_DEFINITIONS = `AVAILABLE FUNCTIONS:
+[
+  {"name":"save_phone","description":"Save customer phone when they provide a 10-digit Indian mobile number.","parameters":{"type":"object","properties":{"phone":{"type":"string","description":"Indian mobile number, 10 digits, starts with 6-9. Strip +91/91 prefix if present."}},"required":["phone"]}},
+  {"name":"save_location","description":"Save the Bengaluru area or locality when customer provides it.","parameters":{"type":"object","properties":{"location":{"type":"string","description":"Bengaluru area or locality name (e.g. Koramangala, Indiranagar, Whitefield)"}},"required":["location"]}},
+  {"name":"save_service_type","description":"Save type of domestic help needed when customer specifies it.","parameters":{"type":"object","properties":{"service_type":{"type":"string","description":"Type of help: Cooking, Cleaning, Baby Care, Elderly Care, or similar"}},"required":["service_type"]}},
+  {"name":"save_schedule","description":"Save maid schedule preference when customer specifies it.","parameters":{"type":"object","properties":{"schedule":{"type":"string","description":"24-hour Live-in (stays overnight) or 12-hour Day (morning to evening)"}},"required":["schedule"]}},
+  {"name":"save_salary_range","description":"Save expected salary range if customer mentions it. Optional field.","parameters":{"type":"object","properties":{"salary_range":{"type":"string","description":"Expected salary or budget (e.g. 15k, Rs 12000, flexible)"}},"required":["salary_range"]}},
+  {"name":"save_family_size","description":"Save number of family members if mentioned. Optional field.","parameters":{"type":"object","properties":{"family_size":{"type":"string","description":"Number of people in household (e.g. 4, family of 3, couple)"}},"required":["family_size"]}},
+  {"name":"save_has_experience","description":"Save whether customer has hired a maid before. Optional field.","parameters":{"type":"object","properties":{"has_experience":{"type":"string","description":"Whether they hired domestic help before (Yes/No/details)"}},"required":["has_experience"]}},
+  {"name":"escalate","description":"Escalate to human support when customer is angry, frustrated, or explicitly asks for a human.","parameters":{"type":"object","properties":{"reason":{"type":"string","description":"Brief reason for escalation"}},"required":["reason"]}}
+]
 
-export const agenticTools = {
-  save_phone: tool({
-    description: 'Save the customer phone number when they provide it. Call ONLY when the user has provided a 10-digit Indian mobile number.',
-    inputSchema: z.object({
-      phone: z.string().describe('Indian mobile number, 10 digits, starts with 6-9. Strip country code (+91/91) if present.'),
-    }),
-    execute: async ({ phone }) => {
-      const normalized = phone.replace(/\D/g, '').slice(-10);
+OUTPUT FORMAT — respond with exactly one JSON object, no other text:
+- To save a field and reply: {"action":"save","name":"<function_name>","parameters":{...},"message":"<your friendly reply to continue the conversation>"}
+- To just reply without saving: {"action":"respond","message":"<your friendly reply>"}
+
+NEVER output plain text. ALWAYS output valid JSON on a single line.`;
+
+// ─── Parsed response shape ────────────────────────────────────────────────────
+interface AgenticResponse {
+  action: 'save' | 'respond';
+  name?: string;
+  parameters?: Record<string, string>;
+  message: string;
+}
+
+// ─── parseAgenticResponse ─────────────────────────────────────────────────────
+// Extracts the JSON object from model output. Returns null if unparseable.
+function parseAgenticResponse(text: string): AgenticResponse | null {
+  if (!text || !text.trim()) return null;
+  // Find the first complete JSON object in the output (model may add markdown fences)
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[0]);
+    if (typeof parsed.action !== 'string' || typeof parsed.message !== 'string') return null;
+    return parsed as AgenticResponse;
+  } catch {
+    return null;
+  }
+}
+
+// ─── executeToolCall ──────────────────────────────────────────────────────────
+// Runs the validation logic for a named tool and returns a result.
+// Replaces the Vercel AI SDK tool execute() functions.
+async function executeToolCall(
+  name: string,
+  parameters: Record<string, string> = {},
+): Promise<{ success: boolean; field?: string; value?: string; error?: string }> {
+  switch (name) {
+    case 'save_phone': {
+      const raw = String(parameters.phone ?? '');
+      const normalized = raw.replace(/\D/g, '').slice(-10);
       if (!isValidPhone(normalized)) {
         return { success: false, error: 'Please share a valid 10-digit mobile number (e.g., 9876543210).' };
       }
       return { success: true, field: 'phone', value: normalized };
-    },
-  }),
-
-  save_location: tool({
-    description: 'Save the Bengaluru area or locality when the customer provides it.',
-    inputSchema: z.object({
-      location: z.string().describe('Bengaluru area or locality name (e.g., Koramangala, Indiranagar, Whitefield)'),
-    }),
-    execute: async ({ location }) => {
+    }
+    case 'save_location': {
+      const location = String(parameters.location ?? '');
       if (!validateLocation(location)) {
         return { success: false, error: 'Please share your area in Bengaluru (e.g., Koramangala, Indiranagar, Whitefield).' };
       }
       return { success: true, field: 'location', value: location };
-    },
-  }),
-
-  save_service_type: tool({
-    description: 'Save the type of domestic help needed when the customer specifies it.',
-    inputSchema: z.object({
-      service_type: z.string().describe('Type of domestic help: Cooking, Cleaning, Baby Care, Elderly Care, or similar'),
-    }),
-    execute: async ({ service_type }) => {
+    }
+    case 'save_service_type': {
+      const service_type = String(parameters.service_type ?? '');
       if (!validateServiceType(service_type)) {
         return { success: false, error: 'Please choose from: Cooking, Cleaning, Baby Care, or Elderly Care.' };
       }
       return { success: true, field: 'service_type', value: service_type };
-    },
-  }),
-
-  save_schedule: tool({
-    description: 'Save the maid schedule preference when the customer specifies it.',
-    inputSchema: z.object({
-      schedule: z.string().describe('Schedule preference: 24-hour Live-in (stays at home) or 12-hour Day (morning to evening)'),
-    }),
-    execute: async ({ schedule }) => {
+    }
+    case 'save_schedule': {
+      const schedule = String(parameters.schedule ?? '');
       if (!validateSchedule(schedule)) {
         return { success: false, error: 'Please let us know — 24-hour Live-in maid or 12-hour Day maid?' };
       }
       return { success: true, field: 'schedule', value: schedule };
-    },
-  }),
-
-  save_salary_range: tool({
-    description: 'Save the expected salary range when the customer mentions it. This field is optional.',
-    inputSchema: z.object({
-      salary_range: z.string().describe('Expected salary or budget (e.g., 15k, Rs 12000, 15-20k, or "flexible")'),
-    }),
-    execute: async ({ salary_range }) => {
-      if (!salary_range || salary_range.trim().length === 0) {
+    }
+    case 'save_salary_range': {
+      const salary_range = String(parameters.salary_range ?? '').trim();
+      if (!salary_range) {
         return { success: false, error: 'Please share a salary range or say "skip" to continue.' };
       }
-      return { success: true, field: 'salary_range', value: salary_range.trim() };
-    },
-  }),
-
-  save_family_size: tool({
-    description: 'Save the number of family members when the customer mentions it. This field is optional.',
-    inputSchema: z.object({
-      family_size: z.string().describe('Number of people in household (e.g., "4", "family of 3", "couple")'),
-    }),
-    execute: async ({ family_size }) => {
-      if (!family_size || family_size.trim().length === 0) {
+      return { success: true, field: 'salary_range', value: salary_range };
+    }
+    case 'save_family_size': {
+      const family_size = String(parameters.family_size ?? '').trim();
+      if (!family_size) {
         return { success: false, error: 'How many people are in your family? You can also say "skip".' };
       }
-      return { success: true, field: 'family_size', value: family_size.trim() };
-    },
-  }),
-
-  save_has_experience: tool({
-    description: 'Save whether the customer has hired a maid before. This field is optional.',
-    inputSchema: z.object({
-      has_experience: z.string().describe('Whether they hired domestic help before (Yes/No/details)'),
-    }),
-    execute: async ({ has_experience }) => {
-      if (!has_experience || has_experience.trim().length === 0) {
+      return { success: true, field: 'family_size', value: family_size };
+    }
+    case 'save_has_experience': {
+      const has_experience = String(parameters.has_experience ?? '').trim();
+      if (!has_experience) {
         return { success: false, error: 'Have you hired a maid before? Yes, No, or any details are fine.' };
       }
-      return { success: true, field: 'has_experience', value: has_experience.trim() };
-    },
-  }),
-
-  escalate: tool({
-    description: 'Escalate to human support when the customer is angry, frustrated, has an urgent complaint mid-flow, or explicitly asks to speak to a human.',
-    inputSchema: z.object({
-      reason: z.string().describe('Brief reason for escalation (e.g., "Customer is angry about service quality")'),
-    }),
-    execute: async ({ reason }) => {
+      return { success: true, field: 'has_experience', value: has_experience };
+    }
+    case 'escalate': {
+      const reason = String(parameters.reason ?? 'Customer requested escalation');
       return { success: true, field: '__escalate', value: reason };
-    },
-  }),
-} as const;
+    }
+    default:
+      return { success: false, error: `Unknown function: ${name}` };
+  }
+}
 
 // ─── Helper: isComplete ───────────────────────────────────────────────────────
-// Returns true only when all 4 required fields are truthy non-empty strings.
 function isComplete(collectedData: CollectedData): boolean {
   return REQUIRED_FIELDS.every(f => {
     const val = collectedData[f];
@@ -189,7 +191,6 @@ function isComplete(collectedData: CollectedData): boolean {
 }
 
 // ─── Helper: detectToolLoop ───────────────────────────────────────────────────
-// Returns true when any tool has been called TOOL_LOOP_THRESHOLD or more times.
 function detectToolLoop(collectedData: CollectedData): boolean {
   const raw = (collectedData as any).__tool_calls || '{}';
   try {
@@ -201,7 +202,6 @@ function detectToolLoop(collectedData: CollectedData): boolean {
 }
 
 // ─── Helper: updateToolCallCount ─────────────────────────────────────────────
-// Increments the call count for toolName in __tool_calls JSON string.
 function updateToolCallCount(collectedData: CollectedData, toolName: string): CollectedData {
   const raw = (collectedData as any).__tool_calls || '{}';
   let toolCalls: Record<string, number> = {};
@@ -220,9 +220,7 @@ function shouldForceEscalateAgentic(consecutiveFailures: number): boolean {
 }
 
 // ─── Helper: buildAgenticSystemPrompt ────────────────────────────────────────
-// Builds the system prompt showing collected data and still-needed fields.
 function buildAgenticSystemPrompt(collectedData: CollectedData): string {
-  // Summarise collected data (excluding internal __ keys)
   const collectedEntries = Object.entries(collectedData)
     .filter(([k, v]) => !k.startsWith('__') && typeof v === 'string' && v.trim().length > 0)
     .map(([k, v]) => `  ${k}: "${v}"`)
@@ -232,7 +230,6 @@ function buildAgenticSystemPrompt(collectedData: CollectedData): string {
     ? `COLLECTED DATA:\n${collectedEntries}`
     : 'COLLECTED DATA:\n  (none yet)';
 
-  // Determine still-needed fields
   const requiredRemaining = REQUIRED_FIELDS.filter(f => {
     const val = collectedData[f];
     return !val || val.trim().length === 0;
@@ -261,25 +258,26 @@ ${stillNeededOptional}
 
 INSTRUCTIONS:
 1. Greet the customer warmly on the first turn, then ask for the FIRST missing required field.
-2. When the customer provides information for any field, call the appropriate save_* tool immediately.
-3. Call EXACTLY ONE tool per message. NEVER call multiple tools at once.
-4. If the customer provides information you haven't asked for yet (e.g., they volunteer their location before you ask), call the appropriate save_* tool immediately to save it.
-5. If a customer asks a FAQ (pricing, process, background verification etc.), answer briefly, then re-ask the current missing required field.
-6. If the customer seems angry, frustrated, or explicitly asks for a human, call escalate().
-7. After ALL required fields are collected, thank the customer and say our team will call them within 2 hours. Do NOT ask more questions.
+2. When the customer provides information for any field, call the appropriate save_* function immediately.
+3. Call EXACTLY ONE function per message. NEVER call multiple functions at once.
+4. If the customer provides information you haven't asked for yet, call the appropriate save_* function to capture it.
+5. If a customer asks a FAQ (pricing, process, background verification etc.), answer briefly in the "message", then re-ask the current missing required field.
+6. If the customer seems angry, frustrated, or explicitly asks for a human, call escalate.
+7. After ALL required fields are collected, thank the customer in the "message" and say our team will call them within 2 hours.
 8. For optional fields (salary_range, family_size, has_experience), only ask once all required fields are collected.
 
 RULES:
 - Ask EXACTLY ONE question per message.
-- NEVER mention specific prices or salary amounts you quote yourself.
+- NEVER mention specific prices or salary amounts.
 - NEVER offer to call the customer yourself.
-- NEVER ask for information already collected (see COLLECTED DATA above).
-- Keep responses concise — 1-3 sentences maximum.
-- Schedule options are: "24-hour Live-in maid" (stays at home overnight) or "12-hour Day maid" (morning to evening, goes home at night).`;
+- NEVER ask for information already in COLLECTED DATA.
+- Keep "message" concise — 1-3 sentences maximum.
+- Schedule options: "24-hour Live-in maid" (stays overnight) or "12-hour Day maid" (morning to evening).
+
+${FUNCTION_DEFINITIONS}`;
 }
 
 // ─── Private: saveAgenticSession ─────────────────────────────────────────────
-// Persists agentic session state to Supabase. Always writes agentic_mode=true.
 async function saveAgenticSession(
   conversationId: string,
   newState: string,
@@ -305,9 +303,6 @@ async function saveAgenticSession(
 // ─── handleMaidHireAgentic ────────────────────────────────────────────────────
 // Main agentic handler for maid_hire sessions.
 // Return type MUST match handleMaidHireStateMachine exactly for drop-in use in route.ts.
-//
-// CRITICAL: Do NOT wrap generateText() in try/catch.
-// Gemini API errors must propagate to route.ts for single-turn deterministic fallback.
 export async function handleMaidHireAgentic(
   conversationId: string,
   latestMessage: string,
@@ -329,7 +324,6 @@ export async function handleMaidHireAgentic(
 }> {
   const startTime = Date.now();
 
-  // Default extractionMeta for agentic path (no regex extraction runs here — tools handle validation)
   const extractionMeta: ExtractionMeta = {
     sources: {},
     latency_ms: 0,
@@ -340,11 +334,11 @@ export async function handleMaidHireAgentic(
   // 1. Load collectedData from DB session
   let collectedData: CollectedData = (dbSession?.collected_data || {}) as CollectedData;
 
-  // 2. Parse consecutive failures from collectedData
+  // 2. Parse consecutive failures
   let consecutiveFailures = parseInt((collectedData as any).__consecutive_failures || '0', 10);
   if (isNaN(consecutiveFailures)) consecutiveFailures = 0;
 
-  // 3. Early return: loop already detected in a previous turn → route.ts will fall back to deterministic
+  // 3. Early return: loop already detected in a previous turn
   if ((collectedData as any).__loop_detected === 'true') {
     return {
       displayText: "Let me find the right way to help you. One moment...",
@@ -362,19 +356,15 @@ export async function handleMaidHireAgentic(
     };
   }
 
-  // 4. Build system prompt
+  // 4. Build system prompt (includes function definitions + JSON format instruction)
   const systemPrompt = buildAgenticSystemPrompt(collectedData);
 
-  // 5. Call generateText() with tools.
-  //    NOTE: No try/catch here — Gemini API errors propagate to route.ts
-  //    so it can fall back to handleMaidHireStateMachine for this single turn.
+  // 5. Call generateText() — no tools param (Gemma doesn't support native tool-calling)
+  //    Errors propagate to route.ts for single-turn deterministic fallback.
   const result = await generateText({
     model: google('gemma-3-27b-it'),
-    tools: agenticTools,
-    toolChoice: 'auto',
     system: systemPrompt,
     messages: [{ role: 'user', content: latestMessage }],
-    // No stopWhen — default single-step execution (one LLM call per turn)
   });
 
   // 6. Capture token usage
@@ -383,56 +373,44 @@ export async function handleMaidHireAgentic(
   const totalTokens = result.usage?.totalTokens ?? (promptTokens + completionTokens);
   const estimatedCostUsd = (totalTokens / 1000) * PER_1K_TOKENS;
 
-  // 7. Process tool calls
+  const rawText = result.text?.trim() || '';
+
+  // 7. Parse the JSON response from the model
+  const parsed = parseAgenticResponse(rawText);
+  console.log(`[Agentic] Raw: ${rawText.slice(0, 120)} | Parsed action: ${parsed?.action ?? 'null'}`);
+
+  // 8. Execute tool if model chose to save a field
   let escalateCalled = false;
   let toolError: string | undefined;
   let toolSucceeded = false;
+  let modelMessage = parsed?.message || rawText; // fallback to raw text if JSON parse failed
 
-  if (result.toolCalls && result.toolCalls.length > 0) {
-    // If LLM called multiple tools (should not happen per prompt), log warning and process only first
-    if (result.toolCalls.length > 1) {
-      console.warn(`[Agentic] LLM called ${result.toolCalls.length} tools — processing only first`);
-    }
+  if (parsed?.action === 'save' && parsed.name) {
+    // Update tool call count for loop detection
+    collectedData = updateToolCallCount(collectedData, parsed.name);
 
-    const toolCall = result.toolCalls[0];
-    const toolName = toolCall.toolName as string;
+    const toolResult = await executeToolCall(parsed.name, parsed.parameters ?? {});
 
-    // Update tool call count in collectedData for loop detection
-    collectedData = updateToolCallCount(collectedData, toolName);
-
-    // Read the tool result (execute() already ran via the AI SDK)
-    if (result.toolResults && result.toolResults.length > 0) {
-      const output = result.toolResults[0].output as {
-        success: boolean;
-        field?: string;
-        value?: string;
-        error?: string;
-      };
-
-      if (output.success && output.field && output.value !== undefined) {
-        // Valid slot saved
-        if (output.field === '__escalate') {
-          // escalate() tool was called
-          escalateCalled = true;
-        } else {
-          // Save the field value to collectedData
-          (collectedData as any)[output.field] = output.value;
-        }
-        // Reset consecutive failures on any successful save
-        consecutiveFailures = 0;
-        toolSucceeded = true;
-      } else if (!output.success) {
-        // Validator rejected — increment failure counter
-        consecutiveFailures += 1;
-        toolError = output.error;
+    if (toolResult.success && toolResult.field && toolResult.value !== undefined) {
+      if (toolResult.field === '__escalate') {
+        escalateCalled = true;
+      } else {
+        (collectedData as any)[toolResult.field] = toolResult.value;
       }
+      consecutiveFailures = 0;
+      toolSucceeded = true;
+    } else if (!toolResult.success) {
+      // Validator rejected the value — override model's message with the validator error
+      consecutiveFailures += 1;
+      toolError = toolResult.error;
+      modelMessage = toolResult.error || modelMessage;
     }
   }
 
-  // 8. Update consecutive failures in collectedData
+  // 9. Update consecutive failures in collectedData
   (collectedData as any).__consecutive_failures = String(consecutiveFailures);
 
-  // 9. Check loop detection AFTER updating tool call counts
+  // 10. Check loop detection AFTER updating tool call counts
   if (detectToolLoop(collectedData)) {
     (collectedData as any).__loop_detected = 'true';
     await saveAgenticSession(conversationId, 'LOOP_DETECTED', collectedData, (dbSession?.attempts ?? 0) + 1);
@@ -442,7 +420,7 @@ export async function handleMaidHireAgentic(
       collectedData,
       tookMs: Date.now() - startTime,
       systemPrompt,
-      rawResponse: result.text || '',
+      rawResponse: rawText,
       extractionMeta,
       promptTokens,
       completionTokens,
@@ -452,7 +430,7 @@ export async function handleMaidHireAgentic(
     };
   }
 
-  // 10. Check force escalate (3 consecutive validation failures)
+  // 11. Check force escalate (3 consecutive validation failures)
   if (shouldForceEscalateAgentic(consecutiveFailures)) {
     const hasPhone = !!(collectedData.phone && collectedData.phone.trim().length > 0);
     const forceText = hasPhone
@@ -467,7 +445,7 @@ export async function handleMaidHireAgentic(
       collectedData,
       tookMs: Date.now() - startTime,
       systemPrompt,
-      rawResponse: forceText,
+      rawResponse: rawText,
       extractionMeta,
       promptTokens,
       completionTokens,
@@ -477,26 +455,23 @@ export async function handleMaidHireAgentic(
     };
   }
 
-  // 11. Derive display text
-  // Priority: LLM text > tool error message > derived "Got it! Next question" from remaining fields
-  let displayText = result.text?.trim() || '';
+  // 12. Derive display text
+  // Priority: validator error (if tool failed) > model's message > fallback questions
+  let displayText = modelMessage.trim();
 
   if (!displayText) {
-    // LLM returned no text (typical when a tool is called)
+    // Model returned empty — construct from remaining fields
     if (toolSucceeded) {
-      // Build next question from remaining required fields
       const requiredRemaining = REQUIRED_FIELDS.filter(f => {
         const val = collectedData[f];
         return !val || val.trim().length === 0;
       });
 
       if (requiredRemaining.length === 0) {
-        // All required collected — thank user
         displayText = collectedData.phone
           ? `Thank you! Our team will call you at ${collectedData.phone} within 2 hours with verified profiles matching your requirements.`
           : 'Thank you! Our team will reach out shortly with verified helper profiles.';
       } else {
-        // Ask for next required field
         const nextField = requiredRemaining[0];
         const fieldQuestions: Record<string, string> = {
           phone: 'Could you please share your 10-digit mobile number?',
@@ -507,10 +482,8 @@ export async function handleMaidHireAgentic(
         displayText = `Got it! ${fieldQuestions[nextField] || `Could you share your ${nextField}?`}`;
       }
     } else if (toolError) {
-      // Tool validation failed — use the error message as display text
       displayText = toolError;
     } else {
-      // No tool called, no text — fall back to asking for first missing required field
       const requiredRemaining = REQUIRED_FIELDS.filter(f => {
         const val = collectedData[f];
         return !val || val.trim().length === 0;
@@ -530,23 +503,20 @@ export async function handleMaidHireAgentic(
     }
   }
 
-  // 12. Apply guardrails to display text
+  // 13. Apply guardrails
   displayText = applyStrictGuardrails(displayText);
 
-  // 13. Determine shouldEscalate and newState
+  // 14. Determine shouldEscalate and newState
   let shouldEscalate = false;
   let newState = 'COLLECTING';
 
   if (escalateCalled) {
-    // escalate() tool was called mid-flow
     shouldEscalate = true;
     newState = 'ESCALATED';
   } else if (isComplete(collectedData)) {
-    // All required fields collected
     shouldEscalate = true;
     newState = 'COMPLETE';
   } else {
-    // Determine next needed required field for current_state tracking
     const requiredRemaining = REQUIRED_FIELDS.filter(f => {
       const val = collectedData[f];
       return !val || val.trim().length === 0;
@@ -554,13 +524,11 @@ export async function handleMaidHireAgentic(
     if (requiredRemaining.length > 0) {
       newState = `NEED_${requiredRemaining[0].toUpperCase()}`;
     } else {
-      // Required done but no complete signal yet (edge case)
       newState = 'NEED_OPTIONAL';
     }
   }
 
-  // 14. Save session to Supabase
-  // Increment attempts only on tool validation failures
+  // 15. Save session to Supabase
   const newAttempts = (dbSession?.attempts ?? 0) + (consecutiveFailures > 0 && !toolSucceeded ? 1 : 0);
   await saveAgenticSession(conversationId, newState, collectedData, newAttempts);
 
@@ -570,7 +538,7 @@ export async function handleMaidHireAgentic(
     collectedData,
     tookMs: Date.now() - startTime,
     systemPrompt,
-    rawResponse: result.text || '',
+    rawResponse: rawText,
     extractionMeta,
     promptTokens,
     completionTokens,
