@@ -1,0 +1,298 @@
+---
+# Promptfoo Configuration for EzyBot State Machine Evaluation
+# Run: npx promptfoo eval
+# View: npx promptfoo view
+
+description: "EzyBot Maid Hiring Flow - State Machine Testing"
+
+providers:
+  - id: ezybot-local
+    type: http
+    config:
+      method: POST
+      url: http://localhost:3000/api/chat
+      headers:
+        Content-Type: application/json
+      bodyTemplate: |
+        {
+          "messages": [
+            {{#each vars.chat_history}}
+            {
+              "role": "{{this.role}}",
+              "content": "{{this.content}}"
+            },
+            {{/each}}
+            {
+              "role": "user",
+              "content": "{{vars.user_message}}"
+            }
+          ],
+          "id": "eval_{{vars.test_id}}"
+        }
+      transform: |
+        return {
+          output: body.text || body,
+        };
+
+  - id: ezybot-prod
+    type: http
+    config:
+      method: POST
+      url: https://chat-agent-three.vercel.app/api/chat
+      headers:
+        Content-Type: application/json
+      bodyTemplate: |
+        {
+          "messages": [
+            {{#each vars.chat_history}}
+            {
+              "role": "{{this.role}}",
+              "content": "{{this.content}}"
+            },
+            {{/each}}
+            {
+              "role": "user",
+              "content": "{{vars.user_message}}"
+            }
+          ],
+          "id": "eval_{{vars.test_id}}"
+        }
+      transform: |
+        return {
+          output: body.text || body,
+        };
+
+defaultTest:
+  options:
+    provider: ezybot-local
+    delay: 2000 # Rate limiting: 2 second delay between requests
+
+tests:
+  # ─── Happy Path: Perfect flow ───────────────────────────────────────────
+  - description: "Happy path - Phone only"
+    vars:
+      test_id: "hp_01"
+      chat_history: []
+      user_message: "I need a maid"
+    assert:
+      - type: contains
+        value: "phone"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "undefined"
+        isCaseSensitive: false
+
+  - description: "Happy path - Phone + Area in same message"
+    vars:
+      test_id: "hp_02"
+      chat_history:
+        - role: "user"
+          content: "I need a maid"
+        - role: "assistant"
+          content: "Please share your 10-digit mobile number."
+      user_message: "My number is 9876543210. I live in Koramangala"
+    assert:
+      - type: contains
+        value: "Koramangala"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "undefined"
+        isCaseSensitive: false
+
+  - description: "Happy path - Phone + Service + Area"
+    vars:
+      test_id: "hp_03"
+      chat_history:
+        - role: "user"
+          content: "I need a maid"
+        - role: "assistant"
+          content: "Please share your 10-digit mobile number."
+        - role: "user"
+          content: "9876543210"
+        - role: "assistant"
+          content: "Which area in Bengaluru?"
+      user_message: "Koramangala, need cooking"
+    assert:
+      - type: contains
+        value: "cooking"
+        isCaseSensitive: false
+      - type: contains
+        value: "full-time"
+        isCaseSensitive: false
+
+  # ─── Invalid Phone ──────────────────────────────────────────────────────
+  - description: "Invalid phone - 5 digits then correct"
+    vars:
+      test_id: "invalid_01"
+      chat_history: []
+      user_message: "12345"
+    assert:
+      - type: contains
+        value: "phone"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "Thank you"
+        isCaseSensitive: false
+
+  - description: "Invalid phone - Letters instead of digits"
+    vars:
+      test_id: "invalid_02"
+      chat_history: []
+      user_message: "abcdefghij"
+    assert:
+      - type: contains
+        value: "phone"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "Thank you"
+        isCaseSensitive: false
+
+  # ─── FAQ Mid-Flow ───────────────────────────────────────────────────────
+  - description: "FAQ at START - How much does it cost"
+    vars:
+      test_id: "faq_01"
+      chat_history: []
+      user_message: "How much does it cost?"
+    assert:
+      - type: contains
+        value: "phone"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "undefined"
+        isCaseSensitive: false
+
+  - description: "FAQ mid-flow - Price question after phone"
+    vars:
+      test_id: "faq_02"
+      chat_history:
+        - role: "user"
+          content: "I need a maid"
+        - role: "assistant"
+          content: "Please share your 10-digit mobile number."
+        - role: "user"
+          content: "9876543210"
+        - role: "assistant"
+          content: "Which area in Bengaluru?"
+      user_message: "How much does it cost?"
+    assert:
+      - type: contains
+        value: "area"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "undefined"
+        isCaseSensitive: false
+
+  # ─── Wrong City ─────────────────────────────────────────────────────────
+  - description: "Wrong city at START - Mumbai"
+    vars:
+      test_id: "city_01"
+      chat_history: []
+      user_message: "Do you have service in Mumbai?"
+    assert:
+      - type: contains
+        value: "Bengaluru"
+        isCaseSensitive: false
+      - type: contains
+        value: "phone"
+        isCaseSensitive: false
+
+  - description: "Wrong city mid-flow - Delhi"
+    vars:
+      test_id: "city_02"
+      chat_history:
+        - role: "user"
+          content: "I need a maid"
+        - role: "assistant"
+          content: "Please share your 10-digit mobile number."
+        - role: "user"
+          content: "9876543210"
+        - role: "assistant"
+          content: "Which area in Bengaluru?"
+      user_message: "Actually, I'm in Delhi"
+    assert:
+      - type: contains
+        value: "Bengaluru"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "undefined"
+        isCaseSensitive: false
+
+  # ─── Off-topic ──────────────────────────────────────────────────────────
+  - description: "Off-topic question at START - Weather"
+    vars:
+      test_id: "offtopic_01"
+      chat_history: []
+      user_message: "What's the weather like?"
+    assert:
+      - type: contains
+        value: "domestic"
+        isCaseSensitive: false
+
+  - description: "Off-topic mid-flow - Sports"
+    vars:
+      test_id: "offtopic_02"
+      chat_history:
+        - role: "user"
+          content: "I need a maid"
+        - role: "assistant"
+          content: "Please share your 10-digit mobile number."
+        - role: "user"
+          content: "9876543210"
+        - role: "assistant"
+          content: "Which area in Bengaluru?"
+      user_message: "Who won the cricket match?"
+    assert:
+      - type: contains
+        value: "area"
+        isCaseSensitive: false
+
+  # ─── Hinglish ───────────────────────────────────────────────────────────
+  - description: "Hinglish - Hindi English mix"
+    vars:
+      test_id: "hinglish_01"
+      chat_history: []
+      user_message: "Mujhe ek maid chahiye, phone pe call kar do"
+    assert:
+      - type: contains
+        value: "phone"
+        isCaseSensitive: false
+
+  # ─── Gibberish ──────────────────────────────────────────────────────────
+  - description: "Gibberish - Random characters"
+    vars:
+      test_id: "gibberish_01"
+      chat_history: []
+      user_message: "!@#$%^&*()"
+    assert:
+      - type: contains
+        value: "phone"
+        isCaseSensitive: false
+      - type: not-contains
+        value: "Thank you"
+        isCaseSensitive: false
+
+  # ─── Backtrack ──────────────────────────────────────────────────────────
+  - description: "Backtrack - Change area after providing it"
+    vars:
+      test_id: "backtrack_01"
+      chat_history:
+        - role: "user"
+          content: "I need a maid"
+        - role: "assistant"
+          content: "Please share your 10-digit mobile number."
+        - role: "user"
+          content: "9876543210"
+        - role: "assistant"
+          content: "Which area in Bengaluru?"
+        - role: "user"
+          content: "Koramangala"
+        - role: "assistant"
+          content: "What type of help?"
+      user_message: "Actually, I live in Whitefield instead"
+    assert:
+      - type: contains
+        value: "area"
+        isCaseSensitive: false
+      - type: contains
+        value: "Whitefield"
+        isCaseSensitive: false

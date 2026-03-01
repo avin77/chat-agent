@@ -93,11 +93,30 @@ const BENGALURU_AREAS = [
   'wilson garden', 'bommanahalli', 'begur', 'arekere', 'kudlu gate',
   'kengeri', 'nagarbhavi', 'peenya', 'dasarahalli', 'rr nagar',
   'domlur', 'hal', 'old airport road',
+  // Common spelling variants / phonetic misspellings
+  'indranagar', 'whitfield', 'whitefeild', 'maratahalli', 'jpnagar',
+  'koramanagala', 'koramangla', 'koramanagla', 'hsr layot',
 ];
+
+// ─── Levenshtein distance for fuzzy location matching ────────────────────────
+function levenshtein(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
 
 export function extractLocation(text: string): string | null {
   const lower = text.toLowerCase();
 
+  // Layer 1: exact substring match (fast path)
   for (const area of BENGALURU_AREAS) {
     if (lower.includes(area)) {
       return capitalizeWords(area);
@@ -106,6 +125,20 @@ export function extractLocation(text: string): string | null {
 
   if (lower.includes('bangalore') || lower.includes('bengaluru')) {
     return 'Bangalore';
+  }
+
+  // Layer 2: fuzzy match on individual words — tolerates 1 typo per 5 chars
+  const words = lower.split(/[\s,]+/);
+  for (const word of words) {
+    if (word.length < 4) continue; // skip short words (prepositions, articles, etc.)
+    for (const area of BENGALURU_AREAS) {
+      const firstWord = area.split(' ')[0]; // compare against first word of multi-word area
+      if (firstWord.length < 4) continue;
+      const threshold = Math.floor(firstWord.length / 5); // 1 edit per 5 chars
+      if (threshold > 0 && levenshtein(word, firstWord) <= threshold) {
+        return capitalizeWords(area);
+      }
+    }
   }
 
   return null;

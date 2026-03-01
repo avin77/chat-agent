@@ -1521,5 +1521,603 @@
         "failure": ""
       }
     ]
+  },
+  {
+    "id": "c32",
+    "category": "spelling_location",
+    "notes": "Misspells location with fuzzy-matchable typo — tests Levenshtein layer",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Koramanagla",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Koramangala",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c33",
+    "category": "force_escalate",
+    "notes": "Invalid phone 3 times triggers force escalation (attempts >= 3)",
+    "turns": [
+      {
+        "user": "Need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "12345",
+        "bot": "That does not look like a valid number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "abcdefghij",
+        "bot": "Please share a valid 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "00000000000",
+        "bot": "Our team will contact you shortly.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "COMPLETE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      }
+    ]
+  },
+  {
+    "id": "c34",
+    "category": "hinglish",
+    "notes": "Full Hinglish conversation — mujhe maid chahiye, Hindi service description",
+    "turns": [
+      {
+        "user": "mujhe ek maid chahiye",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9449123456",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9449123456",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Koramangala area mein rehta hoon",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Koramangala",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "khana banana ke liye chahiye",
+        "bot": "Would you prefer a 24-hour Live-in or 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cooking",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c35",
+    "category": "price_everywhere",
+    "notes": "Asks price at multiple states — no price leakage allowed, bot re-asks state question",
+    "turns": [
+      {
+        "user": "I want to hire a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "how much does it cost?",
+        "bot": "Our team will discuss pricing. Which area in Bengaluru are you in?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "FAQ_MID_FLOW"
+      },
+      {
+        "user": "Indiranagar",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Indiranagar",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "what is the price for cleaning?",
+        "bot": "Our team will discuss pricing. What type of help do you need?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SERVICE",
+        "slot": "service_type",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "FAQ_MID_FLOW"
+      },
+      {
+        "user": "Cleaning",
+        "bot": "Would you prefer a 24-hour Live-in or 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cleaning",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c36",
+    "category": "gibberish_recovery",
+    "notes": "2 gibberish messages at phone state then valid phone — tests recovery",
+    "turns": [
+      {
+        "user": "hire maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "xkqpwzmn",
+        "bot": "I did not catch that. Please share your 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "GIBBERISH"
+      },
+      {
+        "user": "!@#$%",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "GIBBERISH"
+      },
+      {
+        "user": "9812345678",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9812345678",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c37",
+    "category": "short_answers",
+    "notes": "Very short answers for optional fields — all should be accepted without rejection",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Whitefield",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Whitefield",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "cooking",
+        "bot": "Would you prefer 24-hour Live-in or 12-hour Day?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cooking",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "part time",
+        "bot": "What salary range do you have in mind?",
+        "current_state": "ASK_SCHEDULE",
+        "expected_state": "ASK_SALARY",
+        "slot": "schedule",
+        "slot_value": "12-hour Day",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "idk",
+        "bot": "How many family members?",
+        "current_state": "ASK_SALARY",
+        "expected_state": "ASK_FAMILY",
+        "slot": "salary_range",
+        "slot_value": "idk",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "3",
+        "bot": "Have you hired a maid before?",
+        "current_state": "ASK_FAMILY",
+        "expected_state": "ASK_EXPERIENCE",
+        "slot": "family_size",
+        "slot_value": "3",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "not sure",
+        "bot": "Thank you! Our team will call you.",
+        "current_state": "ASK_EXPERIENCE",
+        "expected_state": "COMPLETE",
+        "slot": "has_experience",
+        "slot_value": "not sure",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c38",
+    "category": "mega_upfront",
+    "notes": "User provides all major fields in first message — multi-slot jump expected",
+    "turns": [
+      {
+        "user": "Hi I need a maid, my number is 9876543210, I am in Koramangala, need cooking, full time live-in",
+        "bot": "Thank you for all the details! What salary range do you have in mind?",
+        "current_state": "START",
+        "expected_state": "ASK_SALARY",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": "MULTI_SLOT"
+      },
+      {
+        "user": "skip",
+        "bot": "How many family members are in your household?",
+        "current_state": "ASK_SALARY",
+        "expected_state": "ASK_FAMILY",
+        "slot": "salary_range",
+        "slot_value": "Team will discuss",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c39",
+    "category": "wrong_city_chain",
+    "notes": "Mumbai then Delhi then correction to Bengaluru — tests repeated wrong city handling",
+    "turns": [
+      {
+        "user": "Need a maid in Mumbai",
+        "bot": "We currently operate only in Bengaluru.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "WRONG_CITY"
+      },
+      {
+        "user": "Actually I am in Delhi",
+        "bot": "We currently operate only in Bengaluru.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "WRONG_CITY"
+      },
+      {
+        "user": "ok I moved to Bengaluru. 9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Koramangala",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Koramangala",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c40",
+    "category": "skip_required",
+    "notes": "User tries to skip phone (required) then location (required) — bot must refuse",
+    "turns": [
+      {
+        "user": "I want to hire a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "skip",
+        "bot": "This information is needed. Please share your 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "SLOT_SKIP"
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "skip",
+        "bot": "This information is needed. Which area in Bengaluru?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "SLOT_SKIP"
+      },
+      {
+        "user": "Marathahalli",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Marathahalli",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c41",
+    "category": "skip_optional_chain",
+    "notes": "User skips ALL optional fields — salary, family, experience — each should advance",
+    "turns": [
+      {
+        "user": "I want to hire a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Hebbal",
+        "bot": "What type of help do you need?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Hebbal",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Cleaning",
+        "bot": "Would you prefer 24-hour Live-in or 12-hour Day?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cleaning",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "12 hour day",
+        "bot": "What salary range do you have in mind?",
+        "current_state": "ASK_SCHEDULE",
+        "expected_state": "ASK_SALARY",
+        "slot": "schedule",
+        "slot_value": "12-hour Day",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "skip",
+        "bot": "How many family members?",
+        "current_state": "ASK_SALARY",
+        "expected_state": "ASK_FAMILY",
+        "slot": "salary_range",
+        "slot_value": "Team will discuss",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "skip",
+        "bot": "Have you hired a maid before?",
+        "current_state": "ASK_FAMILY",
+        "expected_state": "ASK_EXPERIENCE",
+        "slot": "family_size",
+        "slot_value": "skipped",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "skip",
+        "bot": "Thank you! Our team will call you.",
+        "current_state": "ASK_EXPERIENCE",
+        "expected_state": "COMPLETE",
+        "slot": "has_experience",
+        "slot_value": "skipped",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
   }
 ]

@@ -13,10 +13,10 @@ function cn(...classes: (string | undefined | false)[]) {
 export function ChatWidget() {
     const [sessionId] = useState(() => {
         if (typeof window !== 'undefined') {
-            const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+            const SESSION_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours — matches server-side stale reset
             let id = localStorage.getItem('ezy_chat_id');
             const ts = Number(localStorage.getItem('ezy_chat_ts') || 0);
-            // Start a fresh session if none exists or it's older than 24h
+            // Start a fresh session if none exists or it's older than 4h
             if (!id || Date.now() - ts > SESSION_TTL_MS) {
                 id = Math.random().toString(36).substring(2) + Date.now().toString(36);
                 localStorage.setItem('ezy_chat_id', id);

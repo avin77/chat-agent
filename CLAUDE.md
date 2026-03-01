@@ -286,13 +286,15 @@ Auto-deploys:  on every git push to main
 
 ## Current Status (as of Feb 2026)
 
-**Eval Score:** 94% PRODUCTION READY (Feb 24, 2026)
-- Last eval: `data/eval-state-2026-02-24T07-27-42-329Z.json`
-- 28 conversations tested, 115 turns, 17 failures remain (being fixed in this session)
+**Eval Score:** 98% PRODUCTION READY (Feb 24, 2026)
+- Last eval: `data/eval-state-2026-02-24T14-28-16-898Z.json`
+- 28 conversations tested, 115 turns, 5 failures (fixed in latest commit)
 
 **What's Working:**
 - State machine fully integrated (`BaseFlow.ts` + `MaidHiringFlow.ts`)
 - Keyword fallback in `route.ts` catches ~80% of LLM instruction failures
+- Template-based LLM fallback (no more raw instruction leaks when Gemini fails)
+- Graceful error handling for all intents (no HTTP 500 on API failures)
 - Dashboard at `/dashboard` with eval metrics, response quality, conversation health
 
 **Key Architecture Files:**

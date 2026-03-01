@@ -1,0 +1,1463 @@
+{
+  "timestamp": "2026-02-24T14:28:16.898Z",
+  "botUrl": "http://localhost:3000",
+  "totalConversations": 28,
+  "totalTurns": 115,
+  "scores": {
+    "state_transitions": {
+      "pass": 111,
+      "fail": 4,
+      "pct": 97
+    },
+    "slot_extraction": {
+      "pass": 115,
+      "fail": 0,
+      "pct": 100
+    },
+    "slot_validation": {
+      "pass": 87,
+      "fail": 0,
+      "pct": 100
+    },
+    "advance_decisions": {
+      "pass": 111,
+      "fail": 4,
+      "pct": 97
+    },
+    "failure_handling": {
+      "pass": 25,
+      "fail": 1,
+      "pct": 96
+    },
+    "no_price_leakage": {
+      "pass": 115,
+      "fail": 0,
+      "pct": 100
+    }
+  },
+  "overallScore": 98,
+  "verdict": "PRODUCTION READY",
+  "categoryScores": {
+    "happy_path": {
+      "pass": 22,
+      "fail": 2,
+      "total": 24
+    },
+    "multi_slot": {
+      "pass": 9,
+      "fail": 2,
+      "total": 11
+    },
+    "invalid_phone": {
+      "pass": 9,
+      "fail": 0,
+      "total": 9
+    },
+    "faq_mid_flow": {
+      "pass": 14,
+      "fail": 0,
+      "total": 14
+    },
+    "wrong_city": {
+      "pass": 5,
+      "fail": 0,
+      "total": 5
+    },
+    "off_topic": {
+      "pass": 8,
+      "fail": 0,
+      "total": 8
+    },
+    "spelling": {
+      "pass": 7,
+      "fail": 0,
+      "total": 7
+    },
+    "backtrack": {
+      "pass": 11,
+      "fail": 0,
+      "total": 11
+    },
+    "gibberish": {
+      "pass": 5,
+      "fail": 0,
+      "total": 5
+    },
+    "multi_intent": {
+      "pass": 4,
+      "fail": 0,
+      "total": 4
+    },
+    "price_asking": {
+      "pass": 9,
+      "fail": 0,
+      "total": 9
+    },
+    "phone_upfront": {
+      "pass": 3,
+      "fail": 0,
+      "total": 3
+    },
+    "skip_required": {
+      "pass": 5,
+      "fail": 0,
+      "total": 5
+    }
+  },
+  "failedTurns": [
+    {
+      "conv": "c01",
+      "turn": 6,
+      "user": "15-20k",
+      "expected": "How many family members are in your household?",
+      "actual": "Got it, **[Our team will contact you with pricing details]**,000 to **[Our team will contact you wit",
+      "reason": "STATE: Expected ASK_FAMILY keywords (family/member/household/people) not found in: \"Got it, **[Our team will contact you with pricing details]**,000 to **[Our team ...\"; ADVANCE: Should advance to ASK_FAMILY"
+    },
+    {
+      "conv": "c01",
+      "turn": 7,
+      "user": "4",
+      "expected": "Have you hired a maid or domestic helper before?",
+      "actual": "Thank you! Our team will call you at 9876543210 within 2 hours with verified profiles matching your ",
+      "reason": "STATE: Expected ASK_EXPERIENCE keywords (hired/experience/before/maid before/helper before) not found in: \"Thank you! Our team will call you at 9876543210 within 2 hours with verified pro...\"; ADVANCE: Should advance to ASK_EXPERIENCE"
+    },
+    {
+      "conv": "c04",
+      "turn": 3,
+      "user": "2",
+      "expected": "Have you hired a maid before?",
+      "actual": "Thank you! Our team will call you at 9876543210 within 2 hours with verified profiles matching your ",
+      "reason": "STATE: Expected ASK_EXPERIENCE keywords (hired/experience/before/maid before/helper before) not found in: \"Thank you! Our team will call you at 9876543210 within 2 hours with verified pro...\"; ADVANCE: Should advance to ASK_EXPERIENCE"
+    },
+    {
+      "conv": "c04",
+      "turn": 4,
+      "user": "No first time",
+      "expected": "Thank you! Our team will call you.",
+      "actual": "Got it, no prior experience noted. Please share your 10-digit mobile number.",
+      "reason": "STATE: Expected COMPLETE keywords (team/call/profile/thank/within) not found in: \"Got it, no prior experience noted. Please share your 10-digit mobile number....\"; ADVANCE: Should advance to COMPLETE"
+    },
+    {
+      "conv": "c28",
+      "turn": 5,
+      "user": "What is the salary for full-time cook?",
+      "expected": "Our team will discuss salary. Full-time or Part-time?",
+      "actual": "Our team will discuss pricing when they call you.\nWould you prefer a 24-hour Live-in maid (stays at ",
+      "reason": "FAILURE(FAQ_MID_FLOW): Did not re-ask for ASK_SCHEDULE"
+    }
+  ],
+  "promptMetrics": {
+    "instructionCompliance": 97,
+    "keywordFallbackNeeded": 4,
+    "wrongQuestionCount": 2,
+    "safetyNetTriggers": 0,
+    "avgResponseWords": 18,
+    "avgLatencyMs": 4314,
+    "p50LatencyMs": 3682,
+    "p95LatencyMs": 8536,
+    "avgTurnsToComplete": 7,
+    "completedConversations": 5,
+    "turnsToComplete": {
+      "c01": 8,
+      "c02": 8,
+      "c03": 8,
+      "c04": 4,
+      "c05": 7
+    },
+    "avgWordsByState": {
+      "ASK_PHONE": 12,
+      "ASK_LOCATION": 16,
+      "ASK_SERVICE": 20,
+      "ASK_SCHEDULE": 22,
+      "ASK_SALARY": 27,
+      "ASK_FAMILY": 26,
+      "ASK_EXPERIENCE": 23,
+      "COMPLETE": 24
+    },
+    "avgLatencyByState": {
+      "ASK_PHONE": 3728,
+      "ASK_LOCATION": 4201,
+      "ASK_SERVICE": 3412,
+      "ASK_SCHEDULE": 4140,
+      "ASK_SALARY": 7492,
+      "ASK_FAMILY": 6541,
+      "ASK_EXPERIENCE": 5205,
+      "COMPLETE": 5640
+    }
+  },
+  "conversations": [
+    {
+      "id": "c01",
+      "category": "happy_path",
+      "notes": "Perfect step-by-step flow",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I want to hire a maid",
+          "expected_bot": "Sure! Please share your 10-digit mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2946,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Got it! Which area in Bengaluru are you looking for help?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2294,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Koramangala",
+          "expected_bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "actual_bot": "Great, Koramangala! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 4165,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Cooking",
+          "expected_bot": "Would you prefer Full-time or Part-time help?",
+          "actual_bot": "Got it, cooking. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 6839,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "Full-time",
+          "expected_bot": "What is your expected salary range?",
+          "actual_bot": "Okay, noted about the 24-hour Live-in schedule.\nWhat is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
+          "latencyMs": 8447,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 6,
+          "user": "15-20k",
+          "expected_bot": "How many family members are in your household?",
+          "actual_bot": "Got it, **[Our team will contact you with pricing details]**,000 to **[Our team will contact you with pricing details]**,**[Our team will contact you with pricing details]**. Have you hired a maid or domestic helper before?",
+          "latencyMs": 6957,
+          "pass": false,
+          "failures": [
+            "STATE: Expected ASK_FAMILY keywords (family/member/household/people) not found in: \"Got it, **[Our team will contact you with pricing details]**,000 to **[Our team ...\"",
+            "ADVANCE: Should advance to ASK_FAMILY"
+          ]
+        },
+        {
+          "turn": 7,
+          "user": "4",
+          "expected_bot": "Have you hired a maid or domestic helper before?",
+          "actual_bot": "Thank you! Our team will call you at 9876543210 within 2 hours with verified profiles matching your requirements.\nThank you! Our team will call you at 9876543210 within 2 hours with verified profiles matching your requirements.",
+          "latencyMs": 8536,
+          "pass": false,
+          "failures": [
+            "STATE: Expected ASK_EXPERIENCE keywords (hired/experience/before/maid before/helper before) not found in: \"Thank you! Our team will call you at 9876543210 within 2 hours with verified pro...\"",
+            "ADVANCE: Should advance to ASK_EXPERIENCE"
+          ]
+        },
+        {
+          "turn": 8,
+          "user": "Yes, 2 years ago",
+          "expected_bot": "Thank you! Our team will call you at 9876543210 with verified profiles.",
+          "actual_bot": "Noted, a family size of 2 and you have prior experience—thank you! Please share your 10-digit mobile number.",
+          "latencyMs": 3939,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c02",
+      "category": "happy_path",
+      "notes": "With skips on optional fields",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a cook",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Got it, cooking. Please share your 10-digit mobile number.",
+          "latencyMs": 7537,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9123456789",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 4810,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Indiranagar",
+          "expected_bot": "What type of help? Cooking / Cleaning / Baby Care / Elderly Care",
+          "actual_bot": "Okay, Indiranagar noted. What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 4346,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Cooking",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Got it, cooking. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 2751,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "Part-time",
+          "expected_bot": "Expected salary range?",
+          "actual_bot": "Okay, noted regarding the 12-hour day schedule.\nWhat is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
+          "latencyMs": 4112,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 6,
+          "user": "skip",
+          "expected_bot": "How many family members?",
+          "actual_bot": "Got it, the team will discuss salary. How many family members are in your household?",
+          "latencyMs": 6923,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 7,
+          "user": "skip",
+          "expected_bot": "Have you hired a maid before?",
+          "actual_bot": "Okay, noted. \n\nHave you hired a maid or domestic helper before?",
+          "latencyMs": 3781,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 8,
+          "user": "No",
+          "expected_bot": "Thank you! Our team will call you.",
+          "actual_bot": "Thank you! Our team will call you at 9123456789 within 2 hours with verified profiles matching your requirements.",
+          "latencyMs": 6504,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c03",
+      "category": "happy_path",
+      "notes": "Baby care with details",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Looking for someone to take care of my baby",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Okay, noted—you’re looking for Baby Care for a family size of 1. Please share your 10-digit mobile number.",
+          "latencyMs": 5099,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "8765432109",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 5201,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "HSR Layout",
+          "expected_bot": "What type of help? Cooking / Cleaning / Baby Care / Elderly Care",
+          "actual_bot": "Great, Hsr! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 7077,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Baby care",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Okay, noted regarding Baby Care. \nWould you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 5323,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "Full time live in",
+          "expected_bot": "Expected salary range?",
+          "actual_bot": "Okay, noted about the 24-hour Live-in schedule.\nWhat is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
+          "latencyMs": 12438,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 6,
+          "user": "20000",
+          "expected_bot": "How many family members?",
+          "actual_bot": "Got it, **[Our team will contact you with pricing details]**,**[Our team will contact you with pricing details]**. How many family members are in your household?",
+          "latencyMs": 5449,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 7,
+          "user": "3",
+          "expected_bot": "Have you hired a maid before?",
+          "actual_bot": "Noted, a family size of 3.\nHave you hired a maid or domestic helper before?",
+          "latencyMs": 6388,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 8,
+          "user": "Yes had one for 3 years",
+          "expected_bot": "Thank you! Our team will call you.",
+          "actual_bot": "Thank you! Our team will call you at 8765432109 within 2 hours with verified profiles matching your requirements. Thank you! Our team will call you at 8765432109 within 2 hours with verified profiles matching your requirements.",
+          "latencyMs": 10390,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c04",
+      "category": "multi_slot",
+      "notes": "User gives 4 slots in one message",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a cook in Koramangala full-time 9876543210",
+          "expected_bot": "Great! What is your expected salary range?",
+          "actual_bot": "Thank you for providing your phone number, location, service type, and schedule details. What is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
+          "latencyMs": 9494,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "10-15k per month",
+          "expected_bot": "How many family members?",
+          "actual_bot": "Got it, **[Our team will contact you with pricing details]**,000 to **[Our team will contact you with pricing details]**,**[Our team will contact you with pricing details]**, and a family size of 10. Have you hired a maid or domestic helper before?",
+          "latencyMs": 9505,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "2",
+          "expected_bot": "Have you hired a maid before?",
+          "actual_bot": "Thank you! Our team will call you at 9876543210 within 2 hours with verified profiles matching your requirements.\nThank you! Our team will call you at 9876543210 within 2 hours with verified profiles matching your requirements.",
+          "latencyMs": 4474,
+          "pass": false,
+          "failures": [
+            "STATE: Expected ASK_EXPERIENCE keywords (hired/experience/before/maid before/helper before) not found in: \"Thank you! Our team will call you at 9876543210 within 2 hours with verified pro...\"",
+            "ADVANCE: Should advance to ASK_EXPERIENCE"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "No first time",
+          "expected_bot": "Thank you! Our team will call you.",
+          "actual_bot": "Got it, no prior experience noted. Please share your 10-digit mobile number.",
+          "latencyMs": 2567,
+          "pass": false,
+          "failures": [
+            "STATE: Expected COMPLETE keywords (team/call/profile/thank/within) not found in: \"Got it, no prior experience noted. Please share your 10-digit mobile number....\"",
+            "ADVANCE: Should advance to COMPLETE"
+          ]
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c05",
+      "category": "multi_slot",
+      "notes": "User gives location + service in one message",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2311,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9988776655",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 7327,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Whitefield, need a cook",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Thank you for letting us know your location and service requirement. \nWould you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 8010,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Part-time",
+          "expected_bot": "Expected salary range?",
+          "actual_bot": "Okay, noted—12-hour Day schedule.\nWhat is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
+          "latencyMs": 8070,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "skip",
+          "expected_bot": "How many family members?",
+          "actual_bot": "Got it, the team will discuss salary. How many family members are in your household?",
+          "latencyMs": 3872,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 6,
+          "user": "5",
+          "expected_bot": "Have you hired a maid before?",
+          "actual_bot": "Okay, noted regarding the family size. Have you hired a maid or domestic helper before?",
+          "latencyMs": 2844,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 7,
+          "user": "yes",
+          "expected_bot": "Thank you! Our team will call you.",
+          "actual_bot": "Thank you! Our team will call you at 9988776655 within 2 hours with verified profiles matching your requirements.\nThank you! Our team will call you at 9988776655 within 2 hours with verified profiles matching your requirements.",
+          "latencyMs": 4799,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c06",
+      "category": "invalid_phone",
+      "notes": "5-digit phone then correct",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2550,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "98765",
+          "expected_bot": "That doesn't look complete. Please share a valid 10-digit number.",
+          "actual_bot": "I can help with domestic help services. Please share your 10-digit mobile number.",
+          "latencyMs": 3982,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 3289,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c07",
+      "category": "invalid_phone",
+      "notes": "Letters instead of phone",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a cleaner",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Sure, we have cleaners available! Please share your 10-digit mobile number.",
+          "latencyMs": 2589,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "my number is abc",
+          "expected_bot": "Please share a valid 10-digit mobile number.",
+          "actual_bot": "I can help with domestic help services. Please share your 10-digit mobile number.",
+          "latencyMs": 4455,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "7654321098",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 4903,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c08",
+      "category": "invalid_phone",
+      "notes": "Phone starts with wrong digit",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Need a maid for cooking",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Got it, you need help with cooking. Please share your 10-digit mobile number.",
+          "latencyMs": 3293,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "1234567890",
+          "expected_bot": "That doesn't look valid. Numbers should start with 6-9.",
+          "actual_bot": "I can help with domestic help services. Please share your 10-digit mobile number.",
+          "latencyMs": 2465,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "9234567890",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 10672,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c09",
+      "category": "faq_mid_flow",
+      "notes": "FAQ at ASK_PHONE state",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 7552,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "do you have 24hr maid?",
+          "expected_bot": "Yes! We have full-time live-in helpers. Could you share your 10-digit mobile number?",
+          "actual_bot": "Yes, we offer 24hr, full-time, and live-in maids.\nPlease share your 10-digit mobile number.",
+          "latencyMs": 5255,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 3634,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c10",
+      "category": "faq_mid_flow",
+      "notes": "Price question at ASK_LOCATION",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 4199,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 5102,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "How much does a cook cost?",
+          "expected_bot": "Our team will discuss pricing when they call you. Which area in Bengaluru?",
+          "actual_bot": "Our team will discuss pricing when they call you.\nWhich area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 6096,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Koramangala",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Great, Koramangala! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 2211,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c11",
+      "category": "faq_mid_flow",
+      "notes": "Verification question at ASK_SERVICE",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I want to hire a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 4689,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9988776655",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 4690,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "BTM Layout",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Okay, BTM Layout noted! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 2014,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Are your maids background verified?",
+          "expected_bot": "Yes, all helpers are background verified. What type of help do you need?",
+          "actual_bot": "Yes, all helpers are thoroughly background verified for your peace of mind.\nWhat type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 3094,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "Cleaning",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Got it, cleaning. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 4926,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c12",
+      "category": "faq_mid_flow",
+      "notes": "FAQ at START (before flow begins)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Do you have 24 hour maids? I want to hire one",
+          "expected_bot": "Yes we have full-time helpers! Please share your 10-digit mobile number.",
+          "actual_bot": "Okay, noted—24-hour Live-in schedule and a family size of 24. Please share your 10-digit mobile number.",
+          "latencyMs": 6401,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 5877,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c13",
+      "category": "wrong_city",
+      "notes": "Mumbai at START",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid in Mumbai",
+          "expected_bot": "We currently operate in Bengaluru only. Share your number and we will reach out!",
+          "actual_bot": "We currently operate in Bengaluru only. We're expanding soon — share your number and we'll reach out once we launch in your city!\nPlease share your 10-digit mobile number.",
+          "latencyMs": 3682,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 5804,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c14",
+      "category": "wrong_city",
+      "notes": "Delhi at ASK_LOCATION",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 5998,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 4292,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "I'm in Delhi",
+          "expected_bot": "We only operate in Bengaluru currently. Which area in Bengaluru?",
+          "actual_bot": "We currently operate in Bengaluru only. We're expanding soon — share your number and we'll reach out when we're in your city!\nShare your number and we'll reach out when we're in your city!",
+          "latencyMs": 3956,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c15",
+      "category": "off_topic",
+      "notes": "Weather question at ASK_PHONE",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 3958,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "What's the weather today?",
+          "expected_bot": "I can help with domestic help services. Could you share your 10-digit mobile number?",
+          "actual_bot": "I can help with domestic help services. Please share your 10-digit mobile number.",
+          "latencyMs": 5520,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 3564,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c16",
+      "category": "off_topic",
+      "notes": "Random question at ASK_SERVICE",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2511,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 3437,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Koramangala",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Great, Koramangala! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 3053,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Who is the prime minister?",
+          "expected_bot": "I can help with domestic help services. Cooking / Cleaning / Baby Care / Elderly Care?",
+          "actual_bot": "I can help with domestic help services. What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 3649,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "Cooking",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Got it, cooking. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 3409,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c19",
+      "category": "spelling",
+      "notes": "Heavy typos that should still work",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "i nead a made for cookin",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Got it, you need help with cooking. Please share your 10-digit mobile number.",
+          "latencyMs": 3003,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2620,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "kormangla",
+          "expected_bot": "What type of help?",
+          "actual_bot": "I can help with domestic help services.\nWhich area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 3396,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c20",
+      "category": "spelling",
+      "notes": "Typos in service type",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "hire made",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! We're happy to assist you with finding the right domestic help. Please share your 10-digit mobile number.",
+          "latencyMs": 2488,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 8175,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Jayanagar",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Okay, Jayanagar noted. What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 2702,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "cookin and cleanin",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Got it, cooking. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 2779,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c21",
+      "category": "backtrack",
+      "notes": "User changes area after providing it",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2622,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2391,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Koramangala",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Great, Koramangala! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 3706,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "wait I want to change my area to Indiranagar",
+          "expected_bot": "Sure! Which area in Bengaluru?",
+          "actual_bot": "Sure, no problem! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2496,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "Indiranagar",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Got it, Indiranagar! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 6209,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c22",
+      "category": "backtrack",
+      "notes": "User wants to change service type",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 3412,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 4577,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "HSR",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Got it, Hsr! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 2071,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Cooking",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Got it, cooking. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 2232,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "Actually I want to change the service to cleaning",
+          "expected_bot": "Sure! What type of help?",
+          "actual_bot": "Sure, no problem! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 3269,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 6,
+          "user": "Cleaning",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Got it, cleaning services noted. \nWould you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 5688,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c23",
+      "category": "gibberish",
+      "notes": "Random characters",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 1970,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "asdfghjkl",
+          "expected_bot": "I didn't catch that. Please share your 10-digit mobile number.",
+          "actual_bot": "I didn't catch that.\nPlease share your 10-digit mobile number.",
+          "latencyMs": 2426,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2647,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c24",
+      "category": "gibberish",
+      "notes": "Special characters only",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2146,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "!!!???...",
+          "expected_bot": "I didn't catch that. Please share your 10-digit mobile number.",
+          "actual_bot": "I didn't catch that.\nPlease share your 10-digit mobile number.",
+          "latencyMs": 2644,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c25",
+      "category": "multi_intent",
+      "notes": "Hire + register in same message",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid and I also want to register as a helper",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2379,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2492,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c26",
+      "category": "multi_intent",
+      "notes": "Hire + complaint",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a new maid, the old one was terrible",
+          "expected_bot": "Please share your 10-digit mobile number.",
+          "actual_bot": "Okay, noted—you’re looking for Elderly Care with a family size of 1. Please share your 10-digit mobile number.",
+          "latencyMs": 5326,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2390,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c27",
+      "category": "price_asking",
+      "notes": "Price question at START",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I want to hire a maid, how much will it cost?",
+          "expected_bot": "Our team will discuss pricing. Please share your 10-digit mobile number.",
+          "actual_bot": "Our team will discuss pricing when they call you.\nTo get started, please share your 10-digit mobile number.",
+          "latencyMs": 3265,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "but just tell me the rough price",
+          "expected_bot": "Our team will share exact details on the call. Please share your mobile number.",
+          "actual_bot": "I can help with domestic help services. Please share your 10-digit mobile number.",
+          "latencyMs": 5555,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2169,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c28",
+      "category": "price_asking",
+      "notes": "Price question at ASK_SCHEDULE",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 2097,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "9876543210",
+          "expected_bot": "Which area?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2330,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Marathahalli",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Okay, Marathahalli noted! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 2315,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "Cooking",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Got it, cooking. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 2486,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "What is the salary for full-time cook?",
+          "expected_bot": "Our team will discuss salary. Full-time or Part-time?",
+          "actual_bot": "Our team will discuss pricing when they call you.\nWould you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 2741,
+          "pass": false,
+          "failures": [
+            "FAILURE(FAQ_MID_FLOW): Did not re-ask for ASK_SCHEDULE"
+          ]
+        },
+        {
+          "turn": 6,
+          "user": "Full-time",
+          "expected_bot": "Expected salary range?",
+          "actual_bot": "Okay, noted regarding the 24-hour Live-in schedule.\nWhat is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
+          "latencyMs": 2391,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c29",
+      "category": "phone_upfront",
+      "notes": "Phone provided in first message",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Hi, my number is 9988776655, I need a maid",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2440,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "Electronic City",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Okay, noted. What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 2487,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "Elderly care",
+          "expected_bot": "Full-time or Part-time?",
+          "actual_bot": "Okay, noted. Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+          "latencyMs": 2498,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    },
+    {
+      "id": "c30",
+      "category": "skip_required",
+      "notes": "Try to skip required field",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I need a maid",
+          "expected_bot": "Please share your mobile number.",
+          "actual_bot": "Welcome to EzyHelpers! Please share your 10-digit mobile number.",
+          "latencyMs": 1846,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 2,
+          "user": "skip",
+          "expected_bot": "This info is required. Please share your 10-digit mobile number.",
+          "actual_bot": "This information is needed to find you the right match.\nPlease share your 10-digit mobile number.",
+          "latencyMs": 2297,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 3,
+          "user": "9876543210",
+          "expected_bot": "Which area in Bengaluru?",
+          "actual_bot": "Thank you! Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 2195,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 4,
+          "user": "skip",
+          "expected_bot": "This info is required. Which area in Bengaluru?",
+          "actual_bot": "This information is needed to find you the right match.\nWhich area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
+          "latencyMs": 4174,
+          "pass": true,
+          "failures": []
+        },
+        {
+          "turn": 5,
+          "user": "HSR",
+          "expected_bot": "What type of help?",
+          "actual_bot": "Got it, Hsr! What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+          "latencyMs": 2238,
+          "pass": true,
+          "failures": []
+        }
+      ],
+      "failed": false
+    }
+  ]
+}
