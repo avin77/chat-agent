@@ -11,7 +11,7 @@ import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { createClient } from '@supabase/supabase-js';
 import { applyStrictGuardrails } from '../lib/guardrails';
-import { isValidPhone } from '../extractors/dataExtractor';
+import { isValidPhone, extractPhone } from '../extractors/dataExtractor';
 import type { CollectedData } from './BaseFlow';
 import type { ExtractionMeta } from '../extractors/llmExtractor';
 
@@ -66,9 +66,38 @@ function validateSchedule(v: string | null | undefined): boolean {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const REQUIRED_FIELDS = ['phone', 'location', 'service_type', 'schedule'] as const;
+const OPTIONAL_FIELDS = ['salary_range', 'family_size', 'has_experience'] as const;
+// ALL_FIELDS: required + optional, in the order we collect them
+const ALL_FIELDS: ReadonlyArray<string> = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
 const CONSECUTIVE_FAILURE_THRESHOLD = 3;
 const TOOL_LOOP_THRESHOLD = 3;
 const PER_1K_TOKENS = 0; // Gemma 3 27B is free
+
+// ─── Exact question text per field (mirrors MaidHiringFlow step definitions) ──
+const FIELD_QUESTIONS: Record<string, string> = {
+  phone: 'Could you please share your 10-digit mobile number?',
+  location: 'Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)',
+  service_type: 'What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care',
+  schedule: 'Would you prefer a 24-hour Live-in maid (stays at home overnight) or a 12-hour Day maid (morning to evening)?',
+  salary_range: 'What is your expected salary range? (You can say "skip" to continue.)',
+  family_size: 'How many family members are in your household? (You can say "skip" to continue.)',
+  has_experience: 'Have you hired a maid or domestic helper before? (You can say "skip" to continue.)',
+};
+
+// ─── Compute the next field to ask for, given what is already collected ───────
+function getNextField(collectedData: CollectedData): string | null {
+  // Required fields first, in order
+  for (const f of REQUIRED_FIELDS) {
+    const val = collectedData[f];
+    if (!val || val.trim().length === 0) return f;
+  }
+  // Optional fields, in order
+  for (const f of OPTIONAL_FIELDS) {
+    const val = (collectedData as any)[f];
+    if (!val || val.trim().length === 0) return f;
+  }
+  return null; // All collected
+}
 
 // ─── Function definitions embedded in system prompt ───────────────────────────
 // Gemma 3 27B does not support the native tool-calling protocol.
@@ -183,9 +212,11 @@ async function executeToolCall(
 }
 
 // ─── Helper: isComplete ───────────────────────────────────────────────────────
+// Only "complete" when ALL fields (required + optional) have been collected or skipped.
+// This ensures we ask optional fields before sending the COMPLETE message.
 function isComplete(collectedData: CollectedData): boolean {
-  return REQUIRED_FIELDS.every(f => {
-    const val = collectedData[f];
+  return ALL_FIELDS.every(f => {
+    const val = (collectedData as any)[f];
     return typeof val === 'string' && val.trim().length > 0;
   });
 }
@@ -230,49 +261,56 @@ function buildAgenticSystemPrompt(collectedData: CollectedData): string {
     ? `COLLECTED DATA:\n${collectedEntries}`
     : 'COLLECTED DATA:\n  (none yet)';
 
-  const requiredRemaining = REQUIRED_FIELDS.filter(f => {
+  // Derive the exact next field and question deterministically
+  const nextField = getNextField(collectedData);
+  const nextQuestion = nextField ? (FIELD_QUESTIONS[nextField] ?? null) : null;
+
+  const allRequiredDone = REQUIRED_FIELDS.every(f => {
     const val = collectedData[f];
-    return !val || val.trim().length === 0;
+    return typeof val === 'string' && val.trim().length > 0;
   });
 
-  const optionalFields = ['salary_range', 'family_size', 'has_experience'] as const;
-  const optionalRemaining = optionalFields.filter(f => {
-    const val = collectedData[f];
-    return !val || val.trim().length === 0;
-  });
-
-  const stillNeededRequired = requiredRemaining.length > 0
-    ? `STILL NEEDED (required): ${requiredRemaining.join(', ')}`
-    : 'STILL NEEDED (required): (all collected)';
-
-  const stillNeededOptional = optionalRemaining.length > 0
-    ? `STILL NEEDED (optional): ${optionalRemaining.join(', ')}`
-    : 'STILL NEEDED (optional): (all collected)';
+  // Mandatory instruction block — tells the model exactly what to say next
+  let mandatoryInstruction: string;
+  if (!nextField) {
+    // All fields (required + optional) collected — completion message
+    const phone = collectedData.phone?.trim() ?? '';
+    mandatoryInstruction = `MANDATORY: All information collected. Your "message" MUST thank the customer and say our team will call them at ${phone || 'the number provided'} within 2 hours with verified profiles. Use action "respond".`;
+  } else if (!allRequiredDone) {
+    mandatoryInstruction = `MANDATORY NEXT QUESTION: Your "message" MUST end with this exact question (word-for-word):
+"${nextQuestion}"
+If the customer's message does NOT provide a value for "${nextField}", do NOT call any save_* function — use action "respond" with the MANDATORY NEXT QUESTION.
+If the customer's message DOES provide a value for "${nextField}" (or any other field), call the appropriate save_* function AND include the MANDATORY NEXT QUESTION in your "message".`;
+  } else {
+    // Required done, optional remaining
+    mandatoryInstruction = `MANDATORY NEXT QUESTION: All required fields are collected. Now ask for the next optional field. Your "message" MUST end with this exact question (word-for-word):
+"${nextQuestion}"
+If the customer's message provides a value for "${nextField}" (or says "skip"), call save_${nextField} with that value AND include a brief acknowledgment + the next question.
+If user says "skip", call save_${nextField} with value "skipped".`;
+  }
 
   return `ROLE: EzyBot — domestic help intake assistant for EzyHelpers.com, Bengaluru.
 
 ${collectedSection}
 
-${stillNeededRequired}
-${stillNeededOptional}
+${mandatoryInstruction}
 
 INSTRUCTIONS:
-1. Greet the customer warmly on the first turn, then ask for the FIRST missing required field.
-2. When the customer provides information for any field, call the appropriate save_* function immediately.
-3. Call EXACTLY ONE function per message. NEVER call multiple functions at once.
-4. If the customer provides information you haven't asked for yet, call the appropriate save_* function to capture it.
-5. If a customer asks a FAQ (pricing, process, background verification etc.), answer briefly in the "message", then re-ask the current missing required field.
-6. If the customer seems angry, frustrated, or explicitly asks for a human, call escalate.
-7. After ALL required fields are collected, thank the customer in the "message" and say our team will call them within 2 hours.
-8. For optional fields (salary_range, family_size, has_experience), only ask once all required fields are collected.
+1. When the customer provides information for any field in COLLECTED DATA, call the appropriate save_* function immediately.
+2. Call EXACTLY ONE function per message. NEVER call multiple functions at once.
+3. If the customer provides information for a field NOT yet asked (e.g., mentions their area before you asked), call the appropriate save_* function to capture it, then still ask the MANDATORY NEXT QUESTION.
+4. If a customer asks a FAQ (pricing, process, background verification etc.), answer briefly in the "message", then ALWAYS end with the MANDATORY NEXT QUESTION.
+5. If the customer seems angry, frustrated, or explicitly asks for a human, call escalate.
+6. NEVER re-ask for information already in COLLECTED DATA.
 
 RULES:
+- Your "message" MUST always end with the MANDATORY NEXT QUESTION (copy it word-for-word).
 - Ask EXACTLY ONE question per message.
 - NEVER mention specific prices or salary amounts.
 - NEVER offer to call the customer yourself.
-- NEVER ask for information already in COLLECTED DATA.
 - Keep "message" concise — 1-3 sentences maximum.
 - Schedule options: "24-hour Live-in maid" (stays overnight) or "12-hour Day maid" (morning to evening).
+- If user says "skip" for an optional field, call save_${nextField ?? 'salary_range'} with value "skipped".
 
 ${FUNCTION_DEFINITIONS}`;
 }
@@ -354,6 +392,17 @@ export async function handleMaidHireAgentic(
       estimatedCostUsd: 0,
       newState: 'LOOP_DETECTED',
     };
+  }
+
+  // 3.5. Pre-extract phone from user message using regex (reliable, avoids LLM extraction errors).
+  // If phone is not yet saved and the message contains a valid 10-digit Indian number, save it now.
+  // This handles multi-slot messages like "I'm in Koramangala, my number is 9876543210, need cooking".
+  if (!collectedData.phone || collectedData.phone.trim().length === 0) {
+    const prePhone = extractPhone(latestMessage);
+    if (prePhone) {
+      (collectedData as any).phone = prePhone;
+      console.log(`[Agentic Pre-extract] Phone extracted from message: ${prePhone}`);
+    }
   }
 
   // 4. Build system prompt (includes function definitions + JSON format instruction)
@@ -460,51 +509,47 @@ export async function handleMaidHireAgentic(
   let displayText = modelMessage.trim();
 
   if (!displayText) {
-    // Model returned empty — construct from remaining fields
-    if (toolSucceeded) {
-      const requiredRemaining = REQUIRED_FIELDS.filter(f => {
-        const val = collectedData[f];
-        return !val || val.trim().length === 0;
-      });
-
-      if (requiredRemaining.length === 0) {
+    if (toolError) {
+      displayText = toolError;
+    } else {
+      // Model returned empty — use the next mandatory question as fallback
+      const nf = getNextField(collectedData);
+      if (!nf) {
         displayText = collectedData.phone
           ? `Thank you! Our team will call you at ${collectedData.phone} within 2 hours with verified profiles matching your requirements.`
           : 'Thank you! Our team will reach out shortly with verified helper profiles.';
       } else {
-        const nextField = requiredRemaining[0];
-        const fieldQuestions: Record<string, string> = {
-          phone: 'Could you please share your 10-digit mobile number?',
-          location: 'Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)',
-          service_type: 'What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care',
-          schedule: 'Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?',
-        };
-        displayText = `Got it! ${fieldQuestions[nextField] || `Could you share your ${nextField}?`}`;
-      }
-    } else if (toolError) {
-      displayText = toolError;
-    } else {
-      const requiredRemaining = REQUIRED_FIELDS.filter(f => {
-        const val = collectedData[f];
-        return !val || val.trim().length === 0;
-      });
-      if (requiredRemaining.length > 0) {
-        const nextField = requiredRemaining[0];
-        const fieldQuestions: Record<string, string> = {
-          phone: 'Please share your 10-digit mobile number.',
-          location: 'Which area in Bengaluru are you looking for help?',
-          service_type: 'What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care',
-          schedule: 'Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?',
-        };
-        displayText = fieldQuestions[nextField] || 'How can I help you?';
-      } else {
-        displayText = 'How can I help you?';
+        const prefix = toolSucceeded ? 'Got it! ' : '';
+        displayText = prefix + (FIELD_QUESTIONS[nf] ?? `Could you share your ${nf}?`);
       }
     }
   }
 
   // 13. Apply guardrails
   displayText = applyStrictGuardrails(displayText);
+
+  // 13b. Keyword fallback — if model's message doesn't contain keywords for the NEXT required field,
+  //      force-append the exact question. This mirrors the state machine's keyword fallback (route.ts step 9b).
+  const nextFieldForKeyword = getNextField(collectedData);
+  if (nextFieldForKeyword && !isComplete(collectedData)) {
+    const fieldKeywords: Record<string, string[]> = {
+      phone: ['phone', 'mobile', 'number', '10-digit', 'contact'],
+      location: ['area', 'bengaluru', 'bangalore', 'location', 'where', 'locality'],
+      service_type: ['type', 'cooking', 'cleaning', 'baby', 'elderly', 'help', 'service'],
+      schedule: ['full-time', 'part-time', 'schedule', 'prefer', 'live-in', '24-hour', '12-hour', 'day maid'],
+      salary_range: ['salary', 'range', 'budget', 'expect', 'pay'],
+      family_size: ['family', 'member', 'household', 'people'],
+      has_experience: ['hired', 'experience', 'before', 'maid before', 'helper before'],
+    };
+    const keywords = fieldKeywords[nextFieldForKeyword] ?? [];
+    const lowerDisplay = displayText.toLowerCase();
+    const hasKeyword = keywords.some(kw => lowerDisplay.includes(kw));
+    if (!hasKeyword && FIELD_QUESTIONS[nextFieldForKeyword]) {
+      // Strip trailing question and append the correct one
+      displayText = displayText.replace(/\?[^?]*$/, '.').replace(/\.\s*$/, '. ') + FIELD_QUESTIONS[nextFieldForKeyword];
+      console.log(`[Agentic Keyword Fallback] Appended correct question for ${nextFieldForKeyword}`);
+    }
+  }
 
   // 14. Determine shouldEscalate and newState
   let shouldEscalate = false;
@@ -514,18 +559,12 @@ export async function handleMaidHireAgentic(
     shouldEscalate = true;
     newState = 'ESCALATED';
   } else if (isComplete(collectedData)) {
+    // All required + optional fields collected/skipped — trigger escalation (lead save + email)
     shouldEscalate = true;
     newState = 'COMPLETE';
   } else {
-    const requiredRemaining = REQUIRED_FIELDS.filter(f => {
-      const val = collectedData[f];
-      return !val || val.trim().length === 0;
-    });
-    if (requiredRemaining.length > 0) {
-      newState = `NEED_${requiredRemaining[0].toUpperCase()}`;
-    } else {
-      newState = 'NEED_OPTIONAL';
-    }
+    const nextField = getNextField(collectedData);
+    newState = nextField ? `NEED_${nextField.toUpperCase()}` : 'NEED_OPTIONAL';
   }
 
   // 15. Save session to Supabase
