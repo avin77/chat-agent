@@ -508,14 +508,19 @@ export async function handleMaidHireAgentic(
     if (nextFieldAfterPhone === 'location' || preExtractedPhone) {
       const preLocation = extractLocation(latestMessage);
       if (preLocation) {
-        // When phone is co-present, only save specific areas (not generic Bangalore/Bengaluru)
+        // Always skip generic city name "Bangalore"/"Bengaluru"/"blr" when phone is co-present
+        // in the same message (e.g., "I moved to Bengaluru, my number is 9876543210" should NOT
+        // save "Bengaluru" as specific area — we still need to ask which area in Bengaluru).
+        // When phone is NOT in this message, accept generic city only if location is already the
+        // next field (i.e., phone has already been collected in a prior turn).
         const isGenericCity = /^(bangalore|bengaluru|blr)$/i.test(preLocation.trim());
-        if (!isGenericCity || nextFieldAfterPhone === 'location') {
+        const phoneCoPresent = !!preExtractedPhone;
+        if (!isGenericCity || (!phoneCoPresent && nextFieldAfterPhone === 'location')) {
           (collectedData as any).location = preLocation;
           preExtractedFields.push('location');
           console.log(`[Agentic Pre-extract] Location extracted: ${preLocation}`);
         } else {
-          console.log(`[Agentic Pre-extract] Location skipped (generic city, phone co-present): ${preLocation}`);
+          console.log(`[Agentic Pre-extract] Location skipped (generic city${phoneCoPresent ? ', phone co-present' : ''}): ${preLocation}`);
         }
       }
     }
@@ -630,6 +635,47 @@ export async function handleMaidHireAgentic(
       estimatedCostUsd: 0,
       newState: nextFieldForGibberish ? `NEED_${nextFieldForGibberish.toUpperCase()}` : 'COLLECTING',
     };
+  }
+
+  // 3.5g. Invalid phone attempt tracking — increment consecutiveFailures deterministically when:
+  //   (a) Phone is still not collected (preExtractedPhone is null), AND
+  //   (b) Either:
+  //       - The user's message contained at least one sequence of 5+ digits (indicating a phone attempt), OR
+  //       - We've already had at least one failure (consecutiveFailures > 0), meaning the bot has
+  //         already asked for the phone and the user still hasn't provided a valid one
+  //         (handles non-numeric invalid replies like "abcdefghij" after a numeric failure)
+  //   This ensures force-escalation triggers after CONSECUTIVE_FAILURE_THRESHOLD bad phone attempts,
+  //   even when the LLM correctly follows instructions to return action:"respond" (not action:"save")
+  //   for invalid phone values. Without this, consecutiveFailures never increments via the LLM path
+  //   and the session resets before force-escalation can fire.
+  const phoneStillMissingForEscalation = !collectedData.phone || collectedData.phone.trim().length === 0;
+  const hadInvalidPhoneAttempt = !preExtractedPhone && phoneStillMissingForEscalation &&
+    (consecutiveFailures > 0 || /\d{5,}/.test(latestMessage));
+  if (hadInvalidPhoneAttempt) {
+    consecutiveFailures += 1;
+    console.log(`[Agentic] Invalid phone attempt — consecutiveFailures now ${consecutiveFailures}`);
+    (collectedData as any).__consecutive_failures = String(consecutiveFailures);
+    // Check force-escalation immediately (before LLM call) to avoid session reset interference
+    if (shouldForceEscalateAgentic(consecutiveFailures)) {
+      const forceText = "I'm having trouble with the phone number. Our team is standing by — please call us directly or try again with a valid 10-digit mobile number starting with 6, 7, 8, or 9.";
+      await saveAgenticSession(conversationId, 'FORCE_ESCALATE', collectedData, (dbSession?.attempts ?? 0) + 1);
+      return {
+        displayText: forceText,
+        shouldEscalate: false, // no phone → can't escalate to email, but still return a clear message
+        collectedData,
+        tookMs: Date.now() - startTime,
+        systemPrompt: 'FORCE_ESCALATE_PHONE',
+        rawResponse: '',
+        extractionMeta,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        estimatedCostUsd: 0,
+        newState: 'FORCE_ESCALATE',
+      };
+    }
+    // Save the updated consecutive failure count before LLM call
+    await saveAgenticSession(conversationId, 'NEED_PHONE', collectedData, dbSession?.attempts ?? 0);
   }
 
   // 3.6. Fast-path: if any field was pre-extracted AND phone is not the only missing field,
