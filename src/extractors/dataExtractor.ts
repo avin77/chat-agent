@@ -163,6 +163,7 @@ export function extractWorkType(text: string): string | null {
   if (lower.includes('babysit') || lower.includes('baby') || lower.includes('child') || lower.includes('nanny') || lower.includes('baccha')) return 'Baby Care';
   if (lower.includes('elderly') || lower.includes('old') || lower.includes('senior') || lower.includes('caretaker')) return 'Elderly Care';
   if (lower.includes('both') || (lower.includes('cook') && lower.includes('clean'))) return 'Cooking & Cleaning';
+  if (/\ball\s+work\b|\ball\s+type|\ball\s+kind/.test(lower)) return 'Cleaning';
 
   return null;
 }

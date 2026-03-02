@@ -168,7 +168,15 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                 };
             }
 
-            if (newIntent !== 'general' && newIntent !== currentIntent) {
+            // Guard: never switch intent if the maid_hire flow is already in progress.
+            // Mid-flow messages like "I have a complaint" should be handled by the state
+            // machine as OFF_TOPIC — switching intent here would wipe collected data and
+            // send the user into the complaint flow, breaking their maid hire session.
+            const isMidFlow = currentIntent === 'maid_hire' &&
+                existingSession.current_state !== 'START' &&
+                existingSession.current_state !== 'COMPLETE';
+
+            if (newIntent !== 'general' && newIntent !== currentIntent && !isMidFlow) {
                 console.log(`[Session] Switching intent from ${currentIntent} to ${newIntent}`);
                 await supabase
                     .from('conversation_sessions')

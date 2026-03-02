@@ -1,0 +1,586 @@
+[
+  {
+    "id": "c53",
+    "category": "phone_multi_failure",
+    "notes": "Phone fails 4 times (letters, too short, too long, country code) then correct",
+    "turns": [
+      {
+        "user": "need maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "abcdefghij",
+        "bot": "That does not look like a phone number. Please share a 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "abcdefghij",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "12345",
+        "bot": "That does not look complete. Please share a valid 10-digit number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "12345",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "98765432109",
+        "bot": "That number has too many digits. Please share a valid 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "98765432109",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c54",
+    "category": "location_multi_failure",
+    "notes": "Location fails 3 times (abbreviation, vague, short form) then valid — phone retained throughout",
+    "turns": [
+      {
+        "user": "looking for a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "8765432109",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "8765432109",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "blr",
+        "bot": "Could you share the specific area in Bengaluru? For example, Koramangala, Whitefield, Indiranagar.",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "blr",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "south side",
+        "bot": "Which specific area in South Bengaluru? For example, JP Nagar, Banashankari, Jayanagar.",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "south side",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "BTM layout",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "BTM Layout",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c55",
+    "category": "off_topic_mid_flow_persistent",
+    "notes": "User asks price then technology mid-flow before giving correct service type",
+    "turns": [
+      {
+        "user": "hi need domestic help",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9123456780",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9123456780",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "HSR Layout",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "HSR Layout",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "what is the cost",
+        "bot": "Our team will discuss pricing with you directly. What type of help do you need — Cooking, Cleaning, Baby Care, or Elderly Care?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SERVICE",
+        "slot": "service_type",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "FAQ_MID_FLOW"
+      },
+      {
+        "user": "what technology do you use",
+        "bot": "We use our trained network to match the right helper. What type of help do you need — Cooking, Cleaning, Baby Care, or Elderly Care?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SERVICE",
+        "slot": "service_type",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "OFF_TOPIC"
+      },
+      {
+        "user": "Cleaning",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cleaning",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c56",
+    "category": "synonym_hinglish_service",
+    "notes": "Hinglish + synonyms: bai for maid, bartan+jhadoo for cleaning, part time for schedule, 5-6k salary",
+    "turns": [
+      {
+        "user": "mujhe bai chahiye",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "7654321098",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "7654321098",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Jayanagar",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Jayanagar",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "bartan aur jhadoo",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cleaning",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "part time",
+        "bot": "What is your expected salary range?",
+        "current_state": "ASK_SCHEDULE",
+        "expected_state": "ASK_SALARY",
+        "slot": "schedule",
+        "slot_value": "12-hour Day",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "5-6k",
+        "bot": "How many people are in your family?",
+        "current_state": "ASK_SALARY",
+        "expected_state": "ASK_FAMILY",
+        "slot": "salary_range",
+        "slot_value": "5000-6000",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "4 log",
+        "bot": "Do you prefer a maid with prior experience, or is a fresher okay?",
+        "current_state": "ASK_FAMILY",
+        "expected_state": "ASK_EXPERIENCE",
+        "slot": "family_size",
+        "slot_value": "4",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "experienced one",
+        "bot": "Thank you! Our team will contact you shortly.",
+        "current_state": "ASK_EXPERIENCE",
+        "expected_state": "COMPLETE",
+        "slot": "has_experience",
+        "slot_value": "true",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c57",
+    "category": "other_intent_as_answer",
+    "notes": "User gives helper_reg then complaint answers mid maid_hire flow before correcting",
+    "turns": [
+      {
+        "user": "want to hire domestic help",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9988776655",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9988776655",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "I want to register as a helper",
+        "bot": "I can help with maid hiring enquiries here. Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "OFF_TOPIC"
+      },
+      {
+        "user": "Whitefield",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Whitefield",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "I have a complaint about a previous maid",
+        "bot": "I have noted that. What type of help do you need right now — Cooking, Cleaning, Baby Care, or Elderly Care?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SERVICE",
+        "slot": "service_type",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "OFF_TOPIC"
+      },
+      {
+        "user": "Cooking",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cooking",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c58",
+    "category": "small_english_multi_attempt",
+    "notes": "User types cryptic one-word answers (no, later, near, all) bot re-asks, eventually valid",
+    "turns": [
+      {
+        "user": "need maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "no",
+        "bot": "I need your mobile number to connect you with our team. Please share a 10-digit number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "no",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "later",
+        "bot": "Sure, but I need your number to proceed. Please share a 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "later",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "8899001122",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "8899001122",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "near",
+        "bot": "Near which area? Could you share the locality name — for example Koramangala or Indiranagar?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "near",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "Electronic City",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Electronic City",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "all work",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cleaning",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c59",
+    "category": "phone_retention_after_location_failures",
+    "notes": "Regression test: phone saved, 3 bad locations given, phone must NOT be lost (tests attempts-reset bug fix commit 62eb386)",
+    "turns": [
+      {
+        "user": "hi I need a cook",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "7786543210",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "7786543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "bglr south",
+        "bot": "Could you share the specific area? For example JP Nagar or Banashankari.",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "bglr south",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "near forum mall",
+        "bot": "Forum Mall is in Koramangala — shall I note that as your area?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "near forum mall",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "bharatiya mall nikoo hills",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Nikoo Hills",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c60",
+    "category": "price_asking_persistent",
+    "notes": "User asks price at multiple states — bot must redirect each time without leaking any price figure",
+    "turns": [
+      {
+        "user": "how much does it cost to hire a maid",
+        "bot": "Our team will discuss pricing with you. Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9001234567",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9001234567",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "first tell me the cost",
+        "bot": "Our team will share that with you directly. Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "FAQ_MID_FLOW"
+      },
+      {
+        "user": "Marathahalli",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Marathahalli",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "what is monthly salary for maid",
+        "bot": "Our team will discuss salary details with you. What type of help do you need — Cooking, Cleaning, Baby Care, or Elderly Care?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SERVICE",
+        "slot": "service_type",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "FAQ_MID_FLOW"
+      },
+      {
+        "user": "Baby Care",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Baby Care",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  }
+]
