@@ -11,7 +11,7 @@ import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { createClient } from '@supabase/supabase-js';
 import { applyStrictGuardrails } from '../lib/guardrails';
-import { isValidPhone, extractPhone, extractLocation, extractWorkType, extractSchedule } from '../extractors/dataExtractor';
+import { isValidPhone, extractPhone, extractLocation, extractWorkType, extractSchedule, extractSalaryRange, extractFamilySize, extractExperience, detectGibberish } from '../extractors/dataExtractor';
 import { geminiRateLimiter } from '../lib/rateLimiter';
 import type { CollectedData } from './BaseFlow';
 import type { ExtractionMeta } from '../extractors/llmExtractor';
@@ -464,17 +464,21 @@ export async function handleMaidHireAgentic(
   }
 
   // 3.5. Pre-extract slots from user message using regex (reliable, avoids LLM extraction errors).
-  // Phone: always pre-extract (most critical — model often fails to recognize multi-slot phone).
-  // Location/service_type/schedule: pre-extract only for fields not yet collected, to handle
-  // "all info upfront" messages like "Need full-time cook in Whitefield. My number is 9123456789".
+  // Pre-extraction is the primary defense against the model failing to call save_* tools.
+  // The model (gemma-3-27b-it) frequently acknowledges a value but returns action:"respond"
+  // instead of action:"save", which means the field never gets stored. By pre-extracting
+  // deterministically BEFORE the LLM call, we ensure fields are saved regardless of LLM behavior.
   const extraAlerts: string[] = [];
   let preExtractedPhone: string | null = null;
+  const preExtractedFields: string[] = []; // track which fields were pre-extracted this turn
 
+  // 3.5a. Phone pre-extraction (always, when not yet collected)
   if (!collectedData.phone || collectedData.phone.trim().length === 0) {
     const prePhone = extractPhone(latestMessage);
     if (prePhone) {
       preExtractedPhone = prePhone;
       (collectedData as any).phone = prePhone;
+      preExtractedFields.push('phone');
       console.log(`[Agentic Pre-extract] Phone extracted from message: ${prePhone}`);
       // Phone will be acknowledged via the 12b prefix block below — no model alert needed
     } else {
@@ -490,32 +494,192 @@ export async function handleMaidHireAgentic(
     }
   }
 
-  // Also pre-extract location, service_type, and schedule — BUT ONLY when phone was also
-  // provided in the same message. This handles "all info upfront" messages like
-  // "Need full-time cook in Whitefield. My number is 9123456789" while NOT pre-extracting
-  // service_type from step-by-step openers like "I need a maid for cooking" (no phone there,
-  // so the flow should still ask for service_type in the correct step order).
-  if (preExtractedPhone) {
-    if (!collectedData.location || collectedData.location.trim().length === 0) {
+  // Compute the next expected field at this point (after phone pre-extraction).
+  // Used to decide whether to pre-extract location/service_type/schedule.
+  const nextFieldAfterPhone = getNextField(collectedData);
+
+  // 3.5b. Location pre-extraction.
+  // Pre-extract if: (a) location is the CURRENT next field, OR (b) phone was in the same message
+  // (handles multi-slot "I need help in Whitefield, my number is 9876543210").
+  // When phone is in the message, only accept SPECIFIC area names (not just "Bengaluru"/"Bangalore")
+  // to avoid false positives like "I moved to Bengaluru, my number is 9876543210" extracting
+  // generic city as location (user still needs to specify their area).
+  if (!collectedData.location || collectedData.location.trim().length === 0) {
+    if (nextFieldAfterPhone === 'location' || preExtractedPhone) {
       const preLocation = extractLocation(latestMessage);
       if (preLocation) {
-        (collectedData as any).location = preLocation;
-        console.log(`[Agentic Pre-extract] Location extracted: ${preLocation}`);
+        // When phone is co-present, only save specific areas (not generic Bangalore/Bengaluru)
+        const isGenericCity = /^(bangalore|bengaluru|blr)$/i.test(preLocation.trim());
+        if (!isGenericCity || nextFieldAfterPhone === 'location') {
+          (collectedData as any).location = preLocation;
+          preExtractedFields.push('location');
+          console.log(`[Agentic Pre-extract] Location extracted: ${preLocation}`);
+        } else {
+          console.log(`[Agentic Pre-extract] Location skipped (generic city, phone co-present): ${preLocation}`);
+        }
       }
     }
-    if (!collectedData.service_type || collectedData.service_type.trim().length === 0) {
+  }
+
+  // 3.5c. Service type pre-extraction.
+  // Pre-extract if: (a) service_type is the CURRENT next field, OR (b) phone was in the same message.
+  // Skip if the message is a question (FAQ mid-flow) — service_type keywords appear in FAQs
+  // like "Do you provide full-time cooking service?" and we don't want to pre-extract those.
+  const isQuestion = /\?/.test(latestMessage);
+  if (!collectedData.service_type || collectedData.service_type.trim().length === 0) {
+    const nextFieldForService = getNextField(collectedData);
+    if ((nextFieldForService === 'service_type' || preExtractedPhone) && !isQuestion) {
       const preServiceType = extractWorkType(latestMessage);
       if (preServiceType) {
         (collectedData as any).service_type = preServiceType;
+        preExtractedFields.push('service_type');
         console.log(`[Agentic Pre-extract] Service type extracted: ${preServiceType}`);
       }
     }
-    if (!collectedData.schedule || collectedData.schedule.trim().length === 0) {
+  }
+
+  // 3.5d. Schedule pre-extraction.
+  // Pre-extract if: (a) schedule is the CURRENT next field, OR (b) phone was in the same message.
+  // Skip if the message is a question (FAQ mid-flow) to avoid extracting "full-time" from
+  // "What is the salary for full-time cook?" as a schedule slot.
+  if (!collectedData.schedule || collectedData.schedule.trim().length === 0) {
+    const nextFieldForSchedule = getNextField(collectedData);
+    if ((nextFieldForSchedule === 'schedule' || preExtractedPhone) && !isQuestion) {
       const preSchedule = extractSchedule(latestMessage);
       if (preSchedule) {
         (collectedData as any).schedule = preSchedule;
+        preExtractedFields.push('schedule');
         console.log(`[Agentic Pre-extract] Schedule extracted: ${preSchedule}`);
       }
+    }
+  }
+
+  // 3.5e. Optional field pre-extraction (salary_range, family_size, has_experience).
+  // Only extract the CURRENT next optional field to avoid over-extraction.
+  const currentNextField = getNextField(collectedData);
+  if (currentNextField === 'salary_range') {
+    const preSalary = extractSalaryRange(latestMessage);
+    if (preSalary) {
+      (collectedData as any).salary_range = preSalary;
+      preExtractedFields.push('salary_range');
+      console.log(`[Agentic Pre-extract] Salary range extracted: ${preSalary}`);
+    } else {
+      // Handle "skip" for optional fields
+      const skipPattern = /^(skip|no|na|n\/a|don'?t know|not sure|idk|later|flexible|any|open)$/i;
+      if (skipPattern.test(latestMessage.trim())) {
+        (collectedData as any).salary_range = 'skipped';
+        preExtractedFields.push('salary_range');
+        console.log(`[Agentic Pre-extract] Salary range skipped`);
+      }
+    }
+  }
+  if (currentNextField === 'family_size') {
+    const preFamilySize = extractFamilySize(latestMessage);
+    if (preFamilySize) {
+      (collectedData as any).family_size = preFamilySize;
+      preExtractedFields.push('family_size');
+      console.log(`[Agentic Pre-extract] Family size extracted: ${preFamilySize}`);
+    } else {
+      const skipPattern = /^(skip|no|na|n\/a|don'?t know|not sure|idk|later|flexible|any|open)$/i;
+      if (skipPattern.test(latestMessage.trim())) {
+        (collectedData as any).family_size = 'skipped';
+        preExtractedFields.push('family_size');
+        console.log(`[Agentic Pre-extract] Family size skipped`);
+      }
+    }
+  }
+  if (currentNextField === 'has_experience') {
+    const preExperience = extractExperience(latestMessage);
+    if (preExperience) {
+      (collectedData as any).has_experience = preExperience;
+      preExtractedFields.push('has_experience');
+      console.log(`[Agentic Pre-extract] Experience extracted: ${preExperience}`);
+    } else {
+      const skipPattern = /^(skip|no|na|n\/a|don'?t know|not sure|idk|later|flexible|any|open)$/i;
+      if (skipPattern.test(latestMessage.trim())) {
+        (collectedData as any).has_experience = 'skipped';
+        preExtractedFields.push('has_experience');
+        console.log(`[Agentic Pre-extract] Experience skipped`);
+      }
+    }
+  }
+
+  // 3.5f. Gibberish detection — if message is pure gibberish (random chars, symbols only),
+  // skip the LLM and return a deterministic confusion message.
+  const isGibberish = detectGibberish(latestMessage) && preExtractedFields.length === 0;
+  if (isGibberish) {
+    const nextFieldForGibberish = getNextField(collectedData);
+    const gibberishQuestion = nextFieldForGibberish ? FIELD_QUESTIONS[nextFieldForGibberish] : null;
+    const gibberishText = gibberishQuestion
+      ? `I didn't catch that. ${gibberishQuestion}`
+      : "I didn't catch that. Could you please share your 10-digit mobile number?";
+
+    await saveAgenticSession(conversationId, nextFieldForGibberish ? `NEED_${nextFieldForGibberish.toUpperCase()}` : 'COLLECTING', collectedData, (dbSession?.attempts ?? 0) + 1);
+
+    return {
+      displayText: gibberishText,
+      shouldEscalate: false,
+      collectedData,
+      tookMs: Date.now() - startTime,
+      systemPrompt: 'GIBBERISH_DETECTED',
+      rawResponse: '',
+      extractionMeta,
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+      estimatedCostUsd: 0,
+      newState: nextFieldForGibberish ? `NEED_${nextFieldForGibberish.toUpperCase()}` : 'COLLECTING',
+    };
+  }
+
+  // 3.6. Fast-path: if any field was pre-extracted AND phone is not the only missing field,
+  //      skip the LLM call entirely and return a deterministic response. This avoids:
+  //   (a) LLM misinterpreting "Full-time" as a salary value when asking for salary_range
+  //   (b) Unnecessary LLM cost/latency when we already know the exact right response
+  //      Exception: skip the fast-path if extraAlerts are set (partial phone warning needs LLM).
+  if (preExtractedFields.length > 0 && extraAlerts.length === 0) {
+    const fastPathNextField = getNextField(collectedData);
+    let fastPathText: string;
+    if (preExtractedPhone) {
+      if (fastPathNextField && FIELD_QUESTIONS[fastPathNextField]) {
+        fastPathText = `Thank you for sharing ${preExtractedPhone}! ${FIELD_QUESTIONS[fastPathNextField]}`;
+      } else if (!fastPathNextField) {
+        fastPathText = `Thank you for sharing ${preExtractedPhone}! Our team will call you within 2 hours with verified profiles matching your requirements.`;
+      } else {
+        fastPathText = `Thank you for sharing ${preExtractedPhone}! ${FIELD_QUESTIONS[fastPathNextField] ?? ''}`;
+      }
+    } else {
+      if (fastPathNextField && FIELD_QUESTIONS[fastPathNextField]) {
+        fastPathText = `Got it! ${FIELD_QUESTIONS[fastPathNextField]}`;
+      } else if (!fastPathNextField) {
+        const phone = collectedData.phone?.trim() ?? '';
+        fastPathText = phone
+          ? `Thank you! Our team will call you at ${phone} within 2 hours with verified profiles matching your requirements.`
+          : 'Thank you! Our team will reach out shortly with verified helper profiles.';
+      } else {
+        // Edge case: fallthrough to LLM
+        fastPathText = '';
+      }
+    }
+
+    if (fastPathText) {
+      const fastPathComplete = !fastPathNextField;
+      const fastPathNewState = fastPathComplete ? 'COMPLETE' : `NEED_${fastPathNextField!.toUpperCase()}`;
+      await saveAgenticSession(conversationId, fastPathNewState, collectedData, (dbSession?.attempts ?? 0));
+      return {
+        displayText: applyStrictGuardrails(fastPathText),
+        shouldEscalate: fastPathComplete,
+        collectedData,
+        tookMs: Date.now() - startTime,
+        systemPrompt: 'PRE_EXTRACT_FAST_PATH',
+        rawResponse: '',
+        extractionMeta,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        estimatedCostUsd: 0,
+        newState: fastPathNewState,
+      };
     }
   }
 
@@ -658,24 +822,37 @@ export async function handleMaidHireAgentic(
     }
   }
 
-  // 12b. Pre-extracted phone override — when phone was extracted by regex before calling the model,
-  //      build a deterministic, clean response so:
-  //   (a) The phone number always appears in the display (eval requirement)
-  //   (b) The model's verbose "Thank you! We have your phone number..." text is not shown
-  //       (which would trigger notContains: ['phone'] eval check failures).
-  if (preExtractedPhone) {
-    // Use only the MANDATORY NEXT QUESTION for the next field — clean and deterministic
-    const postPhoneNextField = getNextField(collectedData);
-    if (postPhoneNextField && FIELD_QUESTIONS[postPhoneNextField]) {
-      displayText = `Thank you for sharing ${preExtractedPhone}! ${FIELD_QUESTIONS[postPhoneNextField]}`;
-    } else if (!postPhoneNextField) {
-      // All fields collected — build completion message
-      displayText = `Thank you for sharing ${preExtractedPhone}! Our team will call you within 2 hours with verified profiles matching your requirements.`;
-    } else {
-      // Fallback: prefix the existing model message
-      if (!displayText.includes(preExtractedPhone)) {
-        displayText = `Thank you for sharing ${preExtractedPhone}! ` + displayText;
+  // 12b. Pre-extracted field override — when any field was extracted by regex before the LLM call,
+  //      build a deterministic, clean response. This ensures:
+  //   (a) The correct NEXT field question is always asked (not the field we just captured)
+  //   (b) The model's tendency to re-ask the same question is bypassed entirely
+  //   (c) For phone: the number always appears in the display (eval requirement)
+  if (preExtractedFields.length > 0) {
+    const postExtractNextField = getNextField(collectedData);
+    if (preExtractedPhone) {
+      // Phone was pre-extracted — show phone number in acknowledgment
+      if (postExtractNextField && FIELD_QUESTIONS[postExtractNextField]) {
+        displayText = `Thank you for sharing ${preExtractedPhone}! ${FIELD_QUESTIONS[postExtractNextField]}`;
+      } else if (!postExtractNextField) {
+        displayText = `Thank you for sharing ${preExtractedPhone}! Our team will call you within 2 hours with verified profiles matching your requirements.`;
+      } else {
+        if (!displayText.includes(preExtractedPhone)) {
+          displayText = `Thank you for sharing ${preExtractedPhone}! ` + displayText;
+        }
       }
+    } else {
+      // Non-phone field(s) pre-extracted (location, service_type, schedule, optional fields)
+      // Build deterministic "Got it! [next question]" response
+      if (postExtractNextField && FIELD_QUESTIONS[postExtractNextField]) {
+        displayText = `Got it! ${FIELD_QUESTIONS[postExtractNextField]}`;
+      } else if (!postExtractNextField) {
+        // All fields collected
+        const phone = collectedData.phone?.trim() ?? '';
+        displayText = phone
+          ? `Thank you! Our team will call you at ${phone} within 2 hours with verified profiles matching your requirements.`
+          : 'Thank you! Our team will reach out shortly with verified helper profiles.';
+      }
+      // else: keep model's message (edge case — pre-extracted field but still unclear next step)
     }
   }
 
