@@ -56,7 +56,10 @@
       "WebFetch(domain:ai-sdk.dev)",
       "Bash(cat:*)",
       "WebSearch",
-      "Skill(gsd:execute-phase)"
+      "Skill(gsd:execute-phase)",
+      "Bash(ls:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm:*)"
     ]
   }
 }
