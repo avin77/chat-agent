@@ -93,12 +93,20 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg'
     if (/need.*job|want.*work|looking for.*job|looking for work|i am.*maid|i am.*helper|register.*helper|i am.*cook|i am a cook|i am a maid|i am a helper|i am looking for work/.test(lower)) return 'helper_reg';
 
     // Broader maid_hire patterns — catch "cleaner", service roles, baby care, typos
-    if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help|helper)\b/i.test(lower) &&
+    if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help|helper|servant|naukrani)\b/i.test(lower) &&
         /\b(need|want|hire|book|get|looking|find|require|send)\b/i.test(lower)) return 'maid_hire';
     if (/\b(maid|maids)\b/.test(lower) && /\b(hire|need|want|book|get|looking|find)\b/.test(lower)) return 'maid_hire';
+    // Hinglish: "mujhe ek maid chahiye" / "maid chahiye" / "kaam wali chahiye" / "naukrani chahiye" / "servant chahiye"
+    if (/\b(maid|maids|bai|kaam.?wali|cook|helper|servant|naukrani)\b/i.test(lower) && /\b(chahiye|chahata|chahti|chaye|chaiye)\b/i.test(lower)) return 'maid_hire';
+    // Hinglish cooking phrases: "khaana banana wali chahiye" / "khaana banane wali"
+    if (/khaana.{0,10}bana/i.test(lower)) return 'maid_hire';
+    // Hinglish housework: "ghar ka kaam" combined with need/want/chahiye
+    if (/ghar.{0,5}ka.{0,5}kaam/i.test(lower) && /\b(need|want|chahiye|chahata|chahti|help|looking)\b/i.test(lower)) return 'maid_hire';
     if (/(looking for|need|want|find)\s+(?:a\s+)?(?:someone|person|lady|woman|man|worker|help)\s+.{0,30}(cook|clean|take care|care for|baby|elderly|elder)/i.test(lower)) return 'maid_hire';
-    if (/\b(hire|need|want|get)\b.{0,15}\b(made)\b/i.test(lower) ||
-        /\b(made)\b.{0,20}\b(cook|cookin|clean|care|baby|elder)\b/i.test(lower)) return 'maid_hire';
+    // Typo variants for "maid": made, maed, maeid, maaid
+    if (/\b(hire|need|want|get)\b.{0,15}\b(made|maed|maeid|maaid)\b/i.test(lower) ||
+        /\b(made|maed|maeid|maaid)\b.{0,20}\b(cook|cookin|clean|care|baby|elder)\b/i.test(lower)) return 'maid_hire';
+    if (/\b(need|want|hire|get|looking)\b.{0,10}\b(maed|maeid|maaid)\b/i.test(lower)) return 'maid_hire';
 
     if (/need.*job|want.*work|looking for.*job|i am.*maid|i am.*helper|register.*helper|i am.*cook|looking for work/.test(lower)) return 'helper_reg';
 

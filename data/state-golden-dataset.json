@@ -2344,5 +2344,121 @@
         "failure": ""
       }
     ]
+  },
+  {
+    "id": "c49",
+    "category": "synonym",
+    "notes": "Synonym: 'servant' (common Indian English) should route to maid_hire",
+    "turns": [
+      {
+        "user": "I need a servant",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c50",
+    "category": "synonym",
+    "notes": "Synonym: 'naukrani' (Hindi word for maid) should route to maid_hire",
+    "turns": [
+      {
+        "user": "need a naukrani",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c51",
+    "category": "synonym",
+    "notes": "Hinglish: 'khaana banana wali chahiye' should route to maid_hire",
+    "turns": [
+      {
+        "user": "khaana banana wali chahiye",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c52",
+    "category": "spelling",
+    "notes": "Typo: 'i need a maed' (keyboard-adjacent typo for maid) should route to maid_hire",
+    "turns": [
+      {
+        "user": "i need a maed",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
   }
 ]
