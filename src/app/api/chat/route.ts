@@ -140,8 +140,13 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                 existingSession.current_state !== 'START' &&
                 existingSession.current_state !== 'COMPLETE' &&
                 Date.now() - lastActivity > SESSION_RESUME_TIMEOUT_MS;
+            // Agentic sessions manage their own failure handling (force-escalate after 3 consecutive
+            // validation failures via __consecutive_failures). The generic attempts >= 3 reset must
+            // NOT fire for agentic sessions — it would wipe collectedData (including phone) after
+            // 3 failed save_location calls, causing silent data loss mid-flow.
+            const isAgenticSession = existingSession.agentic_mode === true;
             const isStuck = existingSession.current_state === 'COMPLETE' ||
-                (existingSession.detected_intent === 'maid_hire' && (existingSession.attempts ?? 0) >= 3) ||
+                (existingSession.detected_intent === 'maid_hire' && !isAgenticSession && (existingSession.attempts ?? 0) >= 3) ||
                 isStalePartial;
             if (isStuck) {
                 const reason = existingSession.current_state === 'COMPLETE' ? 'COMPLETE'
