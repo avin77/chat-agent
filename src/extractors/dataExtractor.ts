@@ -23,9 +23,19 @@ export interface ExtractedSlots {
 // ─── Phone ───────────────────────────────────────────────────────────────────
 export function extractPhone(text: string): string | null {
   const patterns = [
-    /\b([6-9]\d{9})\b/g,
-    /\b(\+91[\s-]?[6-9]\d{9})\b/g,
-    /\b(91[\s-]?[6-9]\d{9})\b/g,
+    // Standard 10-digit Indian mobile (6-9 start), not preceded by another digit
+    // Uses (?<!\d) not \b so alpha-prefixed inputs like "ph9876543210" also match
+    /(?<!\d)([6-9]\d{9})(?!\d)/g,
+    // +91 country code prefix
+    /(\+91[\s-]?[6-9]\d{9})(?!\d)/g,
+    // 91 country code prefix (no +), must not be preceded by digit to avoid ambiguity
+    /(?<!\d)(91[\s-]?[6-9]\d{9})(?!\d)/g,
+    // Leading zero: 09876543210 — strip leading 0, get valid 10-digit
+    /(?<!\d)(0[6-9]\d{9})(?!\d)/g,
+    // Space or hyphen in middle (5+5): 98765 43210 or 98765-43210
+    /(?<!\d)([6-9]\d{4}[\s-]\d{5})(?!\d)/g,
+    // Space or hyphen in middle (4+3+3 or other splits): 9876 543 210
+    /(?<!\d)([6-9]\d{3}[\s-]\d{3}[\s-]\d{3})(?!\d)/g,
   ];
 
   for (const pattern of patterns) {
@@ -186,9 +196,10 @@ export function extractSalaryRange(text: string): string | null {
   const salaryPatterns = [
     /(\d+)\s*-\s*(\d+)\s*k/i,
     /(\d+)\s*k\s*(?:to|[-–])\s*(\d+)\s*k/i,
-    /(?:rs\.?|₹|inr)\s*(\d[\d,]*)/i,  // Currency prefix is now REQUIRED (not optional)
+    /(?:rs\.?|₹|inr)\s*(\d[\d,]*)/i,  // Currency prefix
     /(\d+)\s*k/i,
     /(\d+)\s*(?:thousand|hazar)/i,
+    /\b(\d{4,6})\b/,  // Plain number 4-6 digits (e.g. "20000", "8000", "15000")
   ];
 
   for (const pattern of salaryPatterns) {

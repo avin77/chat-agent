@@ -2119,5 +2119,230 @@
         "failure": ""
       }
     ]
+  },
+  {
+    "id": "c42",
+    "category": "phone_format",
+    "notes": "11-digit phone with country code 91 prefix — should strip to 10 digits",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "919876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c43",
+    "category": "phone_format",
+    "notes": "Phone with space in middle: 98765 43210 — should extract and save",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "98765 43210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c44",
+    "category": "phone_format",
+    "notes": "Leading zero phone: 09876543210 — strip leading 0, save 9876543210",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "09876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c45",
+    "category": "phone_format",
+    "notes": "Prefix text then number: ph9876543210 — should extract 9876543210",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "ph9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c46",
+    "category": "intent_switch_phone",
+    "notes": "User switches to complaint intent mid-flow — bot should acknowledge and ask for contact number",
+    "turns": [
+      {
+        "user": "I want to hire a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "Actually I want to make a complaint",
+        "bot": "I'm sorry to hear that. Please share your contact number and tell us about your issue.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "MULTI_INTENT"
+      }
+    ]
+  },
+  {
+    "id": "c47",
+    "category": "angry_mid_flow",
+    "notes": "User angry at ASK_PHONE state — bot should acknowledge frustration and re-ask phone",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "your service is terrible, nobody calls back",
+        "bot": "I'm sorry to hear that. Please share your mobile number so our team can reach you.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "MULTI_INTENT"
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c48",
+    "category": "faq_at_phone",
+    "notes": "User asks a city FAQ at ASK_PHONE — bot should answer and re-ask phone",
+    "turns": [
+      {
+        "user": "I need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "do you work in Delhi?",
+        "bot": "We currently operate only in Bengaluru. Could you share your 10-digit mobile number?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "FAQ_MID_FLOW"
+      },
+      {
+        "user": "9876543210",
+        "bot": "Which area in Bengaluru?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9876543210",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
   }
 ]
