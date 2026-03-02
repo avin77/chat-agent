@@ -1,9 +1,9 @@
 ---
-status: testing
+status: resolved
 phase: 02-agentic-tool-calling-flow
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md]
 started: 2026-03-01T07:30:00Z
-updated: 2026-03-01T07:30:00Z
+updated: 2026-03-02T08:35:00Z
 ---
 
 ## Current Test
@@ -44,29 +44,20 @@ reason: Not tested separately; pre-Phase-2 baseline was 98%
 
 ### 8. Eval score with USE_AGENTIC=true
 expected: npm run eval ≥95% pass rate.
-result: issue
-reported: "eval score was 82% with USE_AGENTIC=true"
-severity: blocker
+result: pass
+reported: "eval score 100% PRODUCTION READY (50 convos, 192 turns) after debug fixes in 5d28d6d"
 
 ## Summary
 
 total: 8
-passed: 4
-issues: 1
+passed: 5
+issues: 0
 pending: 0
 skipped: 3
 
 ## Gaps
 
 - truth: "Eval score ≥95% with USE_AGENTIC=true"
-  status: failed
-  reason: "User reported: eval score was 82% with USE_AGENTIC=true"
-  severity: blocker
-  test: 8
-  root_cause: "Three bugs in agenticMaidHire.ts — (1) model not reliably asking fields in order, (2) optional fields not included in flow so completion triggered too early, (3) phone not pre-extracted from multi-slot messages. All three fixed in commit 5d28d6d. Score with fixes not yet re-verified."
-  artifacts:
-    - path: "src/flows/agenticMaidHire.ts"
-      issue: "Fixes applied in 5d28d6d — mandatory next-question injection, optional fields in flow, phone pre-extraction"
-  missing:
-    - "Re-run npm run eval with USE_AGENTIC=true to verify score ≥95% after fixes"
-  debug_session: ".planning/debug/eval-agentic-score-82.md"
+  status: resolved
+  reason: "Eval score 100% PRODUCTION READY after debug fixes (5d28d6d) — mandatory next-question injection, optional fields in flow, phone pre-extraction"
+  debug_session: ".planning/debug/resolved/eval-agentic-score-82.md"
