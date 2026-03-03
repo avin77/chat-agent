@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-03-03T12:00:00Z",
+  "conversations": [
+    {
+      "id": "conf-01",
+      "category": "confusion",
+      "notes": "Global Confusion (Off-topic 2x)",
+      "turns": [
+        { "user": "I need a maid", "expected_state": "ASK_PHONE" },
+        { "user": "What is the weather?", "expected_state": "ASK_PHONE" },
+        { "user": "I like pizza", "expected_pivot": true }
+      ]
+    },
+    {
+      "id": "conf-02",
+      "category": "confusion",
+      "notes": "Slot Frustration (Invalid Location 3x)",
+      "turns": [
+        { "user": "9876543210", "expected_state": "ASK_LOCATION" },
+        { "user": "Moon", "expected_state": "ASK_LOCATION" },
+        { "user": "Mars", "expected_state": "ASK_LOCATION" },
+        { "user": "Jupiter", "expected_pivot": true }
+      ]
+    }
+  ]
+}

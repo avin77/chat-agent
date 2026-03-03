@@ -700,12 +700,12 @@ export async function getAgenticQualityMetrics(days: number = 7) {
     const [sessionsResult, logsResult] = await Promise.all([
         supabase
             .from('conversation_sessions')
-            .select('conversation_id, current_state, collected_data, attempts, created_at, last_activity')
+            .select('conversation_id, current_state, collected_data, attempts, slot_attempts, created_at, last_activity')
             .eq('detected_intent', 'maid_hire')
             .gte('created_at', since),
         supabase
             .from('llm_logs')
-            .select('conversation_id, raw_llm_response, after_guardrails, created_at')
+            .select('conversation_id, raw_llm_response, after_guardrails, system_prompt, created_at')
             .eq('intent', 'maid_hire')
             .gte('created_at', since),
     ]);
@@ -719,6 +719,7 @@ export async function getAgenticQualityMetrics(days: number = 7) {
     if (totalSessions === 0 && totalTurns === 0) {
         return {
             stuckLoopRate: 0,
+            confusionPivotRate: 0,
             escalationAfterConfusionRate: 0,
             slotRetentionAfterSwitch: -1,
             ambiguityResolutionRate: 0,
@@ -735,9 +736,16 @@ export async function getAgenticQualityMetrics(days: number = 7) {
 
     // ── Session-based metrics ───────────────────────────────────────────────
 
-    // stuckLoopRate: sessions with attempts >= 3
-    const stuckCount = sessions.filter((s: any) => (s.attempts || 0) >= 3).length;
+    // stuckLoopRate: sessions where any slot attempt >= 3
+    const stuckCount = sessions.filter((s: any) => {
+        const slots = s.slot_attempts || {};
+        return Object.values(slots).some((v: any) => v >= 3) || (s.attempts || 0) >= 3;
+    }).length;
     const stuckLoopRate = totalSessions > 0 ? Math.round((stuckCount / totalSessions) * 100) : 0;
+
+    // confusionPivotRate: turns where pivot was triggered
+    const pivotTurns = logs.filter((l: any) => l.system_prompt && l.system_prompt.includes('trouble')).length;
+    const confusionPivotRate = totalTurns > 0 ? Math.round((pivotTurns / totalTurns) * 100) : 0;
 
     // escalationAfterConfusionRate: sessions with attempts > 2 AND COMPLETE / sessions with attempts > 0
     const sessionsWithAttempts = sessions.filter((s: any) => (s.attempts || 0) > 0);
@@ -798,6 +806,7 @@ export async function getAgenticQualityMetrics(days: number = 7) {
 
     return {
         stuckLoopRate,
+        confusionPivotRate,
         escalationAfterConfusionRate,
         slotRetentionAfterSwitch,
         ambiguityResolutionRate,
