@@ -159,12 +159,13 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                         current_state: 'START',
                         collected_data: {},
                         attempts: 0,
+                        slot_attempts: {},
                         last_activity: new Date().toISOString()
                     })
                     .eq('conversation_id', conversationId);
                 return {
-                    intent: currentIntent as 'complaint' | 'maid_hire' | 'helper_reg' | 'general',
-                    session: { ...existingSession, current_state: 'START', collected_data: {}, attempts: 0 },
+                    intent: currentIntent as 'complaint' | 'maid_hire' | 'maid_registration' | 'general',
+                    session: { ...existingSession, current_state: 'START', collected_data: {}, attempts: 0, slot_attempts: {} },
                 };
             }
 
@@ -195,6 +196,7 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                         current_state: 'START',
                         collected_data: {},
                         attempts: 0,
+                        slot_attempts: {},
                         intent_stack: updatedStack,
                         intent_history: updatedHistory,
                         last_activity: new Date().toISOString()
@@ -209,6 +211,7 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                         current_state: 'START', 
                         collected_data: {}, 
                         attempts: 0,
+                        slot_attempts: {},
                         intent_stack: updatedStack,
                         intent_history: updatedHistory
                     } 
@@ -235,6 +238,7 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                 current_state: intent === 'maid_hire' ? 'START' : null,
                 collected_data: intent === 'maid_hire' ? {} : null,
                 attempts: 0,
+                slot_attempts: {},
                 intent_stack: [],
                 intent_history: [intent]
             });
@@ -259,6 +263,7 @@ function loadStateMachineSession(conversationId: string, dbSession: any): Sessio
             currentState: (dbSession.current_state as FlowState) || FlowState.START,
             collectedData: dbSession.collected_data || {},
             attempts: dbSession.attempts || 0,
+            slot_attempts: dbSession.slot_attempts || {},
             lastMessage: '',
             createdAt: dbSession.created_at || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -270,7 +275,7 @@ function loadStateMachineSession(conversationId: string, dbSession: any): Sessio
 }
 
 // ─── Save state machine session to DB ────────────────────────────────────────
-async function saveStateMachineSession(conversationId: string, state: FlowState, collectedData: Record<string, any>, attempts: number) {
+async function saveStateMachineSession(conversationId: string, state: FlowState, collectedData: Record<string, any>, attempts: number, slot_attempts: Record<string, number>) {
     try {
         await supabase
             .from('conversation_sessions')
@@ -278,6 +283,7 @@ async function saveStateMachineSession(conversationId: string, state: FlowState,
                 current_state: state,
                 collected_data: collectedData,
                 attempts,
+                slot_attempts,
                 last_activity: new Date().toISOString(),
             })
             .eq('conversation_id', conversationId);
@@ -387,7 +393,7 @@ async function handleMaidHireStateMachine(
     // 5. Check force escalate (too many attempts)
     if (maidHiringFlow.shouldForceEscalate(result.attempts)) {
         const forceText = "I'm having trouble understanding. Let me connect you with our team. They'll call you shortly to help.";
-        await saveStateMachineSession(conversationId, result.newState, result.collectedData, result.attempts);
+        await saveStateMachineSession(conversationId, result.newState, result.collectedData, result.attempts, session.slot_attempts);
         return {
             displayText: forceText,
             shouldEscalate: true,
@@ -527,7 +533,7 @@ async function handleMaidHireStateMachine(
     }
 
     // 10. Save state to DB
-    await saveStateMachineSession(conversationId, result.newState, result.collectedData, result.attempts);
+    await saveStateMachineSession(conversationId, result.newState, result.collectedData, result.attempts, session.slot_attempts);
 
     // 11. Log state transition
     try {

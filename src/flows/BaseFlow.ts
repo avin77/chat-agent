@@ -62,6 +62,7 @@ export interface SessionState {
     slots: CollectedData;
   }>;
   intent_history: string[];
+  slot_attempts: Record<string, number>;
 }
 
 // ─── Step Definition ─────────────────────────────────────────────────────────
@@ -89,6 +90,7 @@ export interface ProcessResult {
   // For FAQ mid-flow: the FAQ answer preamble + re-ask
   faqQuestion?: string;
   attempts: number;
+  slot_attempts: Record<string, number>;
 }
 
 // ─── Base Flow ───────────────────────────────────────────────────────────────
@@ -146,6 +148,7 @@ export abstract class BaseFlow {
           isComplete: false,
           llmInstruction: `User mentioned ${wrongCity}. Say: "We currently operate in Bengaluru only. We're expanding soon — share your number and we'll reach out once we launch in your city!" Then ask for their 10-digit mobile number.`,
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
@@ -172,6 +175,11 @@ export abstract class BaseFlow {
         // Multi-slot: jump to next unfilled
         let nextState = this.findNextUnfilledStep(newCollected);
 
+        // Reset attempts for all extracted slots
+        Object.keys(slotsFound).forEach(slot => {
+          delete session.slot_attempts[slot];
+        });
+
         // Safety: if no phone, redirect to ASK_PHONE
         if (!newCollected.phone && nextState !== FlowState.ASK_PHONE) {
           nextState = FlowState.ASK_PHONE;
@@ -190,12 +198,19 @@ export abstract class BaseFlow {
             ? this.getCompletionInstruction(newCollected)
             : `User provided multiple details: ${Object.entries(slotsFound).map(([k,v]) => `${k}=${v}`).join(', ')}. Acknowledge all of them briefly. Then ask: "${nextStep!.question}"`,
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
       if (slotCount === 1) {
         // Single slot from START — if it's phone, advance to ASK_LOCATION
         const nextState = this.findNextUnfilledStep(newCollected);
+
+        // Reset attempts for the extracted slot
+        Object.keys(slotsFound).forEach(slot => {
+          delete session.slot_attempts[slot];
+        });
+
         const nextStep = this.getStepForState(nextState);
         return {
           newState: nextState,
@@ -207,6 +222,7 @@ export abstract class BaseFlow {
           isComplete: false,
           llmInstruction: `User provided ${Object.keys(slotsFound).join(', ')}. Acknowledge it. Then ask: "${nextStep!.question}"`,
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
@@ -223,6 +239,7 @@ export abstract class BaseFlow {
           llmInstruction: `User asked a FAQ: "${faqDetected}". Answer it briefly using EzyHelpers knowledge. Then say: "To get started, please share your 10-digit mobile number."`,
           faqQuestion: faqDetected,
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
@@ -237,6 +254,7 @@ export abstract class BaseFlow {
         isComplete: false,
         llmInstruction: `User wants to hire domestic help. Say something welcoming and ask: "Please share your 10-digit mobile number."`,
         attempts: 0,
+        slot_attempts: session.slot_attempts,
       };
     }
 
@@ -254,6 +272,7 @@ export abstract class BaseFlow {
         isComplete: true,
         llmInstruction: this.getCompletionInstruction(session.collectedData),
         attempts: session.attempts,
+        slot_attempts: session.slot_attempts,
       };
     }
 
@@ -273,12 +292,16 @@ export abstract class BaseFlow {
           isComplete: false,
           llmInstruction: `User wants to change their ${backtrackSlot}. Say "Sure, no problem!" and ask: "${targetStep.question}"`,
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
     }
 
     // ─── Handle gibberish ────────────────────────────────────────────────────
     if (isGibberish) {
+      // Increment slot attempts
+      session.slot_attempts[currentStep.slotName] = (session.slot_attempts[currentStep.slotName] || 0) + 1;
+
       return {
         newState: session.currentState,
         collectedData: session.collectedData,
@@ -289,6 +312,7 @@ export abstract class BaseFlow {
         isComplete: false,
         llmInstruction: `User sent gibberish/unclear text. Say "I didn't catch that." Then re-ask: "${currentStep.question}"`,
         attempts: session.attempts + 1,
+        slot_attempts: session.slot_attempts,
       };
     }
 
@@ -304,6 +328,7 @@ export abstract class BaseFlow {
         isComplete: false,
         llmInstruction: `User mentioned ${wrongCity}. Say: "We currently operate in Bengaluru only. We're expanding soon — share your number and we'll reach out when we're in your city!" Stay on current question.`,
         attempts: session.attempts,
+        slot_attempts: session.slot_attempts,
       };
     }
 
@@ -343,12 +368,19 @@ export abstract class BaseFlow {
         llmInstruction: `User asked a FAQ: "${faqDetected}". Answer it briefly. Then re-ask: "${currentStep.question}"`,
         faqQuestion: faqDetected,
         attempts: session.attempts,
+        slot_attempts: session.slot_attempts,
       };
     }
 
     // ─── Multi-slot extraction ───────────────────────────────────────────────
     if (slotCount > 1) {
       const nextState = this.findNextUnfilledStep(newCollected);
+
+      // Reset attempts for all extracted slots
+      Object.keys(slotsFound).forEach(slot => {
+        delete session.slot_attempts[slot];
+      });
+
       const nextStep = this.getStepForState(nextState);
       return {
         newState: nextState,
@@ -362,6 +394,7 @@ export abstract class BaseFlow {
           ? this.getCompletionInstruction(newCollected)
           : `User provided: ${Object.entries(slotsFound).map(([k,v]) => `${k}=${v}`).join(', ')}. Acknowledge briefly. Then ask: "${nextStep!.question}"`,
         attempts: 0,
+        slot_attempts: session.slot_attempts,
       };
     }
 
@@ -371,6 +404,10 @@ export abstract class BaseFlow {
     if (currentSlotValue && currentStep.validator(currentSlotValue)) {
       // Valid slot — advance
       newCollected[currentStep.slotName] = currentSlotValue;
+
+      // Reset attempts for this slot
+      delete session.slot_attempts[currentStep.slotName];
+
       const nextState = currentStep.nextState;
       const nextStep = this.getStepForState(nextState);
 
@@ -387,6 +424,7 @@ export abstract class BaseFlow {
             isComplete: false,
             llmInstruction: `User provided ${currentStep.slotName}: "${currentSlotValue}". Acknowledge it. But first, we need a phone number. Ask: "Could you please share your 10-digit mobile number?"`,
             attempts: 0,
+            slot_attempts: session.slot_attempts,
           };
         }
 
@@ -400,6 +438,7 @@ export abstract class BaseFlow {
           isComplete: true,
           llmInstruction: this.getCompletionInstruction(newCollected),
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
@@ -413,6 +452,7 @@ export abstract class BaseFlow {
         isComplete: false,
         llmInstruction: `User provided ${currentStep.slotName}: "${currentSlotValue}". Acknowledge it briefly. Then ask: "${nextStep.question}"`,
         attempts: 0,
+        slot_attempts: session.slot_attempts,
       };
     }
 
@@ -420,6 +460,10 @@ export abstract class BaseFlow {
     const isSkip = /^(skip|no|nah|pass|not sure|don'?t know|no preference|na|n\/a)$/i.test(userMessage.trim());
     if (isSkip && !currentStep.required) {
       newCollected[currentStep.slotName] = 'skipped';
+
+      // Reset attempts for this slot
+      delete session.slot_attempts[currentStep.slotName];
+
       const nextState = currentStep.nextState;
       const nextStep = this.getStepForState(nextState);
 
@@ -435,6 +479,7 @@ export abstract class BaseFlow {
           isComplete: false,
           llmInstruction: `User skipped ${currentStep.slotName}. That's fine! But we need your phone number. Ask: "Could you please share your 10-digit mobile number?"`,
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
@@ -449,6 +494,7 @@ export abstract class BaseFlow {
           isComplete: true,
           llmInstruction: this.getCompletionInstruction(newCollected),
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
@@ -462,12 +508,17 @@ export abstract class BaseFlow {
         isComplete: false,
         llmInstruction: `User skipped ${currentStep.slotName}. That's okay. Ask: "${nextStep.question}"`,
         attempts: 0,
+        slot_attempts: session.slot_attempts,
       };
     }
 
     // ─── For optional fields, accept any non-empty text ──────────────────────
     if (!currentStep.required && userMessage.trim().length > 0 && !faqDetected && !isGibberish) {
       newCollected[currentStep.slotName] = userMessage.trim();
+
+      // Reset attempts for this slot
+      delete session.slot_attempts[currentStep.slotName];
+
       const nextState = currentStep.nextState;
       const nextStep = this.getStepForState(nextState);
 
@@ -482,6 +533,7 @@ export abstract class BaseFlow {
           isComplete: true,
           llmInstruction: this.getCompletionInstruction(newCollected),
           attempts: 0,
+          slot_attempts: session.slot_attempts,
         };
       }
 
@@ -495,11 +547,15 @@ export abstract class BaseFlow {
         isComplete: false,
         llmInstruction: `User said: "${userMessage.trim()}" for ${currentStep.slotName}. Acknowledge it. Then ask: "${nextStep.question}"`,
         attempts: 0,
+        slot_attempts: session.slot_attempts,
       };
     }
 
     // ─── Skip attempt for required fields ────────────────────────────────────
     if (isSkip && currentStep.required) {
+      // Increment slot attempts
+      session.slot_attempts[currentStep.slotName] = (session.slot_attempts[currentStep.slotName] || 0) + 1;
+
       return {
         newState: session.currentState,
         collectedData: session.collectedData,
@@ -510,6 +566,7 @@ export abstract class BaseFlow {
         isComplete: false,
         llmInstruction: `User tried to skip ${currentStep.slotName}, but it's required. Say: "This information is needed to find you the right match." Then re-ask: "${currentStep.question}"`,
         attempts: session.attempts + 1,
+        slot_attempts: session.slot_attempts,
       };
     }
 
@@ -523,6 +580,9 @@ export abstract class BaseFlow {
       if (isOffTopic && session.currentState !== FlowState.ASK_SALARY &&
           session.currentState !== FlowState.ASK_FAMILY &&
           session.currentState !== FlowState.ASK_EXPERIENCE) {
+        // Increment slot attempts
+        session.slot_attempts[currentStep.slotName] = (session.slot_attempts[currentStep.slotName] || 0) + 1;
+
         return {
           newState: session.currentState,
           collectedData: session.collectedData,
@@ -533,11 +593,15 @@ export abstract class BaseFlow {
           isComplete: false,
           llmInstruction: `User said something off-topic: "${userMessage}". Say "I can help with domestic help services." Then re-ask: "${currentStep.question}"`,
           attempts: session.attempts + 1,
+          slot_attempts: session.slot_attempts,
         };
       }
     }
 
     // Default: invalid slot
+    // Increment slot attempts
+    session.slot_attempts[currentStep.slotName] = (session.slot_attempts[currentStep.slotName] || 0) + 1;
+
     const errorMsg = typeof currentStep.errorMessage === 'function'
       ? currentStep.errorMessage(session.attempts + 1)
       : currentStep.errorMessage;
@@ -552,6 +616,7 @@ export abstract class BaseFlow {
       isComplete: false,
       llmInstruction: `User input didn't contain valid ${currentStep.slotName}. Say: "${errorMsg}"`,
       attempts: session.attempts + 1,
+      slot_attempts: session.slot_attempts,
     };
   }
 
@@ -585,5 +650,6 @@ export function createSessionState(conversationId: string, intent: string): Sess
     updatedAt: new Date().toISOString(),
     intent_stack: [],
     intent_history: [intent],
+    slot_attempts: {},
   };
 }
