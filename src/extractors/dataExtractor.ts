@@ -108,6 +108,70 @@ const BENGALURU_AREAS = [
   'koramanagala', 'koramangla', 'koramanagla', 'hsr layot',
 ];
 
+// Landmark → canonical area mapping (malls, hospitals, tech parks, landmarks)
+const BENGALURU_LANDMARKS: Record<string, string> = {
+  // Malls
+  'forum mall': 'Koramangala',
+  'forum value mall': 'Whitefield',
+  'forum neighbourhood mall': 'Whitefield',
+  'phoenix marketcity': 'Whitefield',
+  'phoenix mall': 'Whitefield',
+  'ub city': 'MG Road',
+  'orion mall': 'Rajajinagar',
+  'mantri mall': 'Malleshwaram',
+  'nexus mall': 'Koramangala',
+  'central mall': 'MG Road',
+  'garuda mall': 'MG Road',
+  'elements mall': 'Thanisandra',
+  'vega city mall': 'BTM',
+  'brookefield mall': 'Whitefield',
+  'royal meenakshi mall': 'Bannerghatta',
+  'gopalan mall': 'Bannerghatta',
+  'gopalan innovation mall': 'Marathahalli',
+  'gopalan arcade': 'Rajajinagar',
+  'sigma mall': 'Cunningham Road',
+  'prestige forum': 'Koramangala',
+  'bharatiya mall': 'Thanisandra',
+  'nikoo hills': 'Thanisandra',
+  // Tech parks / IT hubs
+  'embassy tech village': 'Bellandur',
+  'rmz ecospace': 'Bellandur',
+  'bagmane tech park': 'CV Raman Nagar',
+  'cv raman nagar': 'CV Raman Nagar',
+  'manyata tech park': 'Hebbal',
+  'prestige tech park': 'Marathahalli',
+  'international tech park': 'Whitefield',
+  'itpl': 'Whitefield',
+  'divyasree technopolis': 'Yeshwanthpur',
+  'global village': 'Kengeri',
+  'cessna business park': 'Marathahalli',
+  'outer ring road': 'Outer Ring Road',
+  'orr': 'Outer Ring Road',
+  // Hospitals / landmarks
+  'manipal hospital': 'HAL',
+  'fortis hospital': 'Bannerghatta',
+  'narayana health': 'Bommanahalli',
+  'apollo hospital': 'Bannerghatta',
+  'columbia asia': 'Hebbal',
+  'victoria hospital': 'City Center',
+  'ms ramaiah': 'Yeshwanthpur',
+  'kidwai hospital': 'BSK',
+  // Colleges / universities
+  'iim bangalore': 'Bannerghatta',
+  'iimb': 'Bannerghatta',
+  'iit bangalore': 'Yeshwanthpur',
+  'iisc': 'Malleshwaram',
+  'bms college': 'Basavanagudi',
+  // Metro / transit hubs
+  'silk board': 'BTM',
+  'tin factory': 'Old Airport Road',
+  'kr puram': 'KR Puram',
+  'kr market': 'City Center',
+  'majestic': 'City Center',
+  'shivajinagar': 'Shivajinagar',
+  'yelahanka new town': 'Yelahanka',
+};
+
 // ─── Levenshtein distance for fuzzy location matching ────────────────────────
 function levenshtein(a: string, b: string): number {
   const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
@@ -126,7 +190,7 @@ function levenshtein(a: string, b: string): number {
 export function extractLocation(text: string): string | null {
   const lower = text.toLowerCase();
 
-  // Layer 1: exact substring match (fast path)
+  // Layer 1: exact substring match against known areas (fast path)
   for (const area of BENGALURU_AREAS) {
     if (lower.includes(area)) {
       return capitalizeWords(area);
@@ -135,6 +199,13 @@ export function extractLocation(text: string): string | null {
 
   if (lower.includes('bangalore') || lower.includes('bengaluru')) {
     return 'Bangalore';
+  }
+
+  // Layer 1b: landmark lookup — maps malls/hospitals/tech parks to their area
+  for (const [landmark, area] of Object.entries(BENGALURU_LANDMARKS)) {
+    if (lower.includes(landmark)) {
+      return area;
+    }
   }
 
   // Layer 2: fuzzy match on individual words — tolerates 1 typo per 5 chars

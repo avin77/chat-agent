@@ -131,23 +131,54 @@ export async function getErrorMetrics(days: number = 7) {
 }
 
 // ─── Eval Results (from JSON files) ─────────────────────────────────────────
-export async function getLatestEvalResults() {
-    // Read latest eval JSON from data/ directory
+export async function getAllEvalFiles() {
+    const fs = await import('fs');
+    const path = await import('path');
+    const dataDir = path.join(process.cwd(), 'data');
+    try {
+        const files = (fs.readdirSync(dataDir) as string[])
+            .filter((f: string) => f.startsWith('eval-state-') && f.endsWith('.json'))
+            .sort()
+            .reverse()
+            .slice(0, 30);
+        return files.map((filename: string) => {
+            try {
+                const data = JSON.parse(fs.readFileSync(path.join(dataDir, filename), 'utf-8'));
+                return {
+                    filename,
+                    timestamp: data.timestamp as string,
+                    datasetName: (data.datasetName as string) || 'state',
+                    overallScore: data.overallScore as number,
+                    verdict: data.verdict as string,
+                    totalConversations: data.totalConversations as number,
+                };
+            } catch { return null; }
+        }).filter(Boolean);
+    } catch { return []; }
+}
+
+export async function getLatestEvalResults(filename?: string) {
+    // Read latest eval JSON from data/ directory (or a specific file)
     const fs = await import('fs');
     const path = await import('path');
 
     const dataDir = path.join(process.cwd(), 'data');
 
     try {
-        const files = fs.readdirSync(dataDir)
-            .filter((f: string) => f.startsWith('eval-state-') && f.endsWith('.json'))
-            .sort()
-            .reverse();
+        let targetFile = filename;
+        if (!targetFile) {
+            const files = (fs.readdirSync(dataDir) as string[])
+                .filter((f: string) => f.startsWith('eval-state-') && f.endsWith('.json'))
+                .sort()
+                .reverse();
+            if (files.length === 0) return null;
+            targetFile = files[0];
+        }
 
-        if (files.length === 0) return null;
-
-        const latest = JSON.parse(fs.readFileSync(path.join(dataDir, files[0]), 'utf-8'));
+        const latest = JSON.parse(fs.readFileSync(path.join(dataDir, targetFile), 'utf-8'));
         return {
+            filename: targetFile,
+            datasetName: (latest.datasetName as string) || 'state',
             timestamp: latest.timestamp,
             overallScore: latest.overallScore,
             verdict: latest.verdict,

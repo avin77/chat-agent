@@ -8,6 +8,7 @@ import {
     getRecentConversations,
     getErrorMetrics,
     getLatestEvalResults,
+    getAllEvalFiles,
     getResponseQualityMetrics,
     getConversationHealthMetrics,
     getConversationLLMLogs,
@@ -38,7 +39,18 @@ interface ErrorMetrics {
     errorIntents: number;
 }
 
+interface EvalFile {
+    filename: string;
+    timestamp: string;
+    datasetName: string;
+    overallScore: number;
+    verdict: string;
+    totalConversations: number;
+}
+
 interface EvalResults {
+    filename: string;
+    datasetName: string;
     timestamp: string;
     overallScore: number;
     verdict: string;
@@ -193,6 +205,9 @@ export default function Dashboard() {
     const [conversations, setConversations] = useState<any[]>([]);
     const [errors, setErrors] = useState<ErrorMetrics | null>(null);
     const [evalResults, setEvalResults] = useState<EvalResults | null>(null);
+    const [evalFiles, setEvalFiles] = useState<EvalFile[]>([]);
+    const [selectedEvalFile, setSelectedEvalFile] = useState<string>('');
+    const [evalFileLoading, setEvalFileLoading] = useState(false);
     const [responseQuality, setResponseQuality] = useState<ResponseQuality | null>(null);
     const [convHealth, setConvHealth] = useState<ConversationHealth | null>(null);
     const [productHealth, setProductHealth] = useState<ProductHealth | null>(null);
@@ -212,7 +227,7 @@ export default function Dashboard() {
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
-        const [s, i, f, c, e, ev, rq, ch, ph, tc, sm, sa] = await Promise.all([
+        const [s, i, f, c, e, ev, rq, ch, ph, tc, sm, sa, ef] = await Promise.all([
             getDashboardStats(days),
             getIntentBreakdown(days),
             getFlowFunnel(days),
@@ -225,13 +240,16 @@ export default function Dashboard() {
             getTokenCostMetrics(days),
             getShadowMetrics(7),
             getSystemAlerts(24),
+            getAllEvalFiles(),
         ]);
         setStats(s);
         setIntents(i);
         setFunnel(f);
         setConversations(c);
         setErrors(e);
-        setEvalResults(ev);
+        setEvalResults(ev as EvalResults | null);
+        setEvalFiles(ef as EvalFile[]);
+        if (ev) setSelectedEvalFile((ev as EvalResults).filename);
         setResponseQuality(rq);
         setConvHealth(ch);
         setProductHealth(ph);
@@ -243,6 +261,15 @@ export default function Dashboard() {
         // so the alert banner above can show active alerts. Fire-and-forget (non-blocking).
         checkAndWriteAlerts().catch(err => console.error('[Alerts] check failed:', err.message));
     }, [days]);
+
+    // Reload eval results when user picks a different file
+    const handleEvalFileChange = useCallback(async (filename: string) => {
+        setSelectedEvalFile(filename);
+        setEvalFileLoading(true);
+        const ev = await getLatestEvalResults(filename);
+        setEvalResults(ev as EvalResults | null);
+        setEvalFileLoading(false);
+    }, []);
 
     useEffect(() => {
         fetchAll();
@@ -436,11 +463,31 @@ export default function Dashboard() {
                 {/* ═══════════════════════════════════════════════════════ */}
                 {activeTab === 'eval' && (
                     <div className="space-y-6">
+                        {/* Eval File Selector */}
+                        {evalFiles.length > 0 && (
+                            <div className="bg-white rounded-lg px-4 py-3 shadow-sm border border-gray-200 flex items-center gap-3">
+                                <span className="text-xs font-medium text-gray-500 shrink-0">Eval run:</span>
+                                <select
+                                    className="text-xs border border-gray-200 rounded px-2 py-1.5 text-gray-700 bg-white flex-1 max-w-xl focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    value={selectedEvalFile}
+                                    onChange={e => handleEvalFileChange(e.target.value)}
+                                    disabled={evalFileLoading}
+                                >
+                                    {evalFiles.map(f => (
+                                        <option key={f.filename} value={f.filename}>
+                                            [{f.datasetName}] {new Date(f.timestamp).toLocaleString()} — {f.overallScore}% {f.verdict} ({f.totalConversations} conv)
+                                        </option>
+                                    ))}
+                                </select>
+                                {evalFileLoading && <span className="text-xs text-gray-400">Loading…</span>}
+                            </div>
+                        )}
+
                         {!evalResults ? (
                             <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
                                 <p className="text-gray-500 mb-2">No eval results found.</p>
                                 <p className="text-sm text-gray-400">
-                                    Run <code className="bg-gray-100 px-1.5 py-0.5 rounded">npm run eval:state -- --json</code> to generate results.
+                                    Run <code className="bg-gray-100 px-1.5 py-0.5 rounded">npm run eval:state</code> or <code className="bg-gray-100 px-1.5 py-0.5 rounded">npm run eval:unhappy</code> to generate results.
                                 </p>
                             </div>
                         ) : (
@@ -449,7 +496,14 @@ export default function Dashboard() {
                                 <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
                                     <div className="flex justify-between items-center">
                                         <div>
-                                            <h2 className="text-sm font-semibold text-gray-700">Latest Eval Run</h2>
+                                            <h2 className="text-sm font-semibold text-gray-700">
+                                                Eval Run
+                                                {evalResults.datasetName && (
+                                                    <span className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${evalResults.datasetName === 'unhappy' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                        {evalResults.datasetName}
+                                                    </span>
+                                                )}
+                                            </h2>
                                             <p className="text-xs text-gray-400 mt-1">
                                                 {new Date(evalResults.timestamp).toLocaleString()} | {evalResults.totalConversations} conversations, {evalResults.totalTurns} turns
                                             </p>

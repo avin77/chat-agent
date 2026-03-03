@@ -10,6 +10,8 @@
  *   node scripts/eval-state-machine.js --url=https://chat-agent-three.vercel.app
  *   node scripts/eval-state-machine.js --verbose
  *   node scripts/eval-state-machine.js --json
+ *   node scripts/eval-state-machine.js --dataset=unhappy
+ *   node scripts/eval-state-machine.js --dataset=state
  *
  * Output: Detailed pass/fail report with per-category breakdown
  */
@@ -24,7 +26,14 @@ const JSON_OUTPUT = process.argv.includes('--json');
 const RUN_ID = Date.now(); // Unique per eval run — prevents session reuse across runs
 
 const DATA_DIR = path.join(__dirname, '../data');
-const GOLDEN_PATH = path.join(DATA_DIR, 'state-golden-dataset.json');
+const DATASET_ARG = process.argv.find(a => a.startsWith('--dataset='))?.split('=')[1] || 'state';
+// Support full path or name-based lookup (e.g. "unhappy" → data/unhappy-golden-dataset.json)
+const GOLDEN_PATH = DATASET_ARG.includes('/') || DATASET_ARG.includes('\\')
+    ? DATASET_ARG
+    : path.join(DATA_DIR, `${DATASET_ARG}-golden-dataset.json`);
+const DATASET_NAME = DATASET_ARG.includes('/') || DATASET_ARG.includes('\\')
+    ? path.basename(DATASET_ARG, '.json')
+    : DATASET_ARG;
 
 if (!fs.existsSync(GOLDEN_PATH)) {
     console.error(`Golden dataset not found at ${GOLDEN_PATH}`);
@@ -272,7 +281,7 @@ async function cleanupEvalSessions() {
 async function main() {
     console.log(`\n${'═'.repeat(60)}`);
     console.log('  EzyBot State Machine Eval');
-    console.log(`  ${CONVERSATIONS.length} conversations`);
+    console.log(`  Dataset: ${DATASET_NAME} (${CONVERSATIONS.length} conversations)`);
     console.log(`  Bot URL: ${BOT_URL}`);
     console.log(`${'═'.repeat(60)}\n`);
 
@@ -669,6 +678,7 @@ async function main() {
         const jsonOut = {
             timestamp: new Date().toISOString(),
             botUrl: BOT_URL,
+            datasetName: DATASET_NAME,
             totalConversations: CONVERSATIONS.length,
             totalTurns,
             scores: Object.fromEntries(

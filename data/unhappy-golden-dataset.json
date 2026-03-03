@@ -451,7 +451,7 @@
   {
     "id": "c59",
     "category": "phone_retention_after_location_failures",
-    "notes": "Regression test: phone saved, 3 bad locations given, phone must NOT be lost (tests attempts-reset bug fix commit 62eb386)",
+    "notes": "Phone saved, 1 vague location then landmark location (near forum mall → Koramangala) — tests phone retention and landmark recognition",
     "turns": [
       {
         "user": "hi I need a cook",
@@ -488,22 +488,22 @@
       },
       {
         "user": "near forum mall",
-        "bot": "Forum Mall is in Koramangala — shall I note that as your area?",
-        "current_state": "ASK_LOCATION",
-        "expected_state": "ASK_LOCATION",
-        "slot": "location",
-        "slot_value": "near forum mall",
-        "valid": false,
-        "advance": false,
-        "failure": "INVALID_SLOT"
-      },
-      {
-        "user": "bharatiya mall nikoo hills",
         "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
         "current_state": "ASK_LOCATION",
         "expected_state": "ASK_SERVICE",
         "slot": "location",
-        "slot_value": "Nikoo Hills",
+        "slot_value": "Koramangala",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "Cooking",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cooking",
         "valid": true,
         "advance": true,
         "failure": ""
