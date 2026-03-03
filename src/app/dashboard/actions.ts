@@ -692,3 +692,197 @@ export async function checkAndWriteAlerts() {
 
     return alertsToInsert;
 }
+
+// ─── Agentic Quality Metrics (Phase 9) ────────────────────────────────────────
+export async function getAgenticQualityMetrics(days: number = 7) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    const [sessionsResult, logsResult] = await Promise.all([
+        supabase
+            .from('conversation_sessions')
+            .select('conversation_id, current_state, collected_data, attempts, created_at, last_activity')
+            .eq('detected_intent', 'maid_hire')
+            .gte('created_at', since),
+        supabase
+            .from('llm_logs')
+            .select('conversation_id, raw_llm_response, after_guardrails, created_at')
+            .eq('intent', 'maid_hire')
+            .gte('created_at', since),
+    ]);
+
+    const sessions = sessionsResult.data || [];
+    const logs = logsResult.data || [];
+
+    const totalSessions = sessions.length;
+    const totalTurns = logs.length;
+
+    if (totalSessions === 0 && totalTurns === 0) {
+        return {
+            stuckLoopRate: 0,
+            escalationAfterConfusionRate: 0,
+            slotRetentionAfterSwitch: -1,
+            ambiguityResolutionRate: 0,
+            resumeSuccessRate: -1,
+            intentSwitchSuccessRate: -1,
+            memoryRetentionRate: -1,
+            repeatQuestionRate: 0,
+            guardrailBypassAttemptRate: 0,
+            safetyNetTriggerRate: 0,
+            totalSessionsAnalyzed: 0,
+            totalTurnsAnalyzed: 0,
+        };
+    }
+
+    // ── Session-based metrics ───────────────────────────────────────────────
+
+    // stuckLoopRate: sessions with attempts >= 3
+    const stuckCount = sessions.filter((s: any) => (s.attempts || 0) >= 3).length;
+    const stuckLoopRate = totalSessions > 0 ? Math.round((stuckCount / totalSessions) * 100) : 0;
+
+    // escalationAfterConfusionRate: sessions with attempts > 2 AND COMPLETE / sessions with attempts > 0
+    const sessionsWithAttempts = sessions.filter((s: any) => (s.attempts || 0) > 0);
+    const confusedAndComplete = sessions.filter((s: any) => (s.attempts || 0) > 2 && s.current_state === 'COMPLETE');
+    const escalationAfterConfusionRate = sessionsWithAttempts.length > 0
+        ? Math.round((confusedAndComplete.length / sessionsWithAttempts.length) * 100)
+        : 0;
+
+    // slotRetentionAfterSwitch: sessions with __intent_stack in collected_data
+    const sessionsWithIntentStack = sessions.filter((s: any) => {
+        const data = s.collected_data || {};
+        return '__intent_stack' in data;
+    });
+    const slotRetentionAfterSwitch = sessionsWithIntentStack.length === 0
+        ? -1
+        : Math.round((sessionsWithIntentStack.filter((s: any) => s.current_state === 'COMPLETE').length / sessionsWithIntentStack.length) * 100);
+
+    // ambiguityResolutionRate: sessions with attempts > 0 AND COMPLETE / sessions with attempts > 0
+    const ambiguityResolutionRate = sessionsWithAttempts.length > 0
+        ? Math.round((sessionsWithAttempts.filter((s: any) => s.current_state === 'COMPLETE').length / sessionsWithAttempts.length) * 100)
+        : 0;
+
+    // resumeSuccessRate, intentSwitchSuccessRate, memoryRetentionRate: same proxy as slotRetentionAfterSwitch
+    const resumeSuccessRate = slotRetentionAfterSwitch;
+    const intentSwitchSuccessRate = slotRetentionAfterSwitch;
+    const memoryRetentionRate = slotRetentionAfterSwitch;
+
+    // ── Turn-based metrics ──────────────────────────────────────────────────
+
+    // repeatQuestionRate: turns where first 60 chars of raw_llm_response matches a prior turn in same conversation
+    let repeatQuestionCount = 0;
+    if (logs.length > 0) {
+        // Group by conversation_id
+        const convTurns: Record<string, string[]> = {};
+        for (const log of logs) {
+            const convId = (log as any).conversation_id as string;
+            const raw = ((log as any).raw_llm_response || '') as string;
+            if (!convTurns[convId]) convTurns[convId] = [];
+            const prefix = raw.trim().toLowerCase().slice(0, 60);
+            if (prefix.length > 10 && convTurns[convId].includes(prefix)) {
+                repeatQuestionCount++;
+            }
+            convTurns[convId].push(prefix);
+        }
+    }
+    const repeatQuestionRate = totalTurns > 0 ? Math.round((repeatQuestionCount / totalTurns) * 100) : 0;
+
+    // guardrailBypassAttemptRate: turns where raw !== after_guardrails
+    const guardrailModified = logs.filter((l: any) => l.raw_llm_response !== l.after_guardrails).length;
+    const guardrailBypassAttemptRate = totalTurns > 0 ? Math.round((guardrailModified / totalTurns) * 100) : 0;
+
+    // safetyNetTriggerRate: turns where raw === '.' or trim().length < 4
+    const safetyNetCount = logs.filter((l: any) => {
+        const raw = (l.raw_llm_response || '') as string;
+        return raw === '.' || raw.trim().length < 4;
+    }).length;
+    const safetyNetTriggerRate = totalTurns > 0 ? Math.round((safetyNetCount / totalTurns) * 100) : 0;
+
+    return {
+        stuckLoopRate,
+        escalationAfterConfusionRate,
+        slotRetentionAfterSwitch,
+        ambiguityResolutionRate,
+        resumeSuccessRate,
+        intentSwitchSuccessRate,
+        memoryRetentionRate,
+        repeatQuestionRate,
+        guardrailBypassAttemptRate,
+        safetyNetTriggerRate,
+        totalSessionsAnalyzed: totalSessions,
+        totalTurnsAnalyzed: totalTurns,
+    };
+}
+
+// ─── Eval Track Scores (reads JSON files from data/ dir) ─────────────────────
+export async function getEvalTrackScores() {
+    const fs = await import('fs');
+    const path = await import('path');
+    const dataDir = path.join(process.cwd(), 'data');
+
+    let stateScore: number | null = null;
+    let stateFile: string | null = null;
+    let unhappyScore: number | null = null;
+    let unhappyFile: string | null = null;
+    let normalScore: number | null = null;
+    let normalFile: string | null = null;
+
+    try {
+        const allFiles = (fs.readdirSync(dataDir) as string[]).filter(
+            (f: string) => f.endsWith('.json'),
+        );
+
+        // eval:state — files matching eval-state-*.json
+        try {
+            const stateFiles = allFiles
+                .filter((f: string) => f.startsWith('eval-state-'))
+                .sort()
+                .reverse();
+            if (stateFiles.length > 0) {
+                stateFile = stateFiles[0];
+                const data = JSON.parse(fs.readFileSync(path.join(dataDir, stateFile), 'utf-8'));
+                stateScore = typeof data.overallScore === 'number' ? data.overallScore : null;
+            }
+        } catch { /* file read failure is non-fatal */ }
+
+        // eval:unhappy — files matching eval-unhappy-*.json
+        try {
+            const unhappyFiles = allFiles
+                .filter((f: string) => f.startsWith('eval-unhappy-'))
+                .sort()
+                .reverse();
+            if (unhappyFiles.length > 0) {
+                unhappyFile = unhappyFiles[0];
+                const data = JSON.parse(fs.readFileSync(path.join(dataDir, unhappyFile), 'utf-8'));
+                unhappyScore = typeof data.overallScore === 'number' ? data.overallScore : null;
+            }
+        } catch { /* file read failure is non-fatal */ }
+
+        // eval:normal — any eval-*.json not matching state or unhappy prefixes
+        try {
+            const normalFiles = allFiles
+                .filter(
+                    (f: string) =>
+                        f.startsWith('eval-') &&
+                        !f.startsWith('eval-state-') &&
+                        !f.startsWith('eval-unhappy-'),
+                )
+                .sort()
+                .reverse();
+            if (normalFiles.length > 0) {
+                normalFile = normalFiles[0];
+                const data = JSON.parse(fs.readFileSync(path.join(dataDir, normalFile), 'utf-8'));
+                normalScore = typeof data.overallScore === 'number' ? data.overallScore : null;
+            }
+        } catch { /* file read failure is non-fatal */ }
+    } catch {
+        // dataDir read failure — return all nulls
+    }
+
+    return {
+        stateScore,
+        unhappyScore,
+        normalScore,
+        stateFile,
+        unhappyFile,
+        normalFile,
+    };
+}
