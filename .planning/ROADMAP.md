@@ -1,141 +1,212 @@
-# EzyBot Agentic Upgrade — Roadmap
+# EzyBot Roadmap
 
 **Project:** EzyBot
-**Milestone:** v2.0 — Agentic Architecture
-**Defined:** 2026-02-27
-**Status:** Active
+**Current milestone:** v3.0 - Multi-Intent Reliability and PM Observability
+**Roadmap status:** Planning
+**Last updated:** 2026-03-03
 
 ---
 
-## Phase Overview
+## Baseline From Latest Evals
 
-| # | Phase | Goal | Requirements | Status |
-|---|-------|------|--------------|--------|
-| 1 | LLM Extraction Integration | Wire LLM-first extraction into chat route, ≥95% eval | AGEX-01–04 | COMPLETE |
-| 2 | Agentic Tool-Calling Flow | handleMaidHireAgentic() behind USE_AGENTIC flag | FLOW-01–06 | COMPLETE |
-| 3 | Dashboard & Cost Tracking | Product Health tab with token cost, shadow, alerts | COST-01–03, DASH-01–05, SHADOW-02–04, CONV-01–04, ALERT-01–04 | COMPLETE |
-| 4 | Data Flywheel Scripts | Automated mining scripts to self-improve extractors and eval | FLY-01–04 | Pending |
+- 2026-03-03 `eval:state` (`50 conv / 192 turns`): `100%`, but recurring quality misses remain in failed-turn list (`c15 t2`, `c28 t5`).
+- 2026-03-03 `eval:unhappy` (`8 conv / 48 turns`): `96%`, with concentrated failures in `c56` (`synonym_hinglish_service`, turns 4-8).
+- 2026-03-02 `eval:unhappy` improved from `91%` to `96%`, but the same `c56` cluster persisted.
+
+Interpretation: core flow is stable, but multi-intent robustness, confusion handling, and PM-grade observability still need product-level hardening.
 
 ---
 
-## Phase 1: LLM Extraction Integration
+## v2.0 Summary (Completed)
 
-**Goal:** Wire `llmExtractor.ts` into the chat route so the LLM handles slot extraction first, with regex as a reliable fallback. Eval score must remain ≥95%.
+| # | Phase | Status |
+|---|-------|--------|
+| 1 | LLM Extraction Integration | COMPLETE |
+| 2 | Agentic Tool-Calling Flow | COMPLETE |
+| 3 | Dashboard and Cost Tracking | COMPLETE |
+| 4 | Data Flywheel Scripts | Deferred to v3 |
 
-**Requirements:** AGEX-01, AGEX-02, AGEX-03, AGEX-04
+v2 shipped successfully and is now considered baseline.
 
-**Plans:** 2/2 plans complete
+---
+
+## v3.0 Phase Overview (Planned)
+
+| # | Phase | Goal | Status |
+|---|-------|------|--------|
+| 5 | V3-01 Intent Contract + English Policy | Lock canonical intents and enforce English-only response behavior with graceful fallback | Planned |
+| 6 | V3-02 Multi-Intent Orchestration | Support mid-flow intent switches without data loss via intent stack/queue | Planned |
+| 7 | V3-03 Confusion Protocol 2.0 | Eliminate repeated-question loops; improve human-like recovery and escalation | Planned |
+| 8 | V3-04 Response Playbooks (Knowledge Contract) | Define required response and data contract per intent | Planned |
+| 9 | V3-05 PM Dashboard Metrics Redesign | Keep existing metrics, add definitions + new agentic quality and memory metrics | Planned |
+| 10 | V3-06 Eval Governance (3 Tracks) | Gate releases on state + unhappy + normal eval tracks with slice thresholds | Planned |
+| 11 | V3-07 Flywheel for Synonyms and Recovery | Convert production/eval misses (especially c56 class) into repeatable improvements | Planned |
+
+Explicitly removed from v3 scope for now (PM decision): shadow-system expansion tasks.
+
+---
+
+## Phase 5: V3-01 Intent Contract + English Policy
+
+**Goal:** Standardize routing contract and language policy before orchestration changes.
+
+**Intent set (canonical):**
+- `maid_hire`
+- `complaint`
+- `maid_registration`
+- `general`
+
+**Policy decisions:**
+- Bot output remains English only.
+- Non-English/Hinglish user input is still accepted for intent/slot understanding, then answered in English.
+- If user asks in non-English explicitly, respond in English with a brief policy line and continue task.
+
+**Exit criteria:**
+1. All entry routes map to one canonical intent.
+2. No legacy alias drift (`helper_reg`/`helper_registration` mismatch removed).
+3. Language policy test cases pass in eval suite.
+
+---
+
+## Phase 6: V3-02 Multi-Intent Orchestration
+
+**Goal:** Handle intent switches without resetting collected data unexpectedly.
+
+**Core behavior:**
+- Introduce `intent_stack` (active intent + suspended intents with snapshots).
+- On side-intent trigger, push current intent to stack and enter new intent.
+- On completion/exit of side-intent, pop and resume prior intent with preserved state.
+- Store intent history per session for dashboard and auditability.
+
+**Exit criteria:**
+1. Mid-flow complaint during hire does not wipe hire slots.
+2. Returning from complaint resumes the exact prior hire step.
+3. Intent memory is queryable in logs and dashboard.
+
+---
+
+## Phase 7: V3-03 Confusion Protocol 2.0
+
+**Goal:** Make recovery behavior human-like and loop-safe.
+
+**Protocol:**
+1. Clarify: acknowledge what was understood and restate what is missing.
+2. Reframe: ask the same need differently with one concrete example.
+3. Escalate/handoff: offer support or callback when repeated failures continue.
+
+**Guardrails:**
+- Do not ask the same question verbatim twice without new context.
+- Track invalid-attempt streak per slot and total retries per session.
+- For phone mistakes, allow multiple retries; valid input at later attempt must still continue flow.
+
+**Exit criteria:**
+1. Repeat-question rate drops below agreed threshold.
+2. `c56`-style loop class has no unresolved failures.
+3. Retry recovery rate improves without increasing abandonment.
+
+---
+
+## Phase 8: V3-04 Response Playbooks (Knowledge Contract)
+
+**Goal:** Define what information is minimally required and how to respond for each intent.
+
+**Maid hire minimum data:**
+- phone, area, service_type, schedule
+
+**Complaint minimum data:**
+- contact, issue summary, severity, callback preference, incident timing (if available)
+
+**Maid registration minimum data:**
+- contact, role/service offered, experience, availability window, preferred areas
+
+**Playbook standard per intent:**
+- Entry confirmation line
+- Required fields
+- Optional fields
+- Failure/repair responses
+- Completion confirmation format
+- Escalation criteria
+
+**Exit criteria:**
+1. Every intent has explicit required/optional schema.
+2. Prompt templates reference playbook contracts, not ad-hoc rules.
+3. Playbook coverage is testable via eval datasets.
+
+---
+
+## Phase 9: V3-05 PM Dashboard Metrics Redesign
+
+**Goal:** Keep all existing cards, add metric definitions and new signals needed for agentic monitoring.
+
+**Plans:** 2 plans
 
 Plans:
-- [x] 01-01-PLAN.md — Fix llmExtractor bug + add ExtractionMeta type and conflict resolution functions + extend llm-logger (commits: 63fef22, b43d17e)
-- [x] 01-02-PLAN.md — Supabase migration + wire LLM extraction into route.ts + eval verification (commit: b1f77e7)
+- [ ] 09-01-PLAN.md — Metric registry (src/lib/metricRegistry.ts) + new agentic quality server actions in actions.ts
+- [ ] 09-02-PLAN.md — Dashboard UI: Agentic Quality tab, MetricTooltip definitions, pre-production checklist panel
 
-**Files:**
-- `src/app/api/chat/route.ts` — Replace `extractAllSlots()` call with `extractAllSlotsWithLLM()`, add try/catch for regex fallback
-- `src/extractors/llmExtractor.ts` — Already created; may need refinements
-- `src/extractors/dataExtractor.ts` — Regex extractors kept as fallback, no removal
+**Keep (no removal):**
+- Completion, quality score, escalation, slot fill, token usage, latency, alerts, eval scores, conversation health.
 
-**Success Criteria:**
-1. User types "Koramanagla Bengaluru, I need a cook" → bot advances to ASK_SERVICE in one turn (location extracted by LLM despite misspelling)
-2. When Gemini API is unavailable, chat still works (regex fallback activates silently)
-3. `npm run eval:state` passes ≥95% — no regressions on c01–c41
-4. Hinglish input ("mujhe maid chahiye Koramangala mein") extracts location correctly
+**Add:**
+- Repeat-question rate
+- Intent switch success rate
+- Resume success after side-intent
+- Slot retry distribution (per field)
+- Recovery step distribution (clarify/reframe/escalate)
+- Memory retention rate after switch (did bot remember prior state/slots)
+- Human handoff acceptance and completion
+- Lead Quality Score
+- Safety Net Trigger Rate
+- Semantic Paraphrase Success
+- Ambiguity Resolution Rate
+- Intent Drift Rate
+- Guardrail Bypass Attempt Rate
+- Hallucination Rate (HITL sample)
+- Escalation-after-confusion rate
+- Slot Retention after Switch
+- Stuck Loop Rate
 
----
-
-## Phase 2: Agentic Tool-Calling Flow
-
-**Goal:** Build `handleMaidHireAgentic()` with LLM tool-calling to replace the deterministic state machine, behind a `USE_AGENTIC` feature flag for safe rollback.
-
-**Requirements:** FLOW-01, FLOW-02, FLOW-03, FLOW-04, FLOW-05, FLOW-06
-
-**Plans:** 3/3 plans complete
-
-Plans:
-- [x] 02-01-PLAN.md — Create agenticMaidHire.ts: 8 tool definitions + handleMaidHireAgentic() with force-escalate, loop detection, guardrails (commit: deecb40)
-- [x] 02-02-PLAN.md — Supabase migration SQL + USE_AGENTIC routing in route.ts + agentic leads insert (commits: 7ae043e, 64c7cad)
-- [x] 02-03-PLAN.md — Human verify: migration applied, eval 100% PRODUCTION READY (50 convos, 192 turns) with USE_AGENTIC=true (2026-03-02)
-
-**Files:**
-- `src/flows/agenticMaidHire.ts` — New file: tool definitions + agentic handler
-- `src/app/api/chat/route.ts` — Feature flag routing (USE_AGENTIC → agentic handler, else deterministic)
-- `supabase-migration-phase2.sql` — New: adds agentic_mode column to conversation_sessions
-
-**Success Criteria:**
-1. `USE_AGENTIC=true` in `.env.local` → maid hire flow uses tool-calling handler
-2. `USE_AGENTIC=false` (or unset) → deterministic handler works identically to before
-3. Session saved to Supabase correctly after each tool call (same schema)
-4. Force-escalate fires after 3 consecutive failed tool calls
-5. All 7 fields collected in correct order; escalation email sent on completion
-6. `npm run eval:state` passes ≥95% with USE_AGENTIC=true
+**Exit criteria:**
+1. Each dashboard metric has a visible definition.
+2. PM can detect whether orchestration and memory behaviors improved.
+3. Pre-production checklist view is driven by metrics + eval gates.
 
 ---
 
-## Phase 3: Dashboard & Cost Tracking
+## Phase 10: V3-06 Eval Governance (3 Tracks)
 
-**Goal:** Complete the Product Health dashboard tab with lead funnel metrics, slot fill rates, token cost tracking, shadow mode alignment infrastructure, conversation robustness, and alert thresholds.
+**Goal:** Separate release quality gates by failure mode.
 
-**Requirements:** COST-01, COST-02, COST-03, DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, SHADOW-01, SHADOW-02, SHADOW-03, SHADOW-04, CONV-01, CONV-02, CONV-03, CONV-04, ALERT-01, ALERT-02, ALERT-03, ALERT-04
+**Tracks:**
+- `eval:state` (core flow correctness)
+- `eval:unhappy` (recovery/robustness under bad inputs)
+- `eval` (normal conversational regression suite)
 
-**Plans:** 5/5 plans complete
-
-Plans:
-- [x] 03-01-PLAN.md — Supabase migration: 4 token columns on llm_logs + shadow_logs table + system_alerts table (commit: 48e512d)
-- [x] 03-02-PLAN.md — Extend llm-logger with token params + capture token usage from generateText() in route.ts (commits: 80249f9, 497d2ed, b62cae7)
-- [x] 03-03-PLAN.md — Intent classifier (intentClassifier.ts) + shadow handler (shadowHandler.ts) + confusion counter + wire into route.ts (commits: 7dd3435, 087dbeb)
-- [x] 03-04-PLAN.md — Dashboard Product Health tab UI + new server actions (token cost, shadow metrics, system alerts) (commits: b424b5c, d1026e9)
-- [x] 03-05-PLAN.md — Human verify: Supabase migration applied, token logging confirmed, Product Health tab operational (human-approved 2026-02-28)
-
-**Files:**
-- `supabase-migration-phase3.sql` — New: all Phase 3 schema changes (idempotent)
-- `src/lib/llm-logger.ts` — Add promptTokens, completionTokens, totalTokens, estimatedCostUsd params
-- `src/app/api/chat/route.ts` — Capture usage from generateText(), integrate classifier, shadow fire-and-forget
-- `src/app/dashboard/actions.ts` — Extend getProductHealthMetrics() + add getTokenCostMetrics(), getShadowMetrics(), getSystemAlerts(), checkAndWriteAlerts()
-- `src/app/dashboard/page.tsx` — Add Product Health tab content (KPI cards, slot fill rates, token cost, shadow panel, alerts)
-- `src/extractors/intentClassifier.ts` — New: lightweight LLM message classification
-- `src/lib/shadowHandler.ts` — New: async shadow comparison against production decisions
-- `src/flows/BaseFlow.ts` — Add __confusion comment (no structural change needed)
-
-**Success Criteria:**
-1. `/dashboard` → Product Health tab shows data (not empty)
-2. Lead completion rate, lead quality score, effective escalation rate displayed with real numbers
-3. Slot fill rate shows all 7 fields with filled/skipped/total counts
-4. After one chat conversation, a new llm_logs row has non-null token columns
-5. Session duration card shows avg + p50 session time for maid_hire conversations
-6. Shadow panel shows alignment % (or "no data yet" if no conversations run)
-7. After 2 consecutive off-topic messages, bot offers to restart or connect to support
-8. eval score remains ≥95% after Phase 3 changes
+**Release gate policy:**
+- No gate passes on overall score alone.
+- Track-specific floor + must-fix conversation IDs for known risk slices.
+- Fail release if unhappy robustness regresses, even if state score is high.
 
 ---
 
-## Phase 4: Data Flywheel Scripts
+## Phase 11: V3-07 Flywheel for Synonyms and Recovery
 
-**Goal:** Automated scripts to mine production Supabase data for improving extractors, prompts, and the eval dataset — no human review required to run.
+**Goal:** Turn repeated misses into deterministic improvements.
 
-**Requirements:** FLY-01, FLY-02, FLY-03, FLY-04
+**Scope:**
+- Mine synonym/phrase misses from eval and production logs.
+- Feed misses into extractor synonyms + playbook examples.
+- Add regression cases for each resolved miss class.
 
-**Files:**
-- `scripts/mine-missed-extractions.js` — New: query stuck-then-recovered sessions
-- `scripts/mine-golden-from-prod.js` — New: reconstruct COMPLETE sessions as golden test cases
-- `scripts/analyze-guardrail-mods.js` — New: rank states by guardrail trigger rate
-- `package.json` — Add `"mine"` script
-
-**Success Criteria:**
-1. `npm run mine` runs without errors (even if Supabase has few records)
-2. `data/missed-extractions-*.json` created with format: `{ state, rejected_text, accepted_text }`
-3. `data/mined-golden-*.json` created with phone numbers hashed (no real PII)
-4. `scripts/analyze-guardrail-mods.js` outputs states ranked by guardrail trigger rate
-5. All three scripts handle empty result sets gracefully (no crash, just empty output)
+**Primary target:** `synonym_hinglish_service` error family (for example current `c56` pattern).
 
 ---
 
-## Deferred (v3)
+## Non-Goals (Current v3)
 
-- **Multi-intent agentic** — Single LLM orchestrator for complaint + hire + helper_reg in one session
-- **LLM-generated error messages** — Replace hardcoded `errorMessage` with contextual LLM responses
-- **Cron scheduling** for flywheel scripts
-- **Supabase real-time** analytics dashboard
+- Shadow-mode expansion work (intentionally deferred for now).
+- Real-time streaming analytics rewrite.
+- New channels/apps beyond current web flow.
 
 ---
-*Roadmap created: 2026-02-27*
-*Last updated: 2026-03-02 — Phases 1, 2, 3 COMPLETE. Eval: 100% PRODUCTION READY (USE_AGENTIC=true). Phase 4 deferred to v3.0.*
+*Roadmap updated: 2026-03-03 with v3 planning scope and phase definitions.*
