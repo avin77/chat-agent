@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-03-03T12:00:00Z",
+  "conversations": [
+    {
+      "id": "c70",
+      "category": "orchestration",
+      "notes": "Hire Maid -> Complaint -> Finish Complaint -> Resume Hire",
+      "turns": [
+        { "user": "I want to hire a maid", "expected_intent": "maid_hire", "expected_state": "ASK_PHONE" },
+        { "user": "9876543210", "expected_intent": "maid_hire", "expected_state": "ASK_LOCATION" },
+        { "user": "Wait, I have a complaint about my previous booking", "expected_intent": "complaint", "expected_state": "ASK_PHONE" },
+        { "user": "9876543210", "expected_intent": "complaint", "expected_state": "COMPLETE", "expected_resumed_intent": "maid_hire", "expected_resumed_state": "ASK_LOCATION" }
+      ]
+    },
+    {
+      "id": "c71",
+      "category": "orchestration",
+      "notes": "Hire Maid -> Registration -> Finish Registration -> Resume Hire",
+      "turns": [
+        { "user": "Looking for domestic help", "expected_intent": "maid_hire", "expected_state": "ASK_PHONE" },
+        { "user": "Actually I want to register as a cook", "expected_intent": "maid_registration", "expected_state": "ASK_PHONE" },
+        { "user": "9988776655", "expected_intent": "maid_registration", "expected_state": "ASK_SERVICE" },
+        { "user": "Cooking and cleaning", "expected_intent": "maid_registration", "expected_state": "ASK_LOCATION" },
+        { "user": "Whitefield", "expected_intent": "maid_registration", "expected_state": "COMPLETE", "expected_resumed_intent": "maid_hire", "expected_resumed_state": "ASK_PHONE" }
+      ]
+    }
+  ]
+}
