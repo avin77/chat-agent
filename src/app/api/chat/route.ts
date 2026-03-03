@@ -168,16 +168,26 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                 };
             }
 
-            // Guard: never switch intent if the maid_hire flow is already in progress.
-            // Mid-flow messages like "I have a complaint" should be handled by the state
-            // machine as OFF_TOPIC — switching intent here would wipe collected data and
-            // send the user into the complaint flow, breaking their maid hire session.
             const isMidFlow = currentIntent === 'maid_hire' &&
                 existingSession.current_state !== 'START' &&
                 existingSession.current_state !== 'COMPLETE';
 
-            if (newIntent !== 'general' && newIntent !== currentIntent && !isMidFlow) {
-                console.log(`[Session] Switching intent from ${currentIntent} to ${newIntent}`);
+            if (newIntent !== 'general' && newIntent !== currentIntent) {
+                console.log(`[Session] Intent switch detected: ${currentIntent} -> ${newIntent}`);
+                
+                const updatedStack = [...(existingSession.intent_stack || [])];
+                const updatedHistory = [...(existingSession.intent_history || []), newIntent];
+
+                // If mid-flow, push current state to stack
+                if (isMidFlow) {
+                    console.log(`[Session] Pushing current intent ${currentIntent} to stack`);
+                    updatedStack.push({
+                        intent: currentIntent,
+                        state: existingSession.current_state,
+                        slots: existingSession.collected_data
+                    });
+                }
+
                 await supabase
                     .from('conversation_sessions')
                     .update({
@@ -185,11 +195,24 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                         current_state: 'START',
                         collected_data: {},
                         attempts: 0,
+                        intent_stack: updatedStack,
+                        intent_history: updatedHistory,
                         last_activity: new Date().toISOString()
                     })
                     .eq('conversation_id', conversationId);
-                // Bug fix: Return corrected session data, not stale pre-update data
-                return { intent: newIntent, session: { ...existingSession, detected_intent: newIntent, current_state: 'START', collected_data: {}, attempts: 0 } };
+
+                return { 
+                    intent: newIntent, 
+                    session: { 
+                        ...existingSession, 
+                        detected_intent: newIntent, 
+                        current_state: 'START', 
+                        collected_data: {}, 
+                        attempts: 0,
+                        intent_stack: updatedStack,
+                        intent_history: updatedHistory
+                    } 
+                };
             }
 
             await supabase
