@@ -56,6 +56,12 @@ export interface SessionState {
   lastMessage: string;
   createdAt: string;
   updatedAt: string;
+  intent_stack: Array<{
+    intent: string;
+    state: string;
+    slots: CollectedData;
+  }>;
+  intent_history: string[];
 }
 
 // ─── Step Definition ─────────────────────────────────────────────────────────
@@ -577,5 +583,7 @@ export function createSessionState(conversationId: string, intent: string): Sess
     lastMessage: '',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    intent_stack: [],
+    intent_history: [intent],
   };
 }

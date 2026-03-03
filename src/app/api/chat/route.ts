@@ -212,6 +212,8 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                 current_state: intent === 'maid_hire' ? 'START' : null,
                 collected_data: intent === 'maid_hire' ? {} : null,
                 attempts: 0,
+                intent_stack: [],
+                intent_history: [intent]
             });
 
         if (insertError) {
@@ -230,16 +232,18 @@ function loadStateMachineSession(conversationId: string, dbSession: any): Sessio
     if (dbSession && dbSession.current_state) {
         return {
             conversationId,
-            intent: 'maid_hire',
+            intent: dbSession.detected_intent || 'maid_hire',
             currentState: (dbSession.current_state as FlowState) || FlowState.START,
             collectedData: dbSession.collected_data || {},
             attempts: dbSession.attempts || 0,
             lastMessage: '',
             createdAt: dbSession.created_at || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            intent_stack: dbSession.intent_stack || [],
+            intent_history: dbSession.intent_history || [dbSession.detected_intent || 'maid_hire'],
         };
     }
-    return createSessionState(conversationId, 'maid_hire');
+    return createSessionState(conversationId, dbSession?.detected_intent || 'maid_hire');
 }
 
 // ─── Save state machine session to DB ────────────────────────────────────────
