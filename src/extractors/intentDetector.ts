@@ -1,5 +1,5 @@
 // Improved Intent Detection with clear patterns
-export type Intent = 'hire_maid' | 'helper_registration' | 'complaint' | 'general';
+export type Intent = 'maid_hire' | 'maid_registration' | 'complaint' | 'general';
 
 interface IntentResult {
   intent: Intent;
@@ -47,8 +47,33 @@ export function detectIntent(message: string): IntentResult {
     return { intent: 'complaint', confidence: Math.min(complaintScore / 10, 1), keywords };
   }
 
-  // HIRE MAID - Customer looking to hire
-  const hireMaidPatterns = [
+  // MAID REGISTRATION - Check before Hire (Specific vs General)
+  const maidRegPatterns = [
+    { pattern: /i am.*maid|i am.*helper|i am.*cook/i, weight: 10, keyword: 'i_am_helper' },
+    { pattern: /need.*job|want.*job|looking for.*job/i, weight: 10, keyword: 'need_job' },
+    { pattern: /want.*work|need.*work|looking for.*work/i, weight: 9, keyword: 'want_work' },
+    { pattern: /i can.*cook|i can.*clean/i, weight: 8, keyword: 'skills' },
+    { pattern: /years.*experience|experience.*years/i, weight: 7, keyword: 'experience' },
+    { pattern: /register|registration|sign up/i, weight: 8, keyword: 'register' },
+    { pattern: /available for work|ready to work/i, weight: 8, keyword: 'available' },
+    { pattern: /register as a maid|register as a helper|register as a cook/i, weight: 10, keyword: 'register_as_maid' },
+  ];
+
+  let maidRegScore = 0;
+  let regKeywords: string[] = [];
+  for (const { pattern, weight, keyword } of maidRegPatterns) {
+    if (pattern.test(lower)) {
+      maidRegScore += weight;
+      regKeywords.push(keyword);
+    }
+  }
+
+  if (maidRegScore >= 8) {
+    return { intent: 'maid_registration', confidence: Math.min(maidRegScore / 10, 1), keywords: regKeywords };
+  }
+
+  // MAID HIRE - Customer looking to hire
+  const maidHirePatterns = [
     { pattern: /need.*maid|want.*maid|looking for.*maid/i, weight: 10, keyword: 'need_maid' },
     { pattern: /hire.*maid|hire.*help|hire.*cook|hire.*cleaner/i, weight: 10, keyword: 'hire_maid' },
     { pattern: /need.*cook|want.*cook|looking for.*cook/i, weight: 9, keyword: 'need_cook' },
@@ -61,41 +86,17 @@ export function detectIntent(message: string): IntentResult {
     { pattern: /maid service|cleaning service|cooking service/i, weight: 7, keyword: 'service' },
   ];
 
-  let hireMaidScore = 0;
-  keywords.length = 0; // Reset
-  for (const { pattern, weight, keyword } of hireMaidPatterns) {
+  let maidHireScore = 0;
+  let hireKeywords: string[] = [];
+  for (const { pattern, weight, keyword } of maidHirePatterns) {
     if (pattern.test(lower)) {
-      hireMaidScore += weight;
-      keywords.push(keyword);
+      maidHireScore += weight;
+      hireKeywords.push(keyword);
     }
   }
 
-  if (hireMaidScore >= 8) {
-    return { intent: 'hire_maid', confidence: Math.min(hireMaidScore / 10, 1), keywords };
-  }
-
-  // HELPER REGISTRATION - Person looking for work
-  const helperRegPatterns = [
-    { pattern: /i am.*maid|i am.*helper|i am.*cook/i, weight: 10, keyword: 'i_am_helper' },
-    { pattern: /need.*job|want.*job|looking for.*job/i, weight: 10, keyword: 'need_job' },
-    { pattern: /want.*work|need.*work|looking for.*work/i, weight: 9, keyword: 'want_work' },
-    { pattern: /i can.*cook|i can.*clean/i, weight: 8, keyword: 'skills' },
-    { pattern: /years.*experience|experience.*years/i, weight: 7, keyword: 'experience' },
-    { pattern: /register|registration|sign up/i, weight: 8, keyword: 'register' },
-    { pattern: /available for work|ready to work/i, weight: 8, keyword: 'available' },
-  ];
-
-  let helperRegScore = 0;
-  keywords.length = 0; // Reset
-  for (const { pattern, weight, keyword } of helperRegPatterns) {
-    if (pattern.test(lower)) {
-      helperRegScore += weight;
-      keywords.push(keyword);
-    }
-  }
-
-  if (helperRegScore >= 8) {
-    return { intent: 'helper_registration', confidence: Math.min(helperRegScore / 10, 1), keywords };
+  if (maidHireScore >= 8) {
+    return { intent: 'maid_hire', confidence: Math.min(maidHireScore / 10, 1), keywords: hireKeywords };
   }
 
   // Default to GENERAL

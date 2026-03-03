@@ -8,7 +8,9 @@ import { generateText } from 'ai';
 
 export type MessageCategory =
   | 'expected_slot_answer'
-  | 'new_intent'
+  | 'maid_hire'
+  | 'complaint'
+  | 'maid_registration'
   | 'meta_question'
   | 'clarification_request'
   | 'off_topic'
@@ -17,7 +19,9 @@ export type MessageCategory =
 
 const VALID_CATEGORIES: MessageCategory[] = [
   'expected_slot_answer',
-  'new_intent',
+  'maid_hire',
+  'complaint',
+  'maid_registration',
   'meta_question',
   'clarification_request',
   'off_topic',
@@ -38,7 +42,9 @@ Classify the user's message into ONE of these categories:
 - expected_slot_answer: directly answers what the bot is asking
 - clarification_request: asking for more info about the current question
 - meta_question: question about the service, pricing, or process
-- new_intent: wants something completely different (e.g. wants to register as helper)
+- maid_hire: wants to hire a maid (even if mid-flow)
+- maid_registration: wants to register as a helper/maid (even if mid-flow)
+- complaint: has a complaint (even if mid-flow)
 - off_topic: irrelevant to domestic help (e.g. sports, news)
 - abusive: rude, offensive, or threatening
 - unknown: unclear
@@ -48,8 +54,10 @@ Reply with ONLY the category name. No punctuation. No explanation.`,
     });
 
     const category = text.trim().toLowerCase() as MessageCategory;
+    console.log(`[IntentClassifier] LLM returned: "${text}", cleaned to: "${category}"`);
     return VALID_CATEGORIES.includes(category) ? category : 'unknown';
-  } catch {
+  } catch (err) {
+    console.error(`[IntentClassifier] Error: ${(err as Error).message}`);
     // Classifier errors must never propagate — default to unknown
     return 'unknown';
   }

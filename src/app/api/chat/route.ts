@@ -77,7 +77,7 @@ function trimMessages(messages: any[]): any[] {
 }
 
 // ─── Intent Detection ────────────────────────────────────────────────────────
-function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg' | 'general' {
+function detectIntent(message: string): 'complaint' | 'maid_hire' | 'maid_registration' | 'general' {
     if (!message) return 'general';
     const lower = message.toLowerCase();
 
@@ -86,11 +86,11 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg'
     }
 
     if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
-    if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook|need.*helper|want.*helper|hire.*helper|looking for.*helper|i need a helper|need domestic help/.test(lower)) return 'maid_hire';
 
-    // Check helper_reg BEFORE broader maid_hire patterns — helper_reg signals take priority
-    // (e.g., "looking for work as a cook" should be helper_reg, not maid_hire)
-    if (/need.*job|want.*work|looking for.*job|looking for work|i am.*maid|i am.*helper|register.*helper|i am.*cook|i am a cook|i am a maid|i am a helper|i am looking for work/.test(lower)) return 'helper_reg';
+    // Check maid_registration BEFORE broader maid_hire patterns — registration signals take priority
+    if (/need.*job|want.*work|looking for.*job|looking for work|i am.*maid|i am.*helper|register.*helper|register.*maid|register.*cook|i am.*cook|i am a cook|i am a maid|i am a helper|i am looking for work/.test(lower)) return 'maid_registration';
+
+    if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook|need.*helper|want.*helper|hire.*helper|looking for.*helper|i need a helper|need domestic help/.test(lower)) return 'maid_hire';
 
     // Broader maid_hire patterns — catch "cleaner", service roles, baby care, typos
     if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help|helper|servant|naukrani)\b/i.test(lower) &&
@@ -108,11 +108,10 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'helper_reg'
         /\b(made|maed|maeid|maaid)\b.{0,20}\b(cook|cookin|clean|care|baby|elder)\b/i.test(lower)) return 'maid_hire';
     if (/\b(need|want|hire|get|looking)\b.{0,10}\b(maed|maeid|maaid)\b/i.test(lower)) return 'maid_hire';
 
-    if (/need.*job|want.*work|looking for.*job|i am.*maid|i am.*helper|register.*helper|i am.*cook|looking for work/.test(lower)) return 'helper_reg';
-
     const isQuestion = /\?/.test(lower) ||
         /^(do you|can you|is there|are there|what|how|tell me|i want to know|will you|would you|could you|should i|where|when|why|which|have you|do they)/.test(lower.trim());
     if (isQuestion) return 'general';
+
     return 'general';
 }
 
