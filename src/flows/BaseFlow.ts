@@ -63,7 +63,7 @@ export interface StepDefinition {
   state: FlowState;
   slotName: keyof CollectedData;
   question: string;
-  errorMessage: string;
+  errorMessage: string | ((attempts: number) => string);
   required: boolean;
   validator: (value: string | null | undefined) => boolean;
   nextState: FlowState;
@@ -532,6 +532,10 @@ export abstract class BaseFlow {
     }
 
     // Default: invalid slot
+    const errorMsg = typeof currentStep.errorMessage === 'function'
+      ? currentStep.errorMessage(session.attempts + 1)
+      : currentStep.errorMessage;
+
     return {
       newState: session.currentState,
       collectedData: session.collectedData,
@@ -540,7 +544,7 @@ export abstract class BaseFlow {
       shouldAdvance: false,
       shouldEscalate: false,
       isComplete: false,
-      llmInstruction: `User input didn't contain valid ${currentStep.slotName}. Say: "${currentStep.errorMessage}"`,
+      llmInstruction: `User input didn't contain valid ${currentStep.slotName}. Say: "${errorMsg}"`,
       attempts: session.attempts + 1,
     };
   }

@@ -55,7 +55,11 @@ export class MaidHiringFlow extends BaseFlow {
         state: FlowState.ASK_PHONE,
         slotName: 'phone',
         question: "Please share your 10-digit mobile number.",
-        errorMessage: "That doesn't look like a valid 10-digit mobile number. Please share a valid number (e.g., 9876543210).",
+        errorMessage: (attempts) => {
+          if (attempts <= 2) return "That doesn't look like a valid 10-digit mobile number. Please share a valid number (e.g., 9876543210).";
+          if (attempts === 3) return "I need your mobile number so our team can send you verified profiles. Could you please share it?";
+          return "I'm having a little trouble. You can share your number now, or would you like to speak with our support team?";
+        },
         required: true,
         validator: (v) => !!v && isValidPhone(v),
         nextState: FlowState.ASK_LOCATION,
