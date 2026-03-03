@@ -368,8 +368,10 @@ async function handleMaidHireStateMachine(
     // Store updated confusion count back to session so processMessage has it
     (session.collectedData as any).__confusion = String(newConfusion);
 
-    // After 2+ consecutive irrelevant messages, we'll override the LLM instruction after processMessage
-    const triggerConfusionResponse = newConfusion >= 2;
+    // After 2+ consecutive irrelevant messages, or 3+ failed attempts for a specific slot, trigger pivot
+    const currentStep = maidHiringFlow.getStepForState(session.currentState);
+    const slotFailures = currentStep ? (session.slot_attempts[currentStep.slotName] || 0) : 0;
+    const triggerConfusionResponse = newConfusion >= 2 || slotFailures >= 3;
 
     // 4. Run state machine
     const result = maidHiringFlow.processMessage(
@@ -384,10 +386,17 @@ async function handleMaidHireStateMachine(
 
     // 4.5 — Override instruction if confusion threshold reached
     if (triggerConfusionResponse) {
-        result.llmInstruction = `The user has given ${newConfusion} off-topic or irrelevant responses in a row for ${session.currentState}. Gently say: "It looks like you might need a different kind of help. Would you like to start over with a new request, or shall I connect you with our support team?" Do NOT re-ask the current question.`;
-        // Reset confusion count after offering restart
+        const reason = slotFailures >= 3 ? `repeated failures for ${currentStep?.slotName}` : `${newConfusion} off-topic responses`;
+        console.log(`[Confusion Pivot] Triggered due to ${reason}`);
+        
+        result.llmInstruction = `The user is having trouble (Reason: ${reason}). Gently say: "It looks like we're having a bit of trouble with this step. Would you like to start over with a new request, or shall I connect you with our support team to help you finish?" Do NOT re-ask the current question.`;
+        
+        // Reset counters after offering pivot
         (session.collectedData as any).__confusion = '0';
         result.collectedData = { ...result.collectedData, __confusion: '0' };
+        if (currentStep) {
+            session.slot_attempts[currentStep.slotName] = 0;
+        }
     }
 
     // 5. Check force escalate (too many attempts)
