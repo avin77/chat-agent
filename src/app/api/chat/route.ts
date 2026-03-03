@@ -475,6 +475,30 @@ async function handleMaidHireStateMachine(
     // 9. Apply guardrails
     let cleaned = applyStrictGuardrails(llmText);
 
+    // 9c. Intent Resume Logic
+    if (result.isComplete && session.intent_stack && session.intent_stack.length > 0) {
+        const resumedIntent = session.intent_stack[session.intent_stack.length - 1];
+        const updatedStack = session.intent_stack.slice(0, -1);
+        
+        console.log(`[Session] Flow ${session.intent} complete. Resuming ${resumedIntent.intent} from stack.`);
+        
+        // Update database with resumed state
+        await supabase
+            .from('conversation_sessions')
+            .update({
+                detected_intent: resumedIntent.intent,
+                current_state: resumedIntent.state,
+                collected_data: resumedIntent.slots,
+                intent_stack: updatedStack,
+                last_activity: new Date().toISOString()
+            })
+            .eq('conversation_id', conversationId);
+
+        // Prepend resume message
+        const resumeIntro = `Now that we've handled that, let's get back to your ${resumedIntent.intent.replace('_', ' ')} request. `;
+        cleaned = resumeIntro + cleaned;
+    }
+
     // 9b. Keyword fallback — if LLM didn't ask the right question, force-append it
     if (result.newState !== FlowState.COMPLETE && result.newState !== FlowState.START) {
         const stateKeywords: Record<string, string[]> = {
