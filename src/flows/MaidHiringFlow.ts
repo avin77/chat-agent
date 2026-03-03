@@ -68,7 +68,11 @@ export class MaidHiringFlow extends BaseFlow {
         state: FlowState.ASK_LOCATION,
         slotName: 'location',
         question: "Which area in Bengaluru are you looking for help? (e.g., Koramangala, Indiranagar, Whitefield)",
-        errorMessage: "Which area in Bengaluru do you need help? Please share your locality.",
+        errorMessage: (attempts) => {
+          if (attempts <= 1) return "Which area in Bengaluru do you need help? Please share your locality.";
+          if (attempts === 2) return "I didn't quite get the location. Could you share the name of your colony or a nearby landmark in Bengaluru?";
+          return "I'm having trouble understanding the area. You can type it one more time, or would you like to speak with our support team?";
+        },
         required: true,
         validator: validateLocation,
         nextState: FlowState.ASK_SERVICE,
@@ -77,7 +81,10 @@ export class MaidHiringFlow extends BaseFlow {
         state: FlowState.ASK_SERVICE,
         slotName: 'service_type',
         question: "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
-        errorMessage: "Please choose from: Cooking, Cleaning, Baby Care, or Elderly Care.",
+        errorMessage: (attempts) => {
+          if (attempts <= 1) return "Please choose from: Cooking, Cleaning, Baby Care, or Elderly Care.";
+          return "I need to know the type of help you're looking for (e.g., just 'Cook' or 'Cleaning'). Which one do you need?";
+        },
         required: true,
         validator: validateServiceType,
         nextState: FlowState.ASK_SCHEDULE,
@@ -86,7 +93,10 @@ export class MaidHiringFlow extends BaseFlow {
         state: FlowState.ASK_SCHEDULE,
         slotName: 'schedule',
         question: "Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
-        errorMessage: "Please let us know — 24-hour Live-in maid or 12-hour Day maid?",
+        errorMessage: (attempts) => {
+          if (attempts <= 1) return "Please let us know — 24-hour Live-in maid or 12-hour Day maid?";
+          return "Would you like the helper to stay at your home (24-hour) or come daily for 12 hours? Please choose one.";
+        },
         required: true,
         validator: validateSchedule,
         nextState: FlowState.ASK_SALARY,
