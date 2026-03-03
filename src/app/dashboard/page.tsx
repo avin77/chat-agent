@@ -19,6 +19,9 @@ import {
     getSystemAlerts,
     checkAndWriteAlerts,
 } from './actions';
+import { getAgenticQualityMetrics, getEvalTrackScores } from './actions';
+import { getMetricSpec } from '@/lib/metricRegistry';
+import type { MetricSpec } from '@/lib/metricRegistry';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface Stats {
@@ -156,6 +159,30 @@ interface SystemAlert {
     resolved: boolean;
 }
 
+interface AgenticQualityMetrics {
+    stuckLoopRate: number;
+    escalationAfterConfusionRate: number;
+    slotRetentionAfterSwitch: number;
+    ambiguityResolutionRate: number;
+    resumeSuccessRate: number;
+    intentSwitchSuccessRate: number;
+    memoryRetentionRate: number;
+    repeatQuestionRate: number;
+    guardrailBypassAttemptRate: number;
+    safetyNetTriggerRate: number;
+    totalSessionsAnalyzed: number;
+    totalTurnsAnalyzed: number;
+}
+
+interface EvalTrackScores {
+    stateScore: number | null;
+    unhappyScore: number | null;
+    normalScore: number | null;
+    stateFile: string | null;
+    unhappyFile: string | null;
+    normalFile: string | null;
+}
+
 // ─── Helper Components ──────────────────────────────────────────────────────
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
     return (
@@ -196,6 +223,124 @@ function ScoreBadge({ score, verdict }: { score: number; verdict: string }) {
     );
 }
 
+function MetricTooltip({ metricId }: { metricId: string }) {
+    const spec = getMetricSpec(metricId);
+    if (!spec) return null;
+    return (
+        <div className="group relative inline-block ml-1">
+            <span className="cursor-help text-gray-400 text-xs border border-gray-300 rounded-full px-1">?</span>
+            <div className="absolute z-10 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 w-72 bottom-6 left-0 shadow-xl">
+                <div className="font-semibold text-gray-100 mb-1">{spec.name}</div>
+                <div className="text-gray-300 mb-2"><span className="text-gray-400">Formula: </span>{spec.formula}</div>
+                {spec.sourceTables.length > 0 && (
+                    <div className="text-gray-300 mb-2"><span className="text-gray-400">Source: </span>{spec.sourceTables.join(', ')}</div>
+                )}
+                <div className="text-gray-300 mb-2"><span className="text-gray-400">Window: </span>{spec.window}</div>
+                <div className="text-green-300"><span className="text-gray-400">Meaning: </span>{spec.interpretation}</div>
+            </div>
+        </div>
+    );
+}
+
+function AgenticMetricCard({ label, value, metricId, note }: {
+    label: string; value: number; metricId: string; note?: string;
+}) {
+    const noData = value === -1;
+    const spec = getMetricSpec(metricId);
+    const isBad = !noData && spec?.warnThreshold !== undefined
+        ? (spec.thresholdDirection === 'above' ? value > spec.warnThreshold : spec.thresholdDirection === 'below' ? value < spec.warnThreshold : false)
+        : false;
+    return (
+        <div className={`bg-white rounded-lg p-4 shadow-sm border ${isBad ? 'border-yellow-400' : 'border-gray-200'}`}>
+            <div className="flex items-center gap-1 text-sm text-gray-500">
+                {label}
+                <MetricTooltip metricId={metricId} />
+            </div>
+            <div className={`text-2xl font-bold mt-1 ${noData ? 'text-gray-300' : isBad ? 'text-yellow-600' : 'text-gray-900'}`}>
+                {noData ? '—' : `${value}%`}
+            </div>
+            {noData && <div className="text-xs text-gray-400 mt-1">No data yet (feature not active)</div>}
+            {note && !noData && <div className="text-xs text-gray-400 mt-1">{note}</div>}
+        </div>
+    );
+}
+
+function PreProdChecklist({
+    evalTrackScores,
+    agenticQuality,
+}: {
+    evalTrackScores: EvalTrackScores | null;
+    agenticQuality: AgenticQualityMetrics | null;
+}) {
+    const gates: Array<{ label: string; pass: boolean | null; detail: string }> = [
+        {
+            label: 'eval:state score >= 95%',
+            pass: evalTrackScores?.stateScore != null ? evalTrackScores.stateScore >= 95 : null,
+            detail: evalTrackScores?.stateScore != null ? `${evalTrackScores.stateScore}%` : 'No file found',
+        },
+        {
+            label: 'eval:unhappy score >= 90%',
+            pass: evalTrackScores?.unhappyScore != null ? evalTrackScores.unhappyScore >= 90 : null,
+            detail: evalTrackScores?.unhappyScore != null ? `${evalTrackScores.unhappyScore}%` : 'No file found',
+        },
+        {
+            label: 'eval:normal score >= 90%',
+            pass: evalTrackScores?.normalScore != null ? evalTrackScores.normalScore >= 90 : null,
+            detail: evalTrackScores?.normalScore != null ? `${evalTrackScores.normalScore}%` : 'No file found',
+        },
+        {
+            label: 'Stuck Loop Rate < 5%',
+            pass: agenticQuality ? agenticQuality.stuckLoopRate < 5 : null,
+            detail: agenticQuality ? `${agenticQuality.stuckLoopRate}%` : 'No data',
+        },
+        {
+            label: 'Safety Net Trigger Rate < 5%',
+            pass: agenticQuality ? agenticQuality.safetyNetTriggerRate < 5 : null,
+            detail: agenticQuality ? `${agenticQuality.safetyNetTriggerRate}%` : 'No data',
+        },
+        {
+            label: 'Repeat Question Rate < 5%',
+            pass: agenticQuality ? agenticQuality.repeatQuestionRate < 5 : null,
+            detail: agenticQuality ? `${agenticQuality.repeatQuestionRate}%` : 'No data',
+        },
+    ];
+
+    const passCount = gates.filter(g => g.pass === true).length;
+    const totalGates = gates.length;
+    const allPass = passCount === totalGates && gates.every(g => g.pass !== null);
+
+    return (
+        <div className={`rounded-lg border p-5 ${allPass ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900">Pre-Production Checklist</h3>
+                <span className={`text-sm font-medium px-3 py-1 rounded-full ${
+                    allPass ? 'bg-green-100 text-green-800' :
+                    passCount >= totalGates / 2 ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                }`}>
+                    {passCount}/{totalGates} gates passed
+                </span>
+            </div>
+            <div className="space-y-2">
+                {gates.map((gate, idx) => (
+                    <div key={idx} className="flex items-center gap-3 text-sm">
+                        <span className={`w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${
+                            gate.pass === null ? 'bg-gray-200 text-gray-500' :
+                            gate.pass ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        }`}>
+                            {gate.pass === null ? '?' : gate.pass ? 'ok' : 'x'}
+                        </span>
+                        <span className={gate.pass === false ? 'text-red-700 font-medium' : 'text-gray-700'}>
+                            {gate.label}
+                        </span>
+                        <span className="text-gray-400 ml-auto">{gate.detail}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Dashboard ─────────────────────────────────────────────────────────
 export default function Dashboard() {
     const [days, setDays] = useState(7);
@@ -214,8 +359,10 @@ export default function Dashboard() {
     const [tokenCost, setTokenCost] = useState<TokenCostMetrics | null>(null);
     const [shadowMetrics, setShadowMetrics] = useState<ShadowMetrics | null>(null);
     const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
+    const [agenticQuality, setAgenticQuality] = useState<AgenticQualityMetrics | null>(null);
+    const [evalTrackScores, setEvalTrackScores] = useState<EvalTrackScores | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'eval' | 'prompt_quality' | 'conversations' | 'llm_logs' | 'product_health'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'eval' | 'prompt_quality' | 'conversations' | 'llm_logs' | 'product_health' | 'agentic_quality'>('overview');
     // LLM I/O state
     const [llmConversations, setLlmConversations] = useState<any[]>([]);
     const [llmIntent, setLlmIntent] = useState<string>('all');
@@ -227,7 +374,7 @@ export default function Dashboard() {
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
-        const [s, i, f, c, e, ev, rq, ch, ph, tc, sm, sa, ef] = await Promise.all([
+        const [s, i, f, c, e, ev, rq, ch, ph, tc, sm, sa, ef, aq, ets] = await Promise.all([
             getDashboardStats(days),
             getIntentBreakdown(days),
             getFlowFunnel(days),
@@ -241,6 +388,8 @@ export default function Dashboard() {
             getShadowMetrics(7),
             getSystemAlerts(24),
             getAllEvalFiles(),
+            getAgenticQualityMetrics(days),
+            getEvalTrackScores(),
         ]);
         setStats(s);
         setIntents(i);
