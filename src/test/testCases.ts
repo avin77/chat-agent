@@ -112,7 +112,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'helper_01',
     scenario: 'Helper looking for work - step by step',
-    expectedIntent: 'helper_registration',
+    expectedIntent: 'maid_registrationistration',
     messages: [
       'I am looking for a job as a cook',
       'My name is Lakshmi',
@@ -131,7 +131,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'helper_02',
     scenario: 'Helper provides full details upfront',
-    expectedIntent: 'helper_registration',
+    expectedIntent: 'maid_registrationistration',
     messages: [
       'I am Priya, looking for work as a cleaner. My number is 9123456788. I can work in Indiranagar.',
     ],
@@ -146,7 +146,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'helper_03',
     scenario: 'Experienced helper registration',
-    expectedIntent: 'helper_registration',
+    expectedIntent: 'maid_registrationistration',
     messages: [
       'I want to register as a maid',
       'Asha',
@@ -165,7 +165,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'helper_04',
     scenario: 'Helper looking for babysitting work',
-    expectedIntent: 'helper_registration',
+    expectedIntent: 'maid_registrationistration',
     messages: [
       'Need job for babysitting',
       'Ravi',
@@ -184,7 +184,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'helper_05',
     scenario: 'Helper for elderly care',
-    expectedIntent: 'helper_registration',
+    expectedIntent: 'maid_registrationistration',
     messages: [
       'I can take care of elderly people',
       'Meena',
@@ -430,7 +430,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'complex_03',
     scenario: 'Helper with experience details',
-    expectedIntent: 'helper_registration',
+    expectedIntent: 'maid_registrationistration',
     messages: [
       'I am Sunita with 10 years experience in cooking. Looking for work. 9123456786. Can work in Whitefield.',
     ],
@@ -454,7 +454,7 @@ export function getTestCaseById(id: string): TestCase | undefined {
 
 console.log(`✅ Generated ${TEST_CASES.length} test cases`);
 console.log(`   - Hire Maid: ${getTestCasesByIntent('hire_maid').length}`);
-console.log(`   - Helper Registration: ${getTestCasesByIntent('helper_registration').length}`);
+console.log(`   - Helper Registration: ${getTestCasesByIntent('maid_registrationistration').length}`);
 console.log(`   - Complaints: ${getTestCasesByIntent('complaint').length}`);
 console.log(`   - General: ${getTestCasesByIntent('general').length}`);
 console.log(`   - Edge Cases: ${TEST_CASES.filter(tc => tc.id.startsWith('edge_')).length}`);

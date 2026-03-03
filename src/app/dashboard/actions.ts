@@ -15,7 +15,7 @@ export async function getDashboardStats(days: number = 7) {
         supabase.from('conversation_sessions').select('id', { count: 'exact', head: true }).gte('last_activity', since),
         supabase.from('leads').select('id', { count: 'exact', head: true }).gte('created_at', since),
         supabase.from('complaints').select('id', { count: 'exact', head: true }).gte('created_at', since),
-        supabase.from('helper_registrations').select('id', { count: 'exact', head: true }).gte('created_at', since),
+        supabase.from('maid_registrationistrations').select('id', { count: 'exact', head: true }).gte('created_at', since),
         supabase.from('llm_logs').select('took_ms').gte('created_at', since),
     ]);
 
