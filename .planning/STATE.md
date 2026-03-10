@@ -75,6 +75,14 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-03-01 [02-02]: Outer catch on useAgenticThisTurn=true calls handleMaidHireStateMachine() as single-turn fallback — not a text fallback
 - 2026-03-01 [02-02]: collected_via uses 'agentic' | 'state_machine' parameter passed to handleMaidHireSuccess()
 
+## Pending Todos
+
+- 4 pending planning todos captured on 2026-03-10
+- Package V3-04 Response Playbooks
+- Define V3-06 Eval Governance
+- Create V3-07 Recovery Flywheel
+- Reconcile Roadmap and State
+
 ## Session Log
 
 - 2026-02-27: Project initialized. Codebase mapped. Requirements defined. Roadmap created (4 phases).
