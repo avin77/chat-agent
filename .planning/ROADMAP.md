@@ -2,8 +2,8 @@
 
 **Project:** EzyBot
 **Current milestone:** v3.0 - Multi-Intent Reliability and PM Observability
-**Roadmap status:** Planning
-**Last updated:** 2026-03-03
+**Roadmap status:** In Progress
+**Last updated:** 2026-03-10
 
 ---
 
@@ -30,21 +30,41 @@ v2 shipped successfully and is now considered baseline.
 
 ---
 
-## v3.0 Phase Overview (Planned)
+## v3.0 Phase Overview
 
 | # | Phase | Goal | Status |
 |---|-------|------|--------|
-| 5 | V3-01 Intent Contract + English Policy | Lock canonical intents and enforce English-only response behavior with graceful fallback | Planned |
-| 6 | V3-02 Multi-Intent Orchestration | Support mid-flow intent switches without data loss via intent stack/queue | Planned |
-| 7 | V3-03 Confusion Protocol 2.0 | Eliminate repeated-question loops; improve human-like recovery and escalation | Planned |
-| 8 | V3-04 Response Playbooks (Knowledge Contract) | Define required response and data contract per intent | Planned |
-| 9 | V3-05 PM Dashboard Metrics Redesign | Keep existing metrics, add definitions + new agentic quality and memory metrics | Planned |
+| 5 | V3-01 Intent Contract + English Policy | Lock canonical intents and enforce English-only response behavior with graceful fallback | COMPLETE (local) |
+| 6 | V3-02 Multi-Intent Orchestration | Support mid-flow intent switches without data loss via intent stack/queue | COMPLETE (local) |
+| 7 | V3-03 Confusion Protocol 2.0 | Eliminate repeated-question loops; improve human-like recovery and escalation | COMPLETE (local) |
+| 8 | V3-04 Response Playbooks (Knowledge Contract) | Define required response and data contract per intent | NEXT |
+| 9 | V3-05 PM Dashboard Metrics Redesign | Keep existing metrics, add definitions + new agentic quality and memory metrics | COMPLETE (local) |
 | 10 | V3-06 Eval Governance (3 Tracks) | Gate releases on state + unhappy + normal eval tracks with slice thresholds | Planned |
 | 11 | V3-07 Flywheel for Synonyms and Recovery | Convert production/eval misses (especially c56 class) into repeatable improvements | Planned |
 | 12 | V2-TD-01 Documentation Alignment | Close v2.0 audit gaps: missing requirement IDs in REQUIREMENTS.md and empty SUMMARY frontmatter | Planned |
 | 13 | V2-TD-02 Code Debt Clearance | Close v2.0 audit gaps: obsolete exports and stray comments | Planned |
 
 Explicitly removed from v3 scope for now (PM decision): shadow-system expansion tasks.
+
+## Current Execution Picture (2026-03-10)
+
+**Locally completed since v3 planning began:**
+- V3-01 Intent Contract + English Policy
+- V3-02 Multi-Intent Orchestration
+- V3-03 Confusion Protocol 2.0
+- V3-05 PM Dashboard Metrics Redesign
+
+**Remaining execution queue:**
+1. Reconcile planning source of truth so `ROADMAP.md`, `STATE.md`, and resume flows report the same milestone state.
+2. Package and plan V3-04 Response Playbooks / Knowledge Contract.
+3. Define V3-06 Eval Governance so release decisions are track-based, not average-score based.
+4. Define V3-07 Synonyms and Recovery Flywheel so repeated unhappy-path misses become deterministic improvements.
+5. Close V2-TD-01 and V2-TD-02 once the v3 planning picture is stable.
+
+**Interpretation:**
+- Core orchestration and confusion-handling work is locally ahead of the planning state.
+- The remaining v3 work is product hardening and governance, not another core architecture rewrite.
+- Shadow-system expansion remains explicitly out of scope until reintroduced by PM decision.
 
 ---
 
@@ -112,6 +132,10 @@ Explicitly removed from v3 scope for now (PM decision): shadow-system expansion 
 
 **Goal:** Define what information is minimally required and how to respond for each intent.
 
+**Why now:**
+- V3-01, V3-02, and V3-03 improved routing, memory, and recovery, but the bot still needs explicit intent contracts so future prompt and eval work do not drift.
+- PM and engineering need one place that defines what "good completion" means per intent.
+
 **Maid hire minimum data:**
 - phone, area, service_type, schedule
 
@@ -134,6 +158,15 @@ Explicitly removed from v3 scope for now (PM decision): shadow-system expansion 
 2. Prompt templates reference playbook contracts, not ad-hoc rules.
 3. Playbook coverage is testable via eval datasets.
 
+**Current risks if skipped:**
+- Prompt logic continues to accumulate intent-specific rules informally.
+- Eval failures will be harder to interpret because required-vs-optional behavior is not locked.
+- Dashboard metrics can show drift without a clear contract for what the bot should have collected or said.
+
+**Recommended next action:**
+- Reconcile planning docs first, then discuss/package this phase as the next PM-facing work item.
+- Suggested command after reconciliation: `$gsd-discuss-phase 8`
+
 ---
 
 ## Phase 9: V3-05 PM Dashboard Metrics Redesign
@@ -143,8 +176,8 @@ Explicitly removed from v3 scope for now (PM decision): shadow-system expansion 
 **Plans:** 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Metric registry (src/lib/metricRegistry.ts) + new agentic quality server actions in actions.ts
-- [ ] 09-02-PLAN.md — Dashboard UI: Agentic Quality tab, MetricTooltip definitions, pre-production checklist panel
+- [x] 09-01-PLAN.md — Metric registry (src/lib/metricRegistry.ts) + new agentic quality server actions in actions.ts
+- [x] 09-02-PLAN.md — Dashboard UI: Agentic Quality tab, MetricTooltip definitions, pre-production checklist panel
 
 **Keep (no removal):**
 - Completion, quality score, escalation, slot fill, token usage, latency, alerts, eval scores, conversation health.
@@ -173,11 +206,19 @@ Plans:
 2. PM can detect whether orchestration and memory behaviors improved.
 3. Pre-production checklist view is driven by metrics + eval gates.
 
+**Local completion evidence:**
+- `09-01-SUMMARY.md` records metric registry and server-action completion on 2026-03-03.
+- `09-02-SUMMARY.md` records Agentic Quality UI and pre-production checklist completion on 2026-03-03.
+
 ---
 
 ## Phase 10: V3-06 Eval Governance (3 Tracks)
 
 **Goal:** Separate release quality gates by failure mode.
+
+**Why now:**
+- Latest evals show strong headline scores with concentrated failure clusters still present.
+- PM needs a release policy that blocks regressions in unhappy-path behavior even when state-machine correctness remains high.
 
 **Tracks:**
 - `eval:state` (core flow correctness)
@@ -189,11 +230,24 @@ Plans:
 - Track-specific floor + must-fix conversation IDs for known risk slices.
 - Fail release if unhappy robustness regresses, even if state score is high.
 
+**Current risks if skipped:**
+- Releases can be approved on a strong average while known unhappy-path slices still fail.
+- Dashboard pre-production views risk becoming informative only, not decision-enforcing.
+- Team discussions about "ready to ship" remain subjective.
+
+**Recommended next action:**
+- Package this immediately after V3-04 so governance is defined before another round of prompt/flow tuning.
+- Suggested command after reconciliation: `$gsd-discuss-phase 10`
+
 ---
 
 ## Phase 11: V3-07 Flywheel for Synonyms and Recovery
 
 **Goal:** Turn repeated misses into deterministic improvements.
+
+**Why now:**
+- `c56` and related synonym/recovery failures are already known and should become a systematic improvement loop, not one-off fixes.
+- The value of V3-06 governance increases if the team also has a disciplined way to resolve the exact misses that gates surface.
 
 **Scope:**
 - Mine synonym/phrase misses from eval and production logs.
@@ -201,6 +255,15 @@ Plans:
 - Add regression cases for each resolved miss class.
 
 **Primary target:** `synonym_hinglish_service` error family (for example current `c56` pattern).
+
+**Current risks if skipped:**
+- The same failure families keep reappearing in eval review without a standard path to resolution.
+- Recovery behavior improves manually but does not compound into a reusable product-learning loop.
+- PM sees recurring misses without a repeatable remediation mechanism.
+
+**Recommended next action:**
+- Package after V3-06 so new governance can point directly at a flywheel for fixing surfaced misses.
+- Suggested command after reconciliation: `$gsd-discuss-phase 11`
 
 ---
 
@@ -241,4 +304,4 @@ Plans:
 - New channels/apps beyond current web flow.
 
 ---
-*Roadmap updated: 2026-03-03 with v3 planning scope and phase definitions.*
+*Roadmap updated: 2026-03-10 with reconciled local completion status and packaged remaining v3 work.*

@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: milestone
-status: unknown
-last_updated: "2026-03-02T08:41:21.729Z"
+milestone: v3.0
+milestone_name: multi-intent-reliability-and-pm-observability
+status: in_progress
+last_updated: "2026-03-10T12:00:00.000Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 9
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 2
 ---
 
 # EzyBot — Project State
@@ -18,21 +18,34 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Capture quality domestic help leads while maintaining natural, helpful conversation
-**Current focus:** Phase 3 — Dashboard & Cost Tracking (Phase 2 deferred)
+**Current focus:** Reconcile planning truth, then package V3-04 Response Playbooks as the next execution item
 
 ## Current Status
 
-**Phase:** 2 of 4 (Phase 2, Plan 2 of 3 complete — IN PROGRESS)
-**Milestone:** v2.0 Agentic Architecture
+**Phase:** 8 of 13 (V3-04 Response Playbooks - NEXT)
+**Milestone:** v3.0 Multi-Intent Reliability and PM Observability
 
 | Phase | Status |
 |-------|--------|
-| 1 — LLM Extraction Integration | COMPLETE (2/2 plans done) |
-| 2 — Agentic Tool-Calling Flow | In Progress (2/3 plans done) |
-| 3 — Dashboard & Cost Tracking | COMPLETE (5/5 plans done) |
-| 4 — Data Flywheel Scripts | Pending |
+| 5 - V3-01 Intent Contract + English Policy | COMPLETE (local evidence) |
+| 6 - V3-02 Multi-Intent Orchestration | COMPLETE (local evidence) |
+| 7 - V3-03 Confusion Protocol 2.0 | COMPLETE (local evidence) |
+| 8 - V3-04 Response Playbooks | Next |
+| 9 - V3-05 PM Dashboard Metrics Redesign | COMPLETE (local evidence) |
+| 10 - V3-06 Eval Governance | Pending |
+| 11 - V3-07 Flywheel for Synonyms and Recovery | Pending |
+| 12 - V2-TD-01 Documentation Alignment | Pending |
+| 13 - V2-TD-02 Code Debt Clearance | Pending |
 
-## Already Shipped (This Cycle)
+## Already Shipped (Current Milestone View)
+
+- v2 baseline remains shipped: LLM extraction integration, agentic maid-hire flow behind `USE_AGENTIC`, and dashboard/cost tracking were completed and verified.
+- V3-01 complete locally on 2026-03-03: canonical intents locked to `maid_hire`, `complaint`, `maid_registration`, and `general`; English-only output policy enforced.
+- V3-02 complete locally on 2026-03-03: `intent_stack` introduced so side-intent switches preserve prior flow state and resume correctly.
+- V3-03 complete locally on 2026-03-03: `slot_attempts`, multi-stage repair messaging, and confusion-pivot recovery added.
+- V3-05 complete locally on 2026-03-03: metric registry, agentic quality server actions, Agentic Quality dashboard tab, and pre-production checklist added.
+- Remaining work is primarily PM and technical hardening: V3-04 knowledge contract, V3-06 eval governance, V3-07 recovery flywheel, then v2 documentation/code-debt cleanup.
+- Legacy shipped detail from the earlier v2 state is retained below for reference.
 
 - Location fuzzy matching (Levenshtein) in `src/extractors/dataExtractor.ts`
 - Session resume 4h TTL reset in `src/app/api/chat/route.ts` + `ChatWidget.tsx`
@@ -74,6 +87,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 - 2026-03-01 [02-02]: handleMaidHireSuccess() helper deduplicates logging/escalation/response code instead of copy-pasting block into catch
 - 2026-03-01 [02-02]: Outer catch on useAgenticThisTurn=true calls handleMaidHireStateMachine() as single-turn fallback — not a text fallback
 - 2026-03-01 [02-02]: collected_via uses 'agentic' | 'state_machine' parameter passed to handleMaidHireSuccess()
+- 2026-03-03 [V3-01]: canonical intent taxonomy locked to `maid_hire`, `complaint`, `maid_registration`, `general`
+- 2026-03-03 [V3-01]: bot output remains English-only while non-English user input is still accepted for understanding
+- 2026-03-03 [V3-02]: `intent_stack` stores suspended intent snapshots so mid-flow switches can resume without data loss
+- 2026-03-03 [V3-03]: confusion handling standardized around slot attempt tracking, reframe messaging, and pivot-to-support behavior
+- 2026-03-03 [V3-05]: PM dashboard expanded with metric registry, agentic quality metrics, and pre-production checklist signals
 
 ## Pending Todos
 
@@ -104,10 +122,16 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ---
 *Last updated: 2026-03-01T05:14:00Z — Phase 2 Plan 02 COMPLETE (2/3 plans). Next: Phase 2 Plan 03 (human verification checkpoint — Supabase migration + end-to-end test).*
 
+ - 2026-03-02: Completed Phase 2 Plan 03 - human verification checkpoint passed; migration confirmed applied; eval reached 100% PRODUCTION READY.
+ - 2026-03-03: Local v3 execution advanced beyond planning state: V3-01, V3-02, V3-03, and V3-05 each have completion summaries and corresponding commits.
+ - 2026-03-10: Captured planning todos for remaining v3 work and began roadmap/state reconciliation.
+
+*Current update: 2026-03-10T12:00:00Z - v3 source-of-truth reconciled locally. Next: package V3-04, then V3-06, then V3-07.*
+
 ## Session Continuity
 
-- Last session resume: 2026-03-10
-- Stopped at: Resume review completed; planning artifacts inspected against roadmap/state
-- Current resume finding: `STATE.md` is stale versus `.planning/ROADMAP.md` and newer phase artifacts
-- Immediate unfinished items: `12-01-PLAN.md`, `13-01-PLAN.md`
+- Last session reconciliation: 2026-03-10
+- Current resume finding: Remaining packaged work is V3-04, V3-06, V3-07, followed by Phase 12 and Phase 13 cleanup
+- Immediate unfinished items: V3-04 packaging, V3-06 governance, V3-07 flywheel, `12-01-PLAN.md`, `13-01-PLAN.md`
+- Historical resume note: 2026-03-10 resume originally detected stale planning state before this reconciliation.
 - Resume file: none
