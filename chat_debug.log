@@ -114198,3 +114198,181 @@ DEBUG_SESSION: ResolvedID: 0jhdht6ojunimm9z8i3c BodyID: 0jhdht6ojunimm9z8i3c Hea
 }
 ---
 DEBUG_SESSION: ResolvedID: 0jhdht6ojunimm9z8i3c BodyID: 0jhdht6ojunimm9z8i3c HeaderID: null
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I want to hire a maid"
+    }
+  ],
+  "id": "uat-1772550459780"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-1772550459780 BodyID: uat-1772550459780 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+{
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Welcome to EzyHelpers! We can help you find the perfect domestic help. Could you please share your 10-digit mobile number?\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "user",
+      "content": "9876543210"
+    }
+  ],
+  "id": "uat-1772550459780"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-1772550459780 BodyID: uat-1772550459780 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+[Finish] {
+  "text": "data: {\"type\":\"text-start\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Thanks! We've sent a one-time password (OTP) to 9876543210. Please enter it here.\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: [DONE]",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Welcome to EzyHelpers! We can help you find the perfect domestic help. Could you please share your 10-digit mobile number?\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"data: {\\\"type\\\":\\\"text-start\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-delta\\\",\\\"delta\\\":\\\"Thanks! We've sent a one-time password (OTP) to 9876543210. Please enter it here.\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-end\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: [DONE]\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "user",
+      "content": "Wait, I have a complaint about my previous booking first."
+    }
+  ],
+  "id": "uat-1772550459780"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-1772550459780 BodyID: uat-1772550459780 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+[Finish] {
+  "text": "data: {\"type\":\"text-start\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Okay, I understand. Before we proceed with a new booking, let's address your complaint. Could you please briefly describe what happened with your previous booking?  Please also provide your booking ID if you have it handy.\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: [DONE]",
+  "intent": "complaint"
+}
+---
+{
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Welcome to EzyHelpers! We can help you find the perfect domestic help. Could you please share your 10-digit mobile number?\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"data: {\\\"type\\\":\\\"text-start\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-delta\\\",\\\"delta\\\":\\\"Thanks! We've sent a one-time password (OTP) to 9876543210. Please enter it here.\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-end\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: [DONE]\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"34d1066c-bfe5-4845-9d78-af8754e30867\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"data: {\\\"type\\\":\\\"text-start\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-delta\\\",\\\"delta\\\":\\\"Okay, I understand. Before we proceed with a new booking, let's address your complaint. Could you please briefly describe what happened with your previous booking?  Please also provide your booking ID if you have it handy.\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-end\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: [DONE]\",\"id\":\"34d1066c-bfe5-4845-9d78-af8754e30867\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"34d1066c-bfe5-4845-9d78-af8754e30867\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "user",
+      "content": "The maid was late and did not clean properly."
+    }
+  ],
+  "id": "uat-1772550459780"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-1772550459780 BodyID: uat-1772550459780 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+[Finish] {
+  "text": "data: {\"type\":\"text-start\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Thank you for letting me know. I apologize for the inconvenience caused by the late arrival and unsatisfactory cleaning. Could you please share your booking ID so I can investigate this further and offer a suitable resolution?\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"6999999f-9999-4999-9999-999999999999\"}\n\ndata: [DONE]",
+  "intent": "complaint"
+}
+---
+{
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Welcome to EzyHelpers! We can help you find the perfect domestic help. Could you please share your 10-digit mobile number?\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"d93c508b-eb11-437d-8742-73ee58116857\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"data: {\\\"type\\\":\\\"text-start\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-delta\\\",\\\"delta\\\":\\\"Thanks! We've sent a one-time password (OTP) to 9876543210. Please enter it here.\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-end\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: [DONE]\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"96e82263-1d66-4deb-8777-02c035159835\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"34d1066c-bfe5-4845-9d78-af8754e30867\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"data: {\\\"type\\\":\\\"text-start\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-delta\\\",\\\"delta\\\":\\\"Okay, I understand. Before we proceed with a new booking, let's address your complaint. Could you please briefly describe what happened with your previous booking?  Please also provide your booking ID if you have it handy.\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-end\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: [DONE]\",\"id\":\"34d1066c-bfe5-4845-9d78-af8754e30867\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"34d1066c-bfe5-4845-9d78-af8754e30867\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"e5830411-f5ee-4407-a747-faa1a3e8c10a\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"data: {\\\"type\\\":\\\"text-start\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-delta\\\",\\\"delta\\\":\\\"Thank you for letting me know. I apologize for the inconvenience caused by the late arrival and unsatisfactory cleaning. Could you please share your booking ID so I can investigate this further and offer a suitable resolution?\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-end\\\",\\\"id\\\":\\\"6999999f-9999-4999-9999-999999999999\\\"}\\n\\ndata: [DONE]\",\"id\":\"e5830411-f5ee-4407-a747-faa1a3e8c10a\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"e5830411-f5ee-4407-a747-faa1a3e8c10a\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "user",
+      "content": "Yes, let us continue the hiring."
+    }
+  ],
+  "id": "uat-1772550459780"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-1772550459780 BodyID: uat-1772550459780 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+[Finish] {
+  "text": "Okay, great! Let's continue with the hiring process. \n\nTo help me find the best helper for you, could you please tell me:\n\n1. **What type of help are you looking for?** (e.g., full-time maid, part-time cleaner, nanny, cook, elderly care, etc.)\n2. **What days and times are you looking for help?** (e.g., Monday-Friday 9am-5pm, every Saturday morning, occasional help as needed)\n3. **What tasks would you like the helper to perform?** (e.g., cleaning, laundry, cooking, childcare, pet care, etc. - be as specific as possible!)\n4. **Do you have any specific requirements or preferences?** (e.g., experience with children, pet-friendly, non-smoker, specific language skills)\n\n\n\n",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need help finding a cook"
+    }
+  ],
+  "id": "uat-conf-1772550511433"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-conf-1772550511433 BodyID: uat-conf-1772550511433 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+{
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"30c3287f-4317-448a-b167-728b8acb6313\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Great! We can help with that. Could you please share your 10-digit mobile number?\",\"id\":\"30c3287f-4317-448a-b167-728b8acb6313\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"30c3287f-4317-448a-b167-728b8acb6313\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "user",
+      "content": "What is your favorite color?"
+    }
+  ],
+  "id": "uat-conf-1772550511433"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-conf-1772550511433 BodyID: uat-conf-1772550511433 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+[Finish] {
+  "text": "data: {\"type\":\"text-start\",\"id\":\"69999999-9999-9999-9999-999999999999\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"As a large language model, I don't have preferences like favorite colors! I don't experience the world in the same way humans do. But if I *were* to choose based on the data I've processed, I'd say blue is mentioned very positively and frequently – it's often associated with calmness, intelligence, and trust. So, I'll say blue!\",\"id\":\"69999999-9999-9999-9999-999999999999\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"69999999-9999-9999-9999-999999999999\"}\n\ndata: [DONE]",
+  "intent": "general"
+}
+---
+{
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"30c3287f-4317-448a-b167-728b8acb6313\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"Great! We can help with that. Could you please share your 10-digit mobile number?\",\"id\":\"30c3287f-4317-448a-b167-728b8acb6313\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"30c3287f-4317-448a-b167-728b8acb6313\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "assistant",
+      "content": "data: {\"type\":\"text-start\",\"id\":\"146b28cb-979d-4812-af65-a8de23d1785e\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"data: {\\\"type\\\":\\\"text-start\\\",\\\"id\\\":\\\"69999999-9999-9999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-delta\\\",\\\"delta\\\":\\\"As a large language model, I don't have preferences like favorite colors! I don't experience the world in the same way humans do. But if I *were* to choose based on the data I've processed, I'd say blue is mentioned very positively and frequently – it's often associated with calmness, intelligence, and trust. So, I'll say blue!\\\",\\\"id\\\":\\\"69999999-9999-9999-9999-999999999999\\\"}\\n\\ndata: {\\\"type\\\":\\\"text-end\\\",\\\"id\\\":\\\"69999999-9999-9999-9999-999999999999\\\"}\\n\\ndata: [DONE]\",\"id\":\"146b28cb-979d-4812-af65-a8de23d1785e\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"146b28cb-979d-4812-af65-a8de23d1785e\"}\n\ndata: [DONE]"
+    },
+    {
+      "role": "user",
+      "content": "Can you play music?"
+    }
+  ],
+  "id": "uat-conf-1772550511433"
+}
+---
+DEBUG_SESSION: ResolvedID: uat-conf-1772550511433 BodyID: uat-conf-1772550511433 HeaderID: null
+[DB Insert Error] {"code":"PGRST204","details":null,"hint":null,"message":"Could not find the 'intent_history' column of 'conversation_sessions' in the schema cache"}
+[Finish] {
+  "text": "data: {\"type\":\"text-start\",\"id\":\"69999999-9999-9999-9999-999999999999\"}\n\ndata: {\"type\":\"text-delta\",\"delta\":\"I can't directly *play* music for you in the way a music player can. I'm a text-based AI! However, I can definitely help you *find* music.  I can:\\n\\n*   **Suggest songs or artists** based on your preferences.\\n*   **Write lyrics** in the style of your favorite musician.\\n*   **Give you information** about songs, albums, and artists.\\n*   **Create playlists** (as text lists, of course!).\\n\\nTo get started, tell me what kind of music you're in the mood for!\",\"id\":\"69999999-9999-9999-9999-999999999999\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"69999999-9999-9999-9999-999999999999\"}\n\ndata: [DONE]",
+  "intent": "general"
+}
+---

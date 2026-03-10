@@ -95,3 +95,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ---
 *Last updated: 2026-03-01T05:14:00Z — Phase 2 Plan 02 COMPLETE (2/3 plans). Next: Phase 2 Plan 03 (human verification checkpoint — Supabase migration + end-to-end test).*
+
+## Session Continuity
+
+- Last session resume: 2026-03-10
+- Stopped at: Resume review completed; planning artifacts inspected against roadmap/state
+- Current resume finding: `STATE.md` is stale versus `.planning/ROADMAP.md` and newer phase artifacts
+- Immediate unfinished items: `12-01-PLAN.md`, `13-01-PLAN.md`
+- Resume file: none

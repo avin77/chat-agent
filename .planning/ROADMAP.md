@@ -41,6 +41,8 @@ v2 shipped successfully and is now considered baseline.
 | 9 | V3-05 PM Dashboard Metrics Redesign | Keep existing metrics, add definitions + new agentic quality and memory metrics | Planned |
 | 10 | V3-06 Eval Governance (3 Tracks) | Gate releases on state + unhappy + normal eval tracks with slice thresholds | Planned |
 | 11 | V3-07 Flywheel for Synonyms and Recovery | Convert production/eval misses (especially c56 class) into repeatable improvements | Planned |
+| 12 | V2-TD-01 Documentation Alignment | Close v2.0 audit gaps: missing requirement IDs in REQUIREMENTS.md and empty SUMMARY frontmatter | Planned |
+| 13 | V2-TD-02 Code Debt Clearance | Close v2.0 audit gaps: obsolete exports and stray comments | Planned |
 
 Explicitly removed from v3 scope for now (PM decision): shadow-system expansion tasks.
 
@@ -199,6 +201,36 @@ Plans:
 - Add regression cases for each resolved miss class.
 
 **Primary target:** `synonym_hinglish_service` error family (for example current `c56` pattern).
+
+---
+
+## Phase 12: V2-TD-01 Documentation Alignment
+
+**Goal:** Ensure 100% requirements traceability and documentation accuracy for v2.0.
+
+**Tasks:**
+- Add definitions for SHADOW-01/04, CONV-01/04, and ALERT-01/04 to REQUIREMENTS.md.
+- Update traceability matrix in REQUIREMENTS.md to include these IDs.
+- Backfill `requirements_completed` frontmatter in SUMMARY.md files for phases 01 and 02.
+
+**Exit criteria:**
+1. REQUIREMENTS.md contains all IDs referenced in roadmap/plans.
+2. All completed phase summaries correctly list their satisfied requirements.
+
+---
+
+## Phase 13: V2-TD-02 Code Debt Clearance
+
+**Goal:** Clean up minor code artifacts identified in v2.0 audit.
+
+**Tasks:**
+- Remove obsolete `agenticTools` export from `src/flows/agenticMaidHire.ts`.
+- Remove stray backslash comment in `src/app/api/chat/route.ts` (line 694).
+- Verify dashboard gate condition hardcoding is acceptable or needs dynamic wiring.
+
+**Exit criteria:**
+1. Codebase is free of identified obsolete exports and stray comments.
+2. Milestone audit tech debt items are resolved.
 
 ---
 
