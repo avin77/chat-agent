@@ -303,5 +303,18 @@ Plans:
 - Real-time streaming analytics rewrite.
 - New channels/apps beyond current web flow.
 
+### Phase 14: true agentic parity ,agentic orchestration and complete agentic based system
+
+**Goal:** Build a shared constrained agentic runtime with faithful shadow parity, true multi-intent orchestration, and PM-visible rollout readiness across all canonical intents.
+**Requirements**: Future agentic runtime contract, shadow parity, multi-intent fidelity, PM reference docs, rollout verification
+**Depends on:** Phase 13
+**Plans:** 4 plans
+
+Plans:
+- [ ] 14-01-PLAN.md - Shared runtime contract, playbooks, validators, and canonical intent normalization
+- [ ] 14-02-PLAN.md - Maid-hire migration onto shared runtime plus faithful shadow simulation
+- [ ] 14-03-PLAN.md - Complaint and maid-registration migration with real suspend / resume multi-intent behavior
+- [ ] 14-04-PLAN.md - PM reference docs, parity regressions, and rollout readiness signals
+
 ---
 *Roadmap updated: 2026-03-10 with reconciled local completion status and packaged remaining v3 work.*

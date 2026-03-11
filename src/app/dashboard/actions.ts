@@ -345,6 +345,78 @@ export async function getConversationLLMLogs(conversationId: string) {
     return data;
 }
 
+export async function getConversationShadowLogs(conversationId: string) {
+    const { data, error } = await supabase
+        .from('shadow_logs')
+        .select('created_at, turn_number, current_state, user_message, prod_next_state, prod_slots, shadow_proposal, agreed, shadow_latency_ms')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+    if (error || !data) return [];
+    return data;
+}
+
+export async function getShadowConversationsWithLogCounts(limit: number = 50, days: number = 7, intent?: string) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: shadowRows, error: shadowError } = await supabase
+        .from('shadow_logs')
+        .select('conversation_id, created_at')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+    if (shadowError || !shadowRows || shadowRows.length === 0) return [];
+
+    const grouped = new Map<string, { conversation_id: string; last_activity: string; shadow_count: number }>();
+    for (const row of shadowRows) {
+        const existing = grouped.get(row.conversation_id);
+        if (!existing) {
+            grouped.set(row.conversation_id, {
+                conversation_id: row.conversation_id,
+                last_activity: row.created_at,
+                shadow_count: 1,
+            });
+        } else {
+            existing.shadow_count += 1;
+            if (row.created_at > existing.last_activity) {
+                existing.last_activity = row.created_at;
+            }
+        }
+    }
+
+    const conversationIds = Array.from(grouped.keys());
+    const { data: sessions } = await supabase
+        .from('conversation_sessions')
+        .select('conversation_id, detected_intent, current_state, last_activity')
+        .in('conversation_id', conversationIds);
+
+    const sessionMap = new Map((sessions || []).map((session: any) => [session.conversation_id, session]));
+
+    const rows = Array.from(grouped.values()).map((item) => {
+        const session = sessionMap.get(item.conversation_id);
+        return {
+            conversation_id: item.conversation_id,
+            detected_intent: session?.detected_intent || 'maid_hire',
+            current_state: session?.current_state || 'START',
+            last_activity: session?.last_activity || item.last_activity,
+            log_count: 0,
+            shadow_count: item.shadow_count,
+            has_production: false,
+            has_shadow: true,
+        };
+    });
+
+    const filtered = intent && intent !== 'all'
+        ? rows.filter((row) => row.detected_intent === intent)
+        : rows;
+
+    return filtered
+        .sort((a, b) => (b.last_activity || '').localeCompare(a.last_activity || ''))
+        .slice(0, limit);
+}
+
 // ─── Recent Conversations with LLM log counts ──────────────────────────────
 export async function getConversationsWithLogCounts(limit: number = 50, days: number = 7, intent?: string) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
@@ -380,6 +452,9 @@ export async function getConversationsWithLogCounts(limit: number = 50, days: nu
     return sessions.map((s: any) => ({
         ...s,
         log_count: logCounts[s.conversation_id] || 0,
+        shadow_count: 0,
+        has_production: true,
+        has_shadow: false,
     }));
 }
 

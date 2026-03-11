@@ -12,14 +12,17 @@ import {
     getResponseQualityMetrics,
     getConversationHealthMetrics,
     getConversationLLMLogs,
+    getConversationShadowLogs,
     getConversationsWithLogCounts,
     getProductHealthMetrics,
+    getShadowConversationsWithLogCounts,
     getTokenCostMetrics,
     getShadowMetrics,
     getSystemAlerts,
     checkAndWriteAlerts,
 } from './actions';
 import { getAgenticQualityMetrics, getEvalTrackScores } from './actions';
+import { mergeLlmIoConversations } from './llmIoHelpers';
 import { getMetricSpec } from '@/lib/metricRegistry';
 import type { MetricSpec } from '@/lib/metricRegistry';
 
@@ -366,8 +369,10 @@ export default function Dashboard() {
     // LLM I/O state
     const [llmConversations, setLlmConversations] = useState<any[]>([]);
     const [llmIntent, setLlmIntent] = useState<string>('all');
+    const [llmMode, setLlmMode] = useState<'production' | 'shadow' | 'both'>('production');
     const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
     const [llmLogs, setLlmLogs] = useState<any[]>([]);
+    const [shadowLogs, setShadowLogs] = useState<any[]>([]);
     const [llmLogsLoading, setLlmLogsLoading] = useState(false);
     const [llmListLoading, setLlmListLoading] = useState(false);
     const [expandedPrompts, setExpandedPrompts] = useState<Set<number>>(new Set());
@@ -432,22 +437,55 @@ export default function Dashboard() {
             setLlmListLoading(true);
             setSelectedConvId(null);
             setLlmLogs([]);
-            getConversationsWithLogCounts(50, days, llmIntent).then(data => {
-                setLlmConversations(data);
+            setShadowLogs([]);
+
+            const loadList = async () => {
+                if (llmMode === 'production') {
+                    const data = await getConversationsWithLogCounts(50, days, llmIntent);
+                    setLlmConversations(data);
+                } else if (llmMode === 'shadow') {
+                    const data = await getShadowConversationsWithLogCounts(50, days, llmIntent);
+                    setLlmConversations(data);
+                } else {
+                    const [prod, shadow] = await Promise.all([
+                        getConversationsWithLogCounts(50, days, llmIntent),
+                        getShadowConversationsWithLogCounts(50, days, llmIntent),
+                    ]);
+                    setLlmConversations(mergeLlmIoConversations(prod as any[], shadow as any[]));
+                }
+                setLlmListLoading(false);
+            };
+
+            loadList().catch(() => {
+                setLlmConversations([]);
                 setLlmListLoading(false);
             });
         }
-    }, [activeTab, days, llmIntent]);
+    }, [activeTab, days, llmIntent, llmMode]);
 
     // Load LLM logs when a conversation is selected
     const loadConvLogs = useCallback(async (convId: string) => {
         setSelectedConvId(convId);
         setLlmLogsLoading(true);
         setExpandedPrompts(new Set());
-        const logs = await getConversationLLMLogs(convId);
-        setLlmLogs(logs);
+        if (llmMode === 'production') {
+            const logs = await getConversationLLMLogs(convId);
+            setLlmLogs(logs);
+            setShadowLogs([]);
+        } else if (llmMode === 'shadow') {
+            const logs = await getConversationShadowLogs(convId);
+            setLlmLogs([]);
+            setShadowLogs(logs);
+        } else {
+            const [prodLogs, shadowTurnLogs] = await Promise.all([
+                getConversationLLMLogs(convId),
+                getConversationShadowLogs(convId),
+            ]);
+            setLlmLogs(prodLogs);
+            setShadowLogs(shadowTurnLogs);
+        }
         setLlmLogsLoading(false);
-    }, []);
+    }, [llmMode]);
 
     if (loading && !stats) {
         return (
@@ -459,6 +497,8 @@ export default function Dashboard() {
 
     const totalIntents = Object.values(intents).reduce((s, v) => s + v, 0);
     const funnelMax = Math.max(...Object.values(funnel), 1);
+    const hasProductionLogs = llmLogs.length > 0;
+    const hasShadowLogs = shadowLogs.length > 0;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -1029,6 +1069,23 @@ export default function Dashboard() {
                                     </h3>
                                     {llmListLoading && <span className="text-[10px] text-gray-400 animate-pulse">loading…</span>}
                                 </div>
+                                <div className="flex flex-wrap gap-1">
+                                    {([
+                                        { id: 'production', label: 'Production' },
+                                        { id: 'shadow', label: 'Shadow' },
+                                        { id: 'both', label: 'Both' },
+                                    ] as const).map(mode => (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => setLlmMode(mode.id)}
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition ${llmMode === mode.id
+                                                ? 'bg-slate-700 text-white border-slate-700'
+                                                : 'bg-white text-gray-500 border-gray-300 hover:border-slate-400'}`}
+                                        >
+                                            {mode.label}
+                                        </button>
+                                    ))}
+                                </div>
                                 {/* Intent filter pills */}
                                 <div className="flex flex-wrap gap-1">
                                     {(['all', 'maid_hire', 'complaint', 'general', 'helper_reg'] as const).map(intent => (
@@ -1048,7 +1105,7 @@ export default function Dashboard() {
                                 {llmListLoading ? (
                                     <p className="p-4 text-gray-400 text-sm text-center">Loading…</p>
                                 ) : llmConversations.length === 0 ? (
-                                    <p className="p-4 text-gray-400 text-sm text-center">No conversations found.</p>
+                                    <p className="p-4 text-gray-400 text-sm text-center">No {llmMode} conversations found.</p>
                                 ) : llmConversations.map((conv: any) => {
                                     const isSelected = selectedConvId === conv.conversation_id;
                                     const intentColors: Record<string, string> = {
@@ -1067,7 +1124,21 @@ export default function Dashboard() {
                                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${intentColors[conv.detected_intent] || 'bg-gray-100'}`}>
                                                     {conv.detected_intent}
                                                 </span>
-                                                <span className="text-[10px] text-gray-400">{conv.log_count} turns</span>
+                                                <span className="text-[10px] text-gray-400">
+                                                    {llmMode === 'production'
+                                                        ? `${conv.log_count} prod`
+                                                        : llmMode === 'shadow'
+                                                            ? `${conv.shadow_count} shadow`
+                                                            : `${conv.log_count} prod · ${conv.shadow_count} shadow`}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1 mt-1">
+                                                {conv.has_production && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium border border-blue-100">prod</span>
+                                                )}
+                                                {conv.has_shadow && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-100">shadow</span>
+                                                )}
                                             </div>
                                             <div className="font-mono text-[10px] text-gray-500 mt-1 truncate" title={conv.conversation_id}>
                                                 {conv.conversation_id.length > 20
@@ -1087,29 +1158,38 @@ export default function Dashboard() {
                         <div className="flex-1 space-y-3 overflow-y-auto">
                             {!selectedConvId ? (
                                 <div className="bg-white rounded-lg p-12 shadow-sm border border-gray-200 text-center">
-                                    <p className="text-gray-400">Select a conversation to view LLM input/output</p>
+                                    <p className="text-gray-400">Select a conversation to view production or shadow input/output</p>
                                 </div>
                             ) : llmLogsLoading ? (
                                 <div className="bg-white rounded-lg p-12 shadow-sm border border-gray-200 text-center">
                                     <p className="text-gray-400">Loading logs...</p>
                                 </div>
-                            ) : llmLogs.length === 0 ? (
+                            ) : !hasProductionLogs && !hasShadowLogs ? (
                                 <div className="bg-white rounded-lg p-12 shadow-sm border border-gray-200 text-center">
-                                    <p className="text-gray-400">No LLM logs for this conversation.</p>
+                                    <p className="text-gray-400">No {llmMode} logs for this conversation.</p>
                                 </div>
                             ) : (
                                 <>
                                     <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-sm font-semibold text-gray-700">
-                                                {llmLogs.length} turns · {selectedConvId.substring(0, 12)}...
+                                                {selectedConvId.substring(0, 12)}...
                                             </h3>
                                             <span className="text-xs text-gray-400">
-                                                {llmLogs[0]?.intent}
+                                                {llmMode === 'production'
+                                                    ? `${llmLogs.length} production turns`
+                                                    : llmMode === 'shadow'
+                                                        ? `${shadowLogs.length} shadow turns`
+                                                        : `${llmLogs.length} production · ${shadowLogs.length} shadow`}
                                             </span>
                                         </div>
                                     </div>
-                                    {llmLogs.map((log: any, idx: number) => {
+                                    {hasProductionLogs && (
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                                            <div className="text-xs font-semibold text-gray-600 uppercase">Production LLM Logs</div>
+                                        </div>
+                                    )}
+                                    {hasProductionLogs && llmLogs.map((log: any, idx: number) => {
                                         const rawDiffers = log.raw_llm_response !== log.after_guardrails;
                                         const isPromptExpanded = expandedPrompts.has(idx);
                                         return (
@@ -1180,6 +1260,83 @@ export default function Dashboard() {
                                             </div>
                                         );
                                     })}
+                                    {hasShadowLogs && (
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                                            <div className="text-xs font-semibold text-amber-700 uppercase">Shadow Logs</div>
+                                            <div className="text-[11px] text-gray-400 mt-1">Structured agentic proposal compared against production for the same conversation turn.</div>
+                                        </div>
+                                    )}
+                                    {hasShadowLogs && shadowLogs.map((log: any, idx: number) => {
+                                        const proposal = log.shadow_proposal || {};
+                                        const nextState = proposal?.next_state || '—';
+                                        const toolCalls = Array.isArray(proposal?.tool_calls) ? proposal.tool_calls : [];
+                                        return (
+                                            <div key={`shadow-${idx}`} className="bg-white rounded-lg shadow-sm border border-amber-200 overflow-hidden">
+                                                <div className="px-3 py-2 bg-amber-50 border-b border-amber-100 flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-gray-500">Shadow Turn {log.turn_number ?? idx + 1}</span>
+                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${log.agreed === true
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : log.agreed === false
+                                                                ? 'bg-red-100 text-red-700'
+                                                                : 'bg-gray-100 text-gray-600'
+                                                            }`}>
+                                                            {log.agreed === true ? 'agreed' : log.agreed === false ? 'disagreed' : 'parse failed'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                                                        <span>{log.shadow_latency_ms ?? 0}ms</span>
+                                                        <span>{new Date(log.created_at).toLocaleTimeString()}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-3 space-y-3">
+                                                    <div>
+                                                        <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">User Input</div>
+                                                        <div className="bg-blue-50 rounded px-2 py-1.5 text-sm text-gray-800">{log.user_message || '—'}</div>
+                                                    </div>
+
+                                                    <div className="grid md:grid-cols-2 gap-3">
+                                                        <div>
+                                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Current State</div>
+                                                            <div className="bg-gray-50 rounded px-2 py-1.5 text-sm text-gray-800">{log.current_state || '—'}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Prod Next State</div>
+                                                            <div className="bg-gray-50 rounded px-2 py-1.5 text-sm text-gray-800">{log.prod_next_state || '—'}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Shadow Proposed Next State</div>
+                                                        <div className="bg-amber-50 rounded px-2 py-1.5 text-sm text-gray-800">{nextState}</div>
+                                                    </div>
+
+                                                    <div className="grid md:grid-cols-2 gap-3">
+                                                        <div>
+                                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Production Slots</div>
+                                                            <pre className="bg-gray-50 rounded px-2 py-1.5 text-[11px] text-gray-700 whitespace-pre-wrap break-words border border-gray-100">
+                                                                {JSON.stringify(log.prod_slots || {}, null, 2)}
+                                                            </pre>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Shadow Proposed Slots</div>
+                                                            <pre className="bg-amber-50 rounded px-2 py-1.5 text-[11px] text-gray-700 whitespace-pre-wrap break-words border border-amber-100">
+                                                                {JSON.stringify(proposal?.slots || {}, null, 2)}
+                                                            </pre>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Shadow Tool Calls</div>
+                                                        <div className="bg-amber-50 rounded px-2 py-1.5 text-sm text-gray-800">
+                                                            {toolCalls.length > 0 ? toolCalls.join(', ') : '—'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </>
                             )}
                         </div>
@@ -1203,6 +1360,29 @@ export default function Dashboard() {
                                 ))}
                             </div>
                         )}
+
+                        {/* ── Shadow Snapshot (above the fold) ─────────────────────────── */}
+                        <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h3 className="font-semibold text-gray-800">Shadow Snapshot</h3>
+                                    <p className="text-xs text-gray-400">Background agentic comparison from `shadow_logs`</p>
+                                </div>
+                                {shadowMetrics?.isReady ? (
+                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-300">READY</span>
+                                ) : (
+                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-semibold rounded-full border border-gray-300">NOT READY</span>
+                                )}
+                            </div>
+                            {shadowMetrics?.hasData ? (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <StatCard label="Shadow Agreement" value={`${shadowMetrics.overall}%`} sub={`${shadowMetrics.agreedCount} of ${shadowMetrics.totalLogs} turns`} />
+                                    <StatCard label="Shadow Logs" value={shadowMetrics.totalLogs} sub="Last 7 days" />
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-400">No shadow data yet. Run a fresh maid_hire conversation with `USE_AGENTIC=false`, then refresh this tab.</p>
+                            )}
+                        </div>
 
                         {/* ── KPI Cards ────────────────────────────────────────────────── */}
                         {productHealth && (
