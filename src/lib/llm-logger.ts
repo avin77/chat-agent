@@ -22,6 +22,9 @@ export async function logLLMInteraction(data: {
     completionTokens?: number;
     totalTokens?: number;
     estimatedCostUsd?: number;
+    telemetryMeta?: Record<string, unknown>;
+    thoughtReflection?: string;
+    confidenceScore?: number;
 }) {
     try {
         await supabase.from('llm_logs').insert({
@@ -33,11 +36,13 @@ export async function logLLMInteraction(data: {
             raw_llm_response: data.rawResponse,
             after_guardrails: data.cleanedResponse,
             took_ms: data.tookMs,
-            extraction_meta: data.extractionMeta ?? null,
+            extraction_meta: data.telemetryMeta ?? data.extractionMeta ?? null,
             prompt_tokens: data.promptTokens ?? null,
             completion_tokens: data.completionTokens ?? null,
             total_tokens: data.totalTokens ?? null,
             estimated_cost_usd: data.estimatedCostUsd ?? null,
+            thought_reflection: data.thoughtReflection ?? null,
+            confidence_score: data.confidenceScore ?? null,
         });
 
         console.log('✅ LLM interaction logged to Supabase');
