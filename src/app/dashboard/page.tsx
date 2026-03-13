@@ -1396,6 +1396,7 @@ export default function Dashboard() {
                         <PreProdChecklist
                             evalGovernance={evalGovernance}
                             agenticQuality={agenticQuality}
+                            shadowMetrics={shadowMetrics}
                         />
 
                         {/* ── Shadow Snapshot (above the fold) ─────────────────────────── */}

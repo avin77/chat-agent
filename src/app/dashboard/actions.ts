@@ -525,7 +525,7 @@ export async function getProductHealthMetrics(days: number = 7, intent: string =
     let abandoned = 0;
 
     const fieldCounts: Record<string, number> = {};
-    for (const f of ALL_FIELDS) fieldCounts[f] = 0;
+    for (const f of ALL_FIELDS) fieldCounts[f.id] = 0;
 
     for (const row of sessions) {
         const state = row.current_state || 'START';
@@ -535,10 +535,10 @@ export async function getProductHealthMetrics(days: number = 7, intent: string =
         const lastActivity = new Date(row.last_activity || row.created_at).getTime();
 
         // Field fill rates
-        const fieldCount = ALL_FIELDS.filter(f => collected[f] && collected[f] !== 'skipped').length;
+        const fieldCount = ALL_FIELDS.filter(f => collected[f.id] && collected[f.id] !== 'skipped').length;
         totalFields += fieldCount;
         for (const f of ALL_FIELDS) {
-            if (collected[f] && collected[f] !== 'skipped') fieldCounts[f]++;
+            if (collected[f.id] && collected[f.id] !== 'skipped') fieldCounts[f.id]++;
         }
 
         // Completion
@@ -546,7 +546,7 @@ export async function getProductHealthMetrics(days: number = 7, intent: string =
             completed++;
             // Effective escalation: all required fields present
             const hasAllRequired = REQUIRED_FIELDS.length > 0
-                ? REQUIRED_FIELDS.every(f => collected[f] && collected[f] !== 'skipped')
+                ? REQUIRED_FIELDS.every(f => collected[f.id] && collected[f.id] !== 'skipped')
                 : true;
             if (hasAllRequired) effectiveLeads++;
         } else {
@@ -574,15 +574,15 @@ export async function getProductHealthMetrics(days: number = 7, intent: string =
     // Per-field detailed stats
     const fieldDetailStats: Record<string, { filled: number; skipped: number; total: number }> = {};
     for (const f of ALL_FIELDS) {
-        fieldDetailStats[f] = { filled: 0, skipped: 0, total: 0 };
+        fieldDetailStats[f.id] = { filled: 0, skipped: 0, total: 0 };
     }
     for (const row of sessions) {
         const collected = row.collected_data || {};
         for (const f of ALL_FIELDS) {
-            if (!fieldDetailStats[f]) continue;
-            fieldDetailStats[f].total++;
-            if (collected[f] === 'skipped') fieldDetailStats[f].skipped++;
-            else if (collected[f] && collected[f] !== 'skipped') fieldDetailStats[f].filled++;
+            if (!fieldDetailStats[f.id]) continue;
+            fieldDetailStats[f.id].total++;
+            if (collected[f.id] === 'skipped') fieldDetailStats[f.id].skipped++;
+            else if (collected[f.id] && collected[f.id] !== 'skipped') fieldDetailStats[f.id].filled++;
         }
     }
 
@@ -598,7 +598,7 @@ export async function getProductHealthMetrics(days: number = 7, intent: string =
     // Per-field fill rates
     const fieldFillRates: Record<string, number> = {};
     for (const f of ALL_FIELDS) {
-        fieldFillRates[f] = total > 0 ? Math.round((fieldCounts[f] / total) * 100) : 0;
+        fieldFillRates[f.id] = total > 0 ? Math.round((fieldCounts[f.id] / total) * 100) : 0;
     }
 
     // Lead quality score
@@ -617,22 +617,6 @@ export async function getProductHealthMetrics(days: number = 7, intent: string =
         abandonmentRate: total > 0 ? Math.round((abandoned / total) * 100) : 0,
         avgSessionDurationMs: durationCount > 0 ? Math.round(totalDurationMs / durationCount) : 0,
         p50SessionDurationMs,
-        totalSessions: total,
-        completedSessions: completed,
-        abandonedSessions: abandoned,
-    };
-}
-
-    return {
-        leadCompletionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-        leadQualityScore,
-        effectiveEscalationRate: total > 0 ? Math.round((effectiveLeads / total) * 100) : 0,
-        fieldFillRates,
-        fieldStats: fieldDetailStats,     // DASH-05
-        recoveryRate: recoverable > 0 ? Math.round((recovered / recoverable) * 100) : 0,
-        abandonmentRate: total > 0 ? Math.round((abandoned / total) * 100) : 0,
-        avgSessionDurationMs: durationCount > 0 ? Math.round(totalDurationMs / durationCount) : 0,
-        p50SessionDurationMs,             // DASH-03
         totalSessions: total,
         completedSessions: completed,
         abandonedSessions: abandoned,
@@ -826,7 +810,7 @@ export async function getAgenticQualityMetrics(days: number = 7, intent: string 
 
     let logsQuery = supabase
         .from('llm_logs')
-        .select('conversation_id, raw_llm_response, after_guardrails, system_prompt, created_at')
+        .select('conversation_id, raw_llm_response, after_guardrails, system_prompt, created_at, telemetry_meta')
         .gte('created_at', since);
 
     if (intent !== 'all') {

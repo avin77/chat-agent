@@ -57,7 +57,6 @@ CRITIQUE: The previous plan had a confidence of ${previousPlan.confidence}%. If 
           { role: 'system', content: `CONTEXT:\n${playbookContext}` },
           ...context.history,
         ],
-        responseFormat: { type: 'json' },
       });
 
       // Handle markdown-wrapped JSON if necessary

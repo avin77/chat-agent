@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { generateText, createUIMessageStreamResponse, createUIMessageStream } from 'ai';
+import { generateText, streamText } from 'ai';
 import * as fs from 'fs';
 import { getEnhancedPrompt } from '@/lib/prompts-enhanced';
 import { applyStrictGuardrails, validatePhone, extractName } from '@/lib/guardrails';
@@ -799,18 +799,6 @@ export async function POST(req: Request) {
                     }
                 }
 
-                // Return response
-                const textId = crypto.randomUUID();
-                const uiStream = createUIMessageStream({
-                    execute: ({ writer }) => {
-                        writer.write({ type: 'text-start', id: textId });
-                        writer.write({ type: 'text-delta', delta: displayText, id: textId });
-                        writer.write({ type: 'metadata', data: { handledIntent: 'maid_hire', newState }, id: textId });
-                        writer.write({ type: 'text-end', id: textId });
-                    },
-                });
-                const response = createUIMessageStreamResponse({ stream: uiStream });
-
                 // Fire shadow handler async (fire and forget — zero latency impact)
                 // Pass pre-computed state data to avoid race condition from DB re-read
                 runShadowHandler(
@@ -826,7 +814,15 @@ export async function POST(req: Request) {
                     dbSession?.intent_history || [intent],
                 ).catch(err => console.error('[Shadow] Failed:', (err as Error).message));
 
-                return response;
+                // Return response
+                return new Response(
+                    JSON.stringify({
+                        message: displayText,
+                        handledIntent: 'maid_hire',
+                        newState,
+                    }),
+                    { headers: { 'Content-Type': 'application/json' } }
+                );
             };
 
             try {
@@ -986,17 +982,14 @@ export async function POST(req: Request) {
             }
         }
 
-        const runtimeTextId = crypto.randomUUID();
-        const runtimeUiStream = createUIMessageStream({
-            execute: ({ writer }) => {
-                writer.write({ type: 'text-start', id: runtimeTextId });
-                writer.write({ type: 'text-delta', delta: runtimeDisplayText, id: runtimeTextId });
-                writer.write({ type: 'metadata', data: { handledIntent: runtimeIntent, newState: runtimeDecision.sessionSnapshot.currentState }, id: runtimeTextId });
-                writer.write({ type: 'text-end', id: runtimeTextId });
-            },
-        });
-
-        return createUIMessageStreamResponse({ stream: runtimeUiStream });
+        return new Response(
+            JSON.stringify({
+                message: runtimeDisplayText,
+                handledIntent: runtimeIntent,
+                newState: runtimeDecision.sessionSnapshot.currentState,
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+        );
 
     } catch (error: any) {
         console.error('API Error:', error);
