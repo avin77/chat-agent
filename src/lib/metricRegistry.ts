@@ -49,8 +49,8 @@ export const METRIC_REGISTRY: MetricSpec[] = [
   {
     id: 'total_maid_registrations',
     name: 'Total Helper Registrations',
-    formula: 'COUNT(maid_registrationistrations WHERE created_at >= since)',
-    sourceTables: ['maid_registrationistrations'],
+    formula: 'COUNT(helper_registrations WHERE created_at >= since)',
+    sourceTables: ['helper_registrations'],
     window: '7d',
     interpretation: 'Helper registration inquiries escalated. Up is good (supply side).',
     owner: 'pm',

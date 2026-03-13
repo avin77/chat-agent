@@ -173,8 +173,9 @@ function writeDatedJson(prefix, payload, options = {}) {
 }
 
 function writeMinedJson(intent, payload, options = {}) {
+    const prefix = options.prefix || 'golden';
     const targetDir = resolveMinedPath(intent, options.out);
-    const filename = buildDatedFilename('golden');
+    const filename = buildDatedFilename(prefix);
     const targetPath = path.join(targetDir, filename);
 
     fs.mkdirSync(targetDir, { recursive: true });

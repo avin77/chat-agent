@@ -20,6 +20,7 @@ metrics:
   completed_date: "2026-03-02"
   tasks_completed: 3
   files_changed: 0
+requirements_completed: [FLOW-02, FLOW-03]
 ---
 
 # Phase 02 Plan 03: Human Verification Checkpoint Summary

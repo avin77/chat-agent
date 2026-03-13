@@ -1,6 +1,13 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import {
+    evaluateEvalGovernance,
+    normalizeEvalArtifactPayload,
+    selectLatestEvalTrackArtifacts,
+    type EvalArtifactInput,
+} from '@/lib/evalGovernance';
+import { RESPONSE_PLAYBOOKS, normalizeIntentId } from '@/lib/responsePlaybooks';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,7 +22,7 @@ export async function getDashboardStats(days: number = 7) {
         supabase.from('conversation_sessions').select('id', { count: 'exact', head: true }).gte('last_activity', since),
         supabase.from('leads').select('id', { count: 'exact', head: true }).gte('created_at', since),
         supabase.from('complaints').select('id', { count: 'exact', head: true }).gte('created_at', since),
-        supabase.from('maid_registrationistrations').select('id', { count: 'exact', head: true }).gte('created_at', since),
+        supabase.from('helper_registrations').select('id', { count: 'exact', head: true }).gte('created_at', since),
         supabase.from('llm_logs').select('took_ms').gte('created_at', since),
     ]);
 
@@ -195,16 +202,22 @@ export async function getLatestEvalResults(filename?: string) {
 }
 
 // ─── Response Quality from LLM Logs (production data) ──────────────────────
-export async function getResponseQualityMetrics(days: number = 7) {
+export async function getResponseQualityMetrics(days: number = 7, intent: string = 'maid_hire') {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const canonicalIntent = normalizeIntentId(intent);
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('llm_logs')
         .select('raw_llm_response, after_guardrails, intent, took_ms, system_prompt')
-        .eq('intent', 'maid_hire')
         .gte('created_at', since)
         .order('created_at', { ascending: false })
         .limit(500);
+
+    if (intent !== 'all') {
+        query = query.eq('intent', canonicalIntent);
+    }
+
+    const { data, error } = await query;
 
     if (error || !data || data.length === 0) {
         return {
@@ -274,14 +287,20 @@ export async function getResponseQualityMetrics(days: number = 7) {
 }
 
 // ─── Conversation Health Metrics ───────────────────────────────────────────
-export async function getConversationHealthMetrics(days: number = 7) {
+export async function getConversationHealthMetrics(days: number = 7, intent: string = 'maid_hire') {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const canonicalIntent = normalizeIntentId(intent);
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('conversation_sessions')
         .select('conversation_id, detected_intent, current_state, collected_data, attempts, created_at')
-        .eq('detected_intent', 'maid_hire')
         .gte('created_at', since);
+
+    if (intent !== 'all') {
+        query = query.eq('detected_intent', canonicalIntent);
+    }
+
+    const { data, error } = await query;
 
     if (error || !data || data.length === 0) {
         return {
@@ -336,7 +355,7 @@ export async function getConversationHealthMetrics(days: number = 7) {
 export async function getConversationLLMLogs(conversationId: string) {
     const { data, error } = await supabase
         .from('llm_logs')
-        .select('created_at, intent, system_prompt, user_message, raw_llm_response, after_guardrails, took_ms')
+        .select('created_at, intent, system_prompt, user_message, raw_llm_response, after_guardrails, took_ms, thought_reflection, confidence_score')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
         .limit(100);
@@ -459,15 +478,19 @@ export async function getConversationsWithLogCounts(limit: number = 50, days: nu
 }
 
 // ─── Product Health Metrics (TPM view) ──────────────────────────────────────
-export async function getProductHealthMetrics(days: number = 7) {
+export async function getProductHealthMetrics(days: number = 7, intent: string = 'maid_hire') {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const canonicalIntent = normalizeIntentId(intent);
 
-    // Get all maid_hire sessions in the period
-    const { data: sessions, error } = await supabase
+    let query = supabase
         .from('conversation_sessions')
-        .select('conversation_id, current_state, collected_data, attempts, created_at, last_activity')
-        .eq('detected_intent', 'maid_hire')
-        .gte('created_at', since);
+        .select('conversation_id, current_state, collected_data, attempts, created_at, last_activity');
+
+    if (intent !== 'all') {
+        query = query.eq('detected_intent', canonicalIntent);
+    }
+
+    const { data: sessions, error } = await query.gte('created_at', since);
 
     if (error || !sessions) {
         return {
@@ -486,12 +509,14 @@ export async function getProductHealthMetrics(days: number = 7) {
         };
     }
 
-    const REQUIRED_FIELDS = ['phone', 'location', 'service_type', 'schedule'];
-    const ALL_FIELDS = ['phone', 'location', 'service_type', 'schedule', 'salary_range', 'family_size', 'has_experience'];
+    // Dynamic field mapping from Playbooks
+    const playbook = RESPONSE_PLAYBOOKS[canonicalIntent] || RESPONSE_PLAYBOOKS['general'];
+    const REQUIRED_FIELDS = playbook.requiredFields || [];
+    const ALL_FIELDS = [...REQUIRED_FIELDS, ...(playbook.optionalFields || [])];
 
     let completed = 0;
     let totalFields = 0;
-    let effectiveLeads = 0; // all 4 required fields
+    let effectiveLeads = 0; // all required fields present
     let recoverable = 0; // sessions with attempts > 0
     let recovered = 0; // sessions with attempts > 0 that eventually completed
     let totalDurationMs = 0;
@@ -519,8 +544,10 @@ export async function getProductHealthMetrics(days: number = 7) {
         // Completion
         if (state === 'COMPLETE') {
             completed++;
-            // Effective escalation: all 4 required fields present
-            const hasAllRequired = REQUIRED_FIELDS.every(f => collected[f]);
+            // Effective escalation: all required fields present
+            const hasAllRequired = REQUIRED_FIELDS.length > 0
+                ? REQUIRED_FIELDS.every(f => collected[f] && collected[f] !== 'skipped')
+                : true;
             if (hasAllRequired) effectiveLeads++;
         } else {
             // Abandonment: not complete and inactive > 1h
@@ -544,7 +571,7 @@ export async function getProductHealthMetrics(days: number = 7) {
 
     const total = sessions.length;
 
-    // Per-field detailed stats (DASH-05)
+    // Per-field detailed stats
     const fieldDetailStats: Record<string, { filled: number; skipped: number; total: number }> = {};
     for (const f of ALL_FIELDS) {
         fieldDetailStats[f] = { filled: 0, skipped: 0, total: 0 };
@@ -552,13 +579,14 @@ export async function getProductHealthMetrics(days: number = 7) {
     for (const row of sessions) {
         const collected = row.collected_data || {};
         for (const f of ALL_FIELDS) {
+            if (!fieldDetailStats[f]) continue;
             fieldDetailStats[f].total++;
             if (collected[f] === 'skipped') fieldDetailStats[f].skipped++;
             else if (collected[f] && collected[f] !== 'skipped') fieldDetailStats[f].filled++;
         }
     }
 
-    // p50 session duration (DASH-03)
+    // p50 session duration
     const durations: number[] = [];
     for (const row of sessions) {
         const d = new Date(row.last_activity || row.created_at).getTime() - new Date(row.created_at).getTime();
@@ -567,15 +595,33 @@ export async function getProductHealthMetrics(days: number = 7) {
     durations.sort((a, b) => a - b);
     const p50SessionDurationMs = durations.length > 0 ? durations[Math.floor(durations.length * 0.5)] : 0;
 
-    // Per-field fill rates (% of sessions that collected this field)
+    // Per-field fill rates
     const fieldFillRates: Record<string, number> = {};
     for (const f of ALL_FIELDS) {
         fieldFillRates[f] = total > 0 ? Math.round((fieldCounts[f] / total) * 100) : 0;
     }
 
-    // Lead quality score: avg fields collected out of 7, scaled to 0-100
+    // Lead quality score
     const avgFields = total > 0 ? totalFields / total : 0;
-    const leadQualityScore = Math.round((avgFields / ALL_FIELDS.length) * 100);
+    const leadQualityScore = ALL_FIELDS.length > 0
+        ? Math.round((avgFields / ALL_FIELDS.length) * 100)
+        : 100;
+
+    return {
+        leadCompletionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+        leadQualityScore,
+        effectiveEscalationRate: total > 0 ? Math.round((effectiveLeads / total) * 100) : 0,
+        fieldFillRates,
+        fieldStats: fieldDetailStats,
+        recoveryRate: recoverable > 0 ? Math.round((recovered / recoverable) * 100) : 0,
+        abandonmentRate: total > 0 ? Math.round((abandoned / total) * 100) : 0,
+        avgSessionDurationMs: durationCount > 0 ? Math.round(totalDurationMs / durationCount) : 0,
+        p50SessionDurationMs,
+        totalSessions: total,
+        completedSessions: completed,
+        abandonedSessions: abandoned,
+    };
+}
 
     return {
         leadCompletionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
@@ -769,21 +815,26 @@ export async function checkAndWriteAlerts() {
 }
 
 // ─── Agentic Quality Metrics (Phase 9) ────────────────────────────────────────
-export async function getAgenticQualityMetrics(days: number = 7) {
+export async function getAgenticQualityMetrics(days: number = 7, intent: string = 'maid_hire') {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const canonicalIntent = normalizeIntentId(intent);
 
-    const [sessionsResult, logsResult] = await Promise.all([
-        supabase
-            .from('conversation_sessions')
-            .select('conversation_id, current_state, collected_data, attempts, slot_attempts, created_at, last_activity')
-            .eq('detected_intent', 'maid_hire')
-            .gte('created_at', since),
-        supabase
-            .from('llm_logs')
-            .select('conversation_id, raw_llm_response, after_guardrails, system_prompt, created_at')
-            .eq('intent', 'maid_hire')
-            .gte('created_at', since),
-    ]);
+    let sessionsQuery = supabase
+        .from('conversation_sessions')
+        .select('conversation_id, current_state, collected_data, attempts, slot_attempts, created_at, last_activity')
+        .gte('created_at', since);
+
+    let logsQuery = supabase
+        .from('llm_logs')
+        .select('conversation_id, raw_llm_response, after_guardrails, system_prompt, created_at')
+        .gte('created_at', since);
+
+    if (intent !== 'all') {
+        sessionsQuery = sessionsQuery.eq('detected_intent', canonicalIntent);
+        logsQuery = logsQuery.eq('intent', canonicalIntent);
+    }
+
+    const [sessionsResult, logsResult] = await Promise.all([sessionsQuery, logsQuery]);
 
     const sessions = sessionsResult.data || [];
     const logs = logsResult.data || [];
@@ -879,6 +930,22 @@ export async function getAgenticQualityMetrics(days: number = 7) {
     }).length;
     const safetyNetTriggerRate = totalTurns > 0 ? Math.round((safetyNetCount / totalTurns) * 100) : 0;
 
+    // Level 3 Metrics (Calculated from llm_logs telemetry)
+    let autonomousTurns = 0;
+    let modelDecisionTurns = 0;
+
+    for (const log of logs) {
+        try {
+            const telemetry = log.telemetry_meta || (log.raw_llm_response ? JSON.parse(log.raw_llm_response) : null);
+            if (telemetry && (telemetry.runtime === 'shared_agentic' || telemetry.runtime === 'AgentPlanner')) {
+                // Autonomous turn = no safety net fallback used
+                if (telemetry.safety_net_fallback !== true) autonomousTurns++;
+                // Model decision = model deviated from deterministic order (proxied by high-confidence reflection)
+                if (telemetry.thoughtReflection && (telemetry.confidenceScore || 0) > 80) modelDecisionTurns++;
+            }
+        } catch (e) { /* ignore parse errors */ }
+    }
+
     return {
         stuckLoopRate,
         confusionPivotRate,
@@ -891,6 +958,8 @@ export async function getAgenticQualityMetrics(days: number = 7) {
         repeatQuestionRate,
         guardrailBypassAttemptRate,
         safetyNetTriggerRate,
+        modelDecisionRatio: totalTurns > 0 ? Math.round((modelDecisionTurns / totalTurns) * 100) : 0,
+        toolAutonomy: totalTurns > 0 ? Math.round((autonomousTurns / totalTurns) * 100) : 0,
         totalSessionsAnalyzed: totalSessions,
         totalTurnsAnalyzed: totalTurns,
     };
@@ -922,8 +991,11 @@ export async function getEvalTrackScores() {
                 .reverse();
             if (stateFiles.length > 0) {
                 stateFile = stateFiles[0];
-                const data = JSON.parse(fs.readFileSync(path.join(dataDir, stateFile), 'utf-8'));
-                stateScore = typeof data.overallScore === 'number' ? data.overallScore : null;
+                const data = normalizeEvalArtifactPayload(
+                    JSON.parse(fs.readFileSync(path.join(dataDir, stateFile), 'utf-8')),
+                    stateFile,
+                );
+                stateScore = typeof data?.overallScore === 'number' ? data.overallScore : null;
             }
         } catch { /* file read failure is non-fatal */ }
 
@@ -935,8 +1007,11 @@ export async function getEvalTrackScores() {
                 .reverse();
             if (unhappyFiles.length > 0) {
                 unhappyFile = unhappyFiles[0];
-                const data = JSON.parse(fs.readFileSync(path.join(dataDir, unhappyFile), 'utf-8'));
-                unhappyScore = typeof data.overallScore === 'number' ? data.overallScore : null;
+                const data = normalizeEvalArtifactPayload(
+                    JSON.parse(fs.readFileSync(path.join(dataDir, unhappyFile), 'utf-8')),
+                    unhappyFile,
+                );
+                unhappyScore = typeof data?.overallScore === 'number' ? data.overallScore : null;
             }
         } catch { /* file read failure is non-fatal */ }
 
@@ -953,8 +1028,11 @@ export async function getEvalTrackScores() {
                 .reverse();
             if (normalFiles.length > 0) {
                 normalFile = normalFiles[0];
-                const data = JSON.parse(fs.readFileSync(path.join(dataDir, normalFile), 'utf-8'));
-                normalScore = typeof data.overallScore === 'number' ? data.overallScore : null;
+                const data = normalizeEvalArtifactPayload(
+                    JSON.parse(fs.readFileSync(path.join(dataDir, normalFile), 'utf-8')),
+                    normalFile,
+                );
+                normalScore = typeof data?.overallScore === 'number' ? data.overallScore : null;
             }
         } catch { /* file read failure is non-fatal */ }
     } catch {
@@ -969,4 +1047,36 @@ export async function getEvalTrackScores() {
         unhappyFile,
         normalFile,
     };
+}
+
+async function readEvalArtifactsFromDataDir(): Promise<EvalArtifactInput[]> {
+    const fs = await import('fs');
+    const path = await import('path');
+    const dataDir = path.join(process.cwd(), 'data');
+
+    try {
+        const allFiles = (fs.readdirSync(dataDir) as string[])
+            .filter((file: string) => file.startsWith('eval-') && file.endsWith('.json'))
+            .sort()
+            .reverse();
+
+        return allFiles.map((filename: string) => {
+            try {
+                const payload = JSON.parse(
+                    fs.readFileSync(path.join(dataDir, filename), 'utf-8'),
+                );
+                return { filename, payload: normalizeEvalArtifactPayload(payload, filename) };
+            } catch {
+                return { filename, payload: null };
+            }
+        });
+    } catch {
+        return [];
+    }
+}
+
+export async function getEvalGovernanceStatus() {
+    const artifacts = await readEvalArtifactsFromDataDir();
+    const selected = selectLatestEvalTrackArtifacts(artifacts);
+    return evaluateEvalGovernance(selected);
 }

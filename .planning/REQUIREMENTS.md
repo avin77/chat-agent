@@ -35,26 +35,70 @@
 - [x] **DASH-04**: Token cost metrics visible: cost per conversation, daily token spend estimate
 - [x] **DASH-05**: `getProductHealthMetrics()` in `actions.ts` returns `fieldStats` with filled/failed/skipped counts per field
 
+### Shadow Observability
+
+- [x] **SHADOW-01**: `src/lib/shadowHandler.ts` writes comparison rows to `shadow_logs` without affecting production latency
+- [x] **SHADOW-02**: Dashboard shadow panel shows overall agreement and time-sliced trend from `shadow_logs`
+- [x] **SHADOW-03**: Shadow readiness indicator turns ready only when agreement stays at or above 95% for 7 consecutive days
+- [x] **SHADOW-04**: Dashboard displays rollout gate checklist for shadow readiness and manual review checks
+
+### Conversation Robustness
+
+- [x] **CONV-01**: `src/extractors/intentClassifier.ts` classifies mid-flow turns for confusion, side intents, and off-topic behavior
+- [x] **CONV-02**: Classifier runs before deterministic maid-hire state processing on the active production path
+- [x] **CONV-03**: After repeated irrelevant or failed answers, the bot offers restart or support instead of looping
+- [x] **CONV-04**: Conversation confusion state is persisted in session data for recovery logic and auditability
+
+### Alerting
+
+- [x] **ALERT-01**: Dashboard writes a warning alert when fallback rate exceeds 5% over the alert window
+- [x] **ALERT-02**: Dashboard writes a critical alert when LLM error rate exceeds 1% over the alert window
+- [x] **ALERT-03**: Dashboard writes a critical alert when latest eval score drops below 95%
+- [x] **ALERT-04**: Dashboard writes warning alerts for cost-budget overruns or shadow alignment dropping below 95%
+
 ### Data Flywheel
 
-- [ ] **FLY-01**: `scripts/mine-missed-extractions.js` queries sessions where `attempts > 0` and outputs rejected/accepted message pairs per state to `data/missed-extractions-YYYY-MM-DD.json`
-- [ ] **FLY-02**: `scripts/mine-golden-from-prod.js` reconstructs COMPLETE maid_hire sessions from `llm_logs`, hashes PII, outputs to `data/mined-golden-YYYY-MM-DD.json`
-- [ ] **FLY-03**: `scripts/analyze-guardrail-mods.js` groups `llm_logs` by state where raw ≠ after_guardrails, ranks states by guardrail trigger rate
-- [ ] **FLY-04**: `package.json` has `"mine"` script that runs all three scripts sequentially
+- [x] **FLY-01**: `scripts/mine-missed-extractions.js` queries sessions where `attempts > 0` and outputs rejected/accepted message pairs per state to `data/missed-extractions-YYYY-MM-DD.json`
+- [x] **FLY-02**: `scripts/mine-golden-from-prod.js` reconstructs COMPLETE maid_hire sessions from `llm_logs`, hashes PII, outputs to `data/mined-golden-YYYY-MM-DD.json`
+- [x] **FLY-03**: `scripts/analyze-guardrail-mods.js` groups `llm_logs` by state where raw ≠ after_guardrails, ranks states by guardrail trigger rate
+- [x] **FLY-04**: `package.json` has `"mine"` script that runs all three scripts sequentially
 
-## v2 Requirements
+## v2 Requirements (Milestone 3.0)
 
-### Advanced Agentic (defer until Phase 2 has 2+ weeks prod data)
+### Advanced Agentic Orchestration
 
-- **ADVA-01**: Multi-intent orchestration (complaint + hire in same session)
-- **ADVA-02**: Zero-shot new intent handling without code changes
-- **ADVA-03**: LLM-generated contextual error messages per field (replace hardcoded errorMessage)
+- [x] **ORCH-01**: Mid-flow intent switches push current intent to `intent_stack` and pop to resume on completion (Phase 6, 14-03)
+- [x] **ORCH-02**: Intent stack and history persisted in `conversation_sessions` JSONB columns (Phase 6, 14-01)
+- [x] **LANG-01**: Absolute English-only response policy enforced across all intents (Phase 5, 14-01)
+- [x] **CONF-01**: Confusion Protocol 2.0 tracks `slot_attempts` and triggers reframe/pivot after 3 failures (Phase 7, 14-03)
+- [x] **PLAY-01**: Centralized Response Playbooks define required/optional fields and canonical responses (Phase 8, 14-01)
+- [x] **DASH-06**: PM Dashboard surfaces Agentic Quality (loop rate, switch success) and Shadow Readiness signals (Phase 9, 14-04)
+- [x] **GOV-01**: Release gates on 3 eval tracks (state, unhappy, normal) via shared governance contract (Phase 10, 14-04)
+- [x] **FLY-05**: Flywheel scripts compatible with shared runtime telemetry in `llm_logs` (Phase 11)
+- [x] **PAR-01**: Shared agentic runtime provides 100% parity across `maid_hire`, `complaint`, and `maid_registration` (Phase 14-01, 14-02, 14-03)
+- [x] **SHAD-05**: Shadow mode uses the identical runtime contract as production for faithful agreement tracking (Phase 14-02)
+- [x] **FIX-01**: Polished runtime handles `general` intent suspension and naturalized completion responses (Phase 14-05)
+
+## v3 Requirements (Milestone 4.0)
+
+### Production Promotion & Scaling
+
+- [ ] **ROLL-01**: Default `USE_AGENTIC=true` for all production users (Phase 16)
+- [ ] **ROLL-02**: Decommissioning of legacy deterministic flow handlers (Phase 16)
+- [ ] **FLY-06**: Mining scripts refactored for all canonical intents (Phase 15)
+- [ ] **FLY-07**: Cross-intent performance comparisons enabled in flywheel analysis (Phase 15)
+- [ ] **SHAD-06**: Shadow simulation for agentic turns enabled (model-vs-model) (Phase 17)
+- [ ] **SHAD-07**: Dashboard visualization for agentic shadow agreement trends (Phase 17)
+- [ ] **UNH-01**: Complex multi-intent cases added to `eval-unhappy` suite (Phase 18)
+- [ ] **UNH-02**: Intent stack robustness verified against nested (>2 deep) suspensions (Phase 18)
+- [ ] **DEBT-03**: `BaseFlow.ts` and `MaidHiringFlow.ts` deleted from codebase (Phase 19)
+- [ ] **DEBT-04**: Redundant deterministic state-machine code (~200+ lines) removed (Phase 19)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Phase 3 multi-intent agentic | Needs 2+ weeks of Phase 2 prod data first |
+| Phase 4 multi-intent agentic | Deferred to future milestone |
 | Supabase real-time subscriptions | Batch analytics sufficient |
 | Mobile app | Web-first, deferred |
 | Playwright UI eval | Already exists as separate test suite |
@@ -69,8 +113,8 @@
 | AGEX-03 | Phase 1 | Complete |
 | AGEX-04 | Phase 1 | Complete |
 | FLOW-01 | Phase 2 | Complete |
-| FLOW-02 | Phase 2 | Complete (02-02) |
-| FLOW-03 | Phase 2 | Complete (02-02) |
+| FLOW-02 | Phase 2 | Complete |
+| FLOW-03 | Phase 2 | Complete |
 | FLOW-04 | Phase 2 | Complete |
 | FLOW-05 | Phase 2 | Complete |
 | FLOW-06 | Phase 2 | Complete |
@@ -82,16 +126,49 @@
 | DASH-03 | Phase 3 | Complete |
 | DASH-04 | Phase 3 | Complete |
 | DASH-05 | Phase 3 | Complete |
-| FLY-01 | Phase 4 | Pending |
-| FLY-02 | Phase 4 | Pending |
-| FLY-03 | Phase 4 | Pending |
-| FLY-04 | Phase 4 | Pending |
+| SHADOW-01 | Phase 3 | Complete |
+| SHADOW-02 | Phase 3 | Complete |
+| SHADOW-03 | Phase 3 | Complete |
+| SHADOW-04 | Phase 3 | Complete |
+| CONV-01 | Phase 3 | Complete |
+| CONV-02 | Phase 3 | Complete |
+| CONV-03 | Phase 3 | Complete |
+| CONV-04 | Phase 3 | Complete |
+| ALERT-01 | Phase 3 | Complete |
+| ALERT-02 | Phase 3 | Complete |
+| ALERT-03 | Phase 3 | Complete |
+| ALERT-04 | Phase 3 | Complete |
+| FLY-01 | Phase 11 | Complete |
+| FLY-02 | Phase 11 | Complete |
+| FLY-03 | Phase 11 | Complete |
+| FLY-04 | Phase 11 | Complete |
+| ORCH-01 | Phase 6/14 | Complete |
+| ORCH-02 | Phase 6/14 | Complete |
+| LANG-01 | Phase 5/14 | Complete |
+| CONF-01 | Phase 7/14 | Complete |
+| PLAY-01 | Phase 8/14 | Complete |
+| DASH-06 | Phase 9/14 | Complete |
+| GOV-01 | Phase 10/14 | Complete |
+| FLY-05 | Phase 11 | Complete |
+| PAR-01 | Phase 14 | Complete |
+| SHAD-05 | Phase 14 | Complete |
+| FIX-01 | Phase 14 | Complete |
+| ROLL-01 | Phase 16 | Pending |
+| ROLL-02 | Phase 16 | Pending |
+| FLY-06 | Phase 15 | Pending |
+| FLY-07 | Phase 15 | Pending |
+| SHAD-06 | Phase 17 | Pending |
+| SHAD-07 | Phase 17 | Pending |
+| UNH-01 | Phase 18 | Pending |
+| UNH-02 | Phase 18 | Pending |
+| DEBT-03 | Phase 19 | Pending |
+| DEBT-04 | Phase 19 | Pending |
 
 **Coverage:**
-- v1 requirements: 22 total
-- Mapped to phases: 22
+- requirements: 44 total
+- Mapped to phases: 44
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after initial definition*
+*Last updated: 2026-03-13 after adding Milestone 4.0*

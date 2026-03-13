@@ -26,6 +26,7 @@ metrics:
   completed_date: "2026-03-01"
   tasks_completed: 2
   files_changed: 2
+requirements_completed: [FLOW-02, FLOW-03]
 ---
 
 # Phase 02 Plan 02: USE_AGENTIC Routing + Supabase Migration Summary

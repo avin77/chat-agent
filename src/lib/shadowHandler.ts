@@ -1,88 +1,76 @@
-// src/lib/shadowHandler.ts
-// Async shadow mode: runs AFTER production response is sent.
-// Compares agentic proposal vs production state machine decision.
-// Writes alignment data to shadow_logs table.
-// NEVER throws — all errors swallowed to protect production path.
+// Shared-runtime shadow mode: runs AFTER production response is sent.
+// Simulates the same constrained runtime used by the live adapter.
+// NEVER throws — all errors are swallowed to protect production path.
 
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
 import { createClient } from '@supabase/supabase-js';
+import { runAgenticTurn } from './agentic/runtime';
+import type { AgenticIntentSnapshot } from './agentic/types';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-interface ShadowProposal {
+type ShadowProposal = {
   next_state: string;
-  slots: Record<string, string | null>;
+  slots: Record<string, string>;
+  accepted_slots: unknown[];
+  rejected_slots: unknown[];
   tool_calls: string[];
-}
+};
 
-const SHADOW_SYSTEM_PROMPT = `You are an agentic AI simulating a maid hiring flow.
-Given the user message, current state, and currently collected slots, decide what to do next.
-Respond with ONLY valid JSON (no markdown fences):
-{
-  "next_state": "ASK_PHONE | ASK_LOCATION | ASK_SERVICE | ASK_SCHEDULE | ASK_SALARY | ASK_FAMILY | ASK_EXPERIENCE | COMPLETE",
-  "slots": { "phone": null, "location": null, "service_type": null, "schedule": null, "salary_range": null, "family_size": null, "has_experience": null },
-  "tool_calls": ["collect_phone", "collect_location", etc]
+function mapIntentStack(intentStack: any[] | undefined): AgenticIntentSnapshot[] {
+  return (intentStack || []).map((snapshot) => ({
+    intent: snapshot.intent,
+    currentState: snapshot.state || snapshot.currentState || 'START',
+    collectedData: snapshot.slots || snapshot.collectedData || {},
+    slotAttempts: snapshot.slot_attempts || snapshot.slotAttempts || {},
+    repairContext: snapshot.repair_context || snapshot.repairContext || null,
+  }));
 }
-Fill extracted slot values. Set next_state to what you would ask next.`;
 
 export async function runShadowHandler(
   conversationId: string,
   turnNumber: number,
+  currentIntent: string,
   userMessage: string,
   currentState: string,
   currentSlots: Record<string, any>,
   prodNextState: string,
   prodSlots: Record<string, any>,
+  intentStack: any[] = [],
+  intentHistory: string[] = [],
 ): Promise<void> {
-  // Only run when USE_AGENTIC is not live (shadow mode monitors readiness)
   if (process.env.USE_AGENTIC === 'true') return;
 
   const shadowStart = Date.now();
   try {
-    const { text } = await generateText({
-      model: google('gemma-3-27b-it'),
-      system: SHADOW_SYSTEM_PROMPT,
-      messages: [{
-        role: 'user',
-        content: JSON.stringify({ userMessage, currentState, currentSlots }),
-      }],
+    const decision = await runAgenticTurn({
+      activeIntent: currentIntent,
+      currentState,
+      collectedData: { ...(currentSlots || {}) },
+      slotAttempts: {},
+      intentStack: mapIntentStack(intentStack),
+      intentHistory,
+      runtimeMode: 'shadow_simulate',
+      userMessage,
     });
 
-    // Strip markdown fences if present before parsing
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    let proposal: ShadowProposal;
-    try {
-      proposal = JSON.parse(cleaned);
-    } catch {
-      // LLM returned non-JSON — log as disagreed with null proposal
-      await supabase.from('shadow_logs').insert({
-        conversation_id: conversationId,
-        turn_number: turnNumber,
-        current_state: currentState,
-        user_message: userMessage,
-        prod_next_state: prodNextState,
-        prod_slots: prodSlots,
-        shadow_proposal: null,
-        agreed: null,   // null = parse failure, not a real comparison
-        shadow_latency_ms: Date.now() - shadowStart,
-      });
-      return;
-    }
+    const proposal: ShadowProposal = {
+      next_state: decision.sessionSnapshot.currentState,
+      slots: decision.sessionSnapshot.collectedData,
+      accepted_slots: decision.acceptedSlots,
+      rejected_slots: decision.rejectedSlots,
+      tool_calls: decision.acceptedSlots.map((slot) => `save_${slot.field}`),
+    };
 
-    // Compare: agreed if next_state matches AND key slots match
     const stateAgreed = proposal.next_state === prodNextState;
-    const slotKeys = ['phone', 'location', 'service_type', 'schedule', 'salary_range', 'family_size', 'has_experience'];
-    const slotsAgreed = slotKeys.every(k => {
-      const prodVal = prodSlots[k] ?? null;
-      const shadowVal = proposal.slots?.[k] ?? null;
-      // Both null = agreed; both same value = agreed
-      return prodVal === shadowVal || (prodVal && shadowVal && prodVal === shadowVal);
+    const slotKeys = Array.from(new Set([...Object.keys(prodSlots || {}), ...Object.keys(proposal.slots || {})]));
+    const slotsAgreed = slotKeys.every((key) => {
+      const prodValue = prodSlots?.[key] ?? null;
+      const shadowValue = proposal.slots?.[key] ?? null;
+      return prodValue === shadowValue;
     });
-    const agreed = stateAgreed && slotsAgreed;
 
     await supabase.from('shadow_logs').insert({
       conversation_id: conversationId,
@@ -92,11 +80,10 @@ export async function runShadowHandler(
       prod_next_state: prodNextState,
       prod_slots: prodSlots,
       shadow_proposal: proposal,
-      agreed,
+      agreed: stateAgreed && slotsAgreed,
       shadow_latency_ms: Date.now() - shadowStart,
     });
   } catch (err) {
-    // Swallow all errors — shadow must never affect production path
     console.error('[Shadow] Error (non-fatal):', (err as Error).message);
   }
 }

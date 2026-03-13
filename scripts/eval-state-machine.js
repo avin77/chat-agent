@@ -98,6 +98,7 @@ async function callBot(messages, convId, attempt = 1) {
 
     const text = await res.text();
     let botText = '';
+    let metadata = {};
 
     for (const line of text.split('\n')) {
         const deltaMatch = line.match(/"type":"text-delta","delta":"(.*?)"/);
@@ -108,9 +109,13 @@ async function callBot(messages, convId, attempt = 1) {
         if (simpleMatch) {
             try { botText += JSON.parse(`"${simpleMatch[1]}"`); } catch { botText += simpleMatch[1]; }
         }
+        const metadataMatch = line.match(/"type":"metadata","data":({.*?})/);
+        if (metadataMatch) {
+            try { metadata = JSON.parse(metadataMatch[1]); } catch (e) { console.error('Failed to parse metadata', e); }
+        }
     }
 
-    return { text: (botText || text).trim(), latencyMs };
+    return { text: (botText || text).trim(), latencyMs, metadata };
 }
 
 // ─── Assertion Checks ────────────────────────────────────────────────────────
@@ -304,11 +309,12 @@ async function main() {
     // Scoring
     const scores = {
         state_transitions: { pass: 0, fail: 0, details: [] },
-        slot_extraction: { pass: 0, fail: 0, details: [] },
+        slot_extraction: { pass: 0, fail: 0, details: [], tp: 0, fp: 0, fn: 0 },
         slot_validation: { pass: 0, fail: 0, details: [] },
         advance_decisions: { pass: 0, fail: 0, details: [] },
         failure_handling: { pass: 0, fail: 0, details: [] },
         no_price_leakage: { pass: 0, fail: 0, details: [] },
+        intent_pivoting: { pass: 0, fail: 0, details: [], tp: 0, fp: 0, fn: 0 },
     };
 
     const failedTurns = [];
@@ -362,9 +368,10 @@ async function main() {
 
             let botReply = '';
             let latencyMs = 0;
+            let result;
 
             try {
-                const result = await callBot([...chatHistory], `eval_${conv.id}_${RUN_ID}`);
+                result = await callBot([...chatHistory], `eval_${conv.id}_${RUN_ID}`);
                 botReply = result.text;
                 latencyMs = result.latencyMs;
                 chatHistory.push({ role: 'assistant', content: botReply });
@@ -404,12 +411,18 @@ async function main() {
                 scores.slot_validation.pass++;
             }
 
-            // 3. Slot extraction — just track pass/fail based on whether it advanced correctly
+            // 3. Slot extraction — TP/FP/FN tracking
             if (turn.valid === true && turn.advance) {
                 scores.slot_extraction.pass++;
-            } else if (turn.valid === false) {
-                // Should NOT have extracted — check it didn't advance
-                scores.slot_extraction.pass++;
+                scores.slot_extraction.tp++; // True Positive: Expected extraction and it happened
+            } else if (turn.valid === false && turn.advance) {
+                scores.slot_extraction.fail++;
+                scores.slot_extraction.fp++; // False Positive: Not expected but it advanced
+                scores.slot_extraction.details.push(`${conv.id} t${i+1}: False extraction (advanced on invalid input)`);
+            } else if (turn.valid === true && !turn.advance) {
+                scores.slot_extraction.fail++;
+                scores.slot_extraction.fn++; // False Negative: Expected extraction but it didn't advance
+                scores.slot_extraction.details.push(`${conv.id} t${i+1}: Missed extraction (did not advance on valid input)`);
             } else {
                 scores.slot_extraction.pass++;
             }
@@ -482,6 +495,34 @@ async function main() {
                 scores.no_price_leakage.details.push(`${conv.id} t${i+1}: ${priceCheck.reason}`);
                 turnPassFail.pass = false;
                 turnPassFail.failures.push(`PRICE: ${priceCheck.reason}`);
+            }
+
+            // 7. Intent Pivoting (Level 3)
+            // 7. Intent Pivoting (Level 3)
+            if (turn.expected_intent) {
+                if (result.metadata?.handledIntent === turn.expected_intent) {
+                    scores.intent_pivoting.pass++;
+                    scores.intent_pivoting.tp++; // True Positive: Pivoted to correct intent
+                } else if (result.metadata?.handledIntent) {
+                    scores.intent_pivoting.fail++;
+                    scores.intent_pivoting.fp++; // False Positive: Pivoted to WRONG intent
+                    scores.intent_pivoting.details.push(`${conv.id} t${i+1}: Expected intent ${turn.expected_intent}, got ${result.metadata?.handledIntent}`);
+                    turnPassFail.pass = false;
+                    turnPassFail.failures.push(`INTENT: Expected ${turn.expected_intent}, got ${result.metadata?.handledIntent}`);
+                } else {
+                    scores.intent_pivoting.fail++;
+                    scores.intent_pivoting.fn++; // False Negative: Did not pivot when expected
+                    scores.intent_pivoting.details.push(`${conv.id} t${i+1}: Missed pivot to ${turn.expected_intent}`);
+                    turnPassFail.pass = false;
+                    turnPassFail.failures.push(`INTENT: Missed pivot to ${turn.expected_intent}`);
+                }
+            } else if (result.metadata?.handledIntent && result.metadata.handledIntent !== turn.current_intent && turn.current_intent) {
+                // Unexpected pivot
+                scores.intent_pivoting.fail++;
+                scores.intent_pivoting.fp++; 
+                scores.intent_pivoting.details.push(`${conv.id} t${i+1}: Unexpected pivot to ${result.metadata.handledIntent}`);
+                turnPassFail.pass = false;
+                turnPassFail.failures.push(`INTENT: Unexpected pivot to ${result.metadata.handledIntent}`);
             }
 
             // ─── Prompt Quality Tracking ──────────────────────────────────
@@ -595,7 +636,16 @@ async function main() {
         const pct = total > 0 ? Math.round((score.pass / total) * 100) : 100;
         const label = name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         const padded = label.padEnd(22);
-        console.log(`${'║'}  ${padded}${String(score.pass).padStart(3)}/${String(total).padStart(3)} correct (${String(pct).padStart(3)}%) ${'║'}`);
+        
+        let prStr = '';
+        if (score.tp !== undefined) {
+            const precision = score.tp / (score.tp + score.fp || 1);
+            const recall = score.tp / (score.tp + score.fn || 1);
+            const f1 = 2 * (precision * recall) / (precision + recall || 1);
+            prStr = ` [P: ${Math.round(precision*100)}% R: ${Math.round(recall*100)}% F1: ${f1.toFixed(2)}]`;
+        }
+
+        console.log(`${'║'}  ${padded}${String(score.pass).padStart(3)}/${String(total).padStart(3)} correct (${String(pct).padStart(3)}%)${prStr.padEnd(28)} ${'║'}`);
     }
 
     // Overall

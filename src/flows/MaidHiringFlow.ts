@@ -1,6 +1,11 @@
 // Maid Hiring Flow - Deterministic 8-step state machine
-import { BaseFlow, FlowState, CollectedData, StepDefinition } from './BaseFlow';
+import { BaseFlow, FlowState, CollectedData } from './BaseFlow';
 import { isValidPhone } from '../extractors/dataExtractor';
+import {
+  MAID_HIRE_OPTIONAL_FIELD_IDS,
+  MAID_HIRE_PLAYBOOK,
+  MAID_HIRE_REQUIRED_FIELD_IDS,
+} from '../lib/responsePlaybooks';
 
 // Known Bengaluru areas for location validation
 const BENGALURU_AREAS = [
@@ -48,6 +53,14 @@ function acceptAny(value: string | null | undefined): boolean {
   return !!value && value.trim().length > 0;
 }
 
+function isRequiredMaidHireField(field: string): boolean {
+  return (MAID_HIRE_REQUIRED_FIELD_IDS as readonly string[]).includes(field);
+}
+
+function isOptionalMaidHireField(field: string): boolean {
+  return (MAID_HIRE_OPTIONAL_FIELD_IDS as readonly string[]).includes(field);
+}
+
 export class MaidHiringFlow extends BaseFlow {
   defineSteps(): void {
     this.steps = [
@@ -60,7 +73,7 @@ export class MaidHiringFlow extends BaseFlow {
           if (attempts === 3) return "I need your mobile number so our team can send you verified profiles. Could you please share it?";
           return "I'm having a little trouble. You can share your number now, or would you like to speak with our support team?";
         },
-        required: true,
+        required: isRequiredMaidHireField('phone'),
         validator: (v) => !!v && isValidPhone(v),
         nextState: FlowState.ASK_LOCATION,
       },
@@ -73,7 +86,7 @@ export class MaidHiringFlow extends BaseFlow {
           if (attempts === 2) return "I didn't quite get the location. Could you share the name of your colony or a nearby landmark in Bengaluru?";
           return "I'm having trouble understanding the area. You can type it one more time, or would you like to speak with our support team?";
         },
-        required: true,
+        required: isRequiredMaidHireField('location'),
         validator: validateLocation,
         nextState: FlowState.ASK_SERVICE,
       },
@@ -85,19 +98,19 @@ export class MaidHiringFlow extends BaseFlow {
           if (attempts <= 1) return "Please choose from: Cooking, Cleaning, Baby Care, or Elderly Care.";
           return "I need to know the type of help you're looking for (e.g., just 'Cook' or 'Cleaning'). Which one do you need?";
         },
-        required: true,
+        required: isRequiredMaidHireField('service_type'),
         validator: validateServiceType,
         nextState: FlowState.ASK_SCHEDULE,
       },
       {
         state: FlowState.ASK_SCHEDULE,
         slotName: 'schedule',
-        question: "Would you prefer a 24-hour Live-in maid (stays at home) or a 12-hour Day maid (morning to evening)?",
+        question: "Would you prefer a full-time 24-hour Live-in maid (stays at home) or a part-time 12-hour Day maid (morning to evening)?",
         errorMessage: (attempts) => {
-          if (attempts <= 1) return "Please let us know — 24-hour Live-in maid or 12-hour Day maid?";
-          return "Would you like the helper to stay at your home (24-hour) or come daily for 12 hours? Please choose one.";
+          if (attempts <= 1) return "Please let us know — full-time 24-hour Live-in maid or part-time 12-hour Day maid?";
+          return "Would you like the helper to stay at your home full-time (24-hour) or come daily part-time for 12 hours? Please choose one.";
         },
-        required: true,
+        required: isRequiredMaidHireField('schedule'),
         validator: validateSchedule,
         nextState: FlowState.ASK_SALARY,
       },
@@ -106,7 +119,7 @@ export class MaidHiringFlow extends BaseFlow {
         slotName: 'salary_range',
         question: "What is your expected salary range? (Our team can also guide you on this — you can say 'skip')",
         errorMessage: "Any salary range in mind? You can also say 'skip' and our team will discuss it.",
-        required: false,
+        required: isRequiredMaidHireField('salary_range') && !isOptionalMaidHireField('salary_range'),
         validator: acceptAny,
         nextState: FlowState.ASK_FAMILY,
       },
@@ -115,7 +128,7 @@ export class MaidHiringFlow extends BaseFlow {
         slotName: 'family_size',
         question: "How many family members are in your household?",
         errorMessage: "How many people are in your family? (You can say 'skip' if you prefer)",
-        required: false,
+        required: isRequiredMaidHireField('family_size') && !isOptionalMaidHireField('family_size'),
         validator: acceptAny,
         nextState: FlowState.ASK_EXPERIENCE,
       },
@@ -124,7 +137,7 @@ export class MaidHiringFlow extends BaseFlow {
         slotName: 'has_experience',
         question: "Have you hired a maid or domestic helper before?",
         errorMessage: "Have you had a maid before? Yes, No, or any details are fine.",
-        required: false,
+        required: isRequiredMaidHireField('has_experience') && !isOptionalMaidHireField('has_experience'),
         validator: acceptAny,
         nextState: FlowState.COMPLETE,
       },
@@ -147,6 +160,6 @@ export class MaidHiringFlow extends BaseFlow {
       data.has_experience && data.has_experience !== 'skipped' ? `Experience: ${data.has_experience}` : null,
     ].filter(Boolean).join(', ');
 
-    return `All details collected! Summary: ${summary}. Say: "Thank you! Our team will call you at ${data.phone} within 2 hours with verified profiles matching your requirements." Do NOT ask any more questions. [ESCALATE]`;
+    return `All details collected! Summary: ${summary}. This satisfies the shared maid_hire playbook completion rule: "${MAID_HIRE_PLAYBOOK.completionRule}". Say: "Thank you! Our team will call you at ${data.phone} within 2 hours with verified profiles matching your requirements." Do NOT ask any more questions. [ESCALATE]`;
   }
 }

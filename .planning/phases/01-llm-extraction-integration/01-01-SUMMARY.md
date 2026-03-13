@@ -26,6 +26,7 @@ metrics:
   tasks_completed: 2
   tasks_total: 2
   files_modified: 2
+requirements_completed: [AGEX-01, AGEX-02, AGEX-03, AGEX-04]
 ---
 
 # Phase 1 Plan 1: LLM Extractor Bug Fix and Extraction Contracts Summary

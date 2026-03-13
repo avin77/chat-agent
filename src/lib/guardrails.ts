@@ -4,14 +4,13 @@
 export function applyStrictGuardrails(text: string): string {
     let cleaned = text;
 
-    // Skip price blocking for salary acknowledgments (user-provided amount being confirmed)
-    const isSalaryAck = /got it|noted|salary|budget/i.test(cleaned) &&
-                        /₹|per month|per\s+month/i.test(cleaned);
+    // Price blocking applies to all generated responses, including salary acknowledgements.
+    const isSalaryAck = false;
 
-    // 1. PRICE BLOCKING (HIGHEST PRIORITY) — skip when confirming user's salary
+    // 1. PRICE BLOCKING (HIGHEST PRIORITY)
     if (!isSalaryAck) {
         const pricePatterns = [
-            /₹\s*\d+/gi,
+            /\u20B9\s*\d+/gi,
             /Rs\.?\s*\d+/gi,
             /\d+\s*rupees/gi,
             /\d+\s*per\s*(month|day|hour)/gi,

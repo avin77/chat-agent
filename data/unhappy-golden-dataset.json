@@ -582,5 +582,383 @@
         "failure": ""
       }
     ]
+  },
+  {
+    "id": "c61",
+    "category": "synonym_hinglish_service",
+    "notes": "Regression: pocha aur bartan should map to Cleaning and advance without looping",
+    "turns": [
+      {
+        "user": "mujhe bai chahiye",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9001234567",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9001234567",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "HSR Layout",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "HSR Layout",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "pocha aur bartan",
+        "bot": "Would you prefer a 24-hour Live-in maid or a 12-hour Day maid?",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SCHEDULE",
+        "slot": "service_type",
+        "slot_value": "Cleaning",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "half day",
+        "bot": "What is your expected salary range?",
+        "current_state": "ASK_SCHEDULE",
+        "expected_state": "ASK_SALARY",
+        "slot": "schedule",
+        "slot_value": "12-hour Day",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c62",
+    "category": "history_audit_phone",
+    "notes": "User says 'I already told you my phone' - bot should acknowledge and proceed if phone was given, or gently re-ask if not",
+    "turns": [
+      {
+        "user": "hi need a maid",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "I already told you my phone",
+        "bot": "I'm sorry, I don't seem to have your number yet. Please share your 10-digit mobile number so our team can contact you.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "HISTORY_AUDIT"
+      },
+      {
+        "user": "it is 9888776655",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9888776655",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "I already gave you my phone number",
+        "bot": "Yes, I have your number 9888776655. Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "HISTORY_AUDIT"
+      }
+    ]
+  },
+  {
+    "id": "c63",
+    "category": "intent_pivot_hire_to_complaint",
+    "notes": "Mid-flow switch from Hire to Complaint - should handle complaint then resume hire or confirm",
+    "turns": [
+      {
+        "user": "looking for a cook",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9112233445",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9112233445",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "actually I have a complaint about my previous maid who stole something",
+        "bot": "I'm sorry to hear that. Our support team will call you on 9112233445 about this complaint.",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "INTENT_PIVOT"
+      },
+      {
+        "user": "Koramangala",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Koramangala",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c64",
+    "category": "location_vague_nearby",
+    "notes": "User gives vague location 'nearby' - bot should ask for specific area",
+    "turns": [
+      {
+        "user": "need domestic help",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "9000800070",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9000800070",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "nearby",
+        "bot": "Which specific area in Bengaluru? For example, Koramangala, Whitefield, Indiranagar.",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "nearby",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "Indiranagar",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_SERVICE",
+        "slot": "location",
+        "slot_value": "Indiranagar",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      }
+    ]
+  },
+  {
+    "id": "c65",
+    "category": "intent_pivot_hire_to_registration",
+    "notes": "Mid-flow switch from Hire to Registration",
+    "turns": [
+      {
+        "user": "hire a helper",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "I want to work as a cook",
+        "bot": "I can help register you for work opportunities. Please share your name and 10-digit mobile number.",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_CONTACT",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "INTENT_PIVOT"
+      }
+    ]
+  },
+  {
+    "id": "c66",
+    "category": "history_audit_location",
+    "notes": "User says 'I already gave my location' after they did",
+    "turns": [
+      {
+        "user": "need maid in Whitefield",
+        "bot": "Please share your 10-digit mobile number.",
+        "current_state": "START",
+        "expected_state": "ASK_PHONE",
+        "slot": "phone",
+        "slot_value": "",
+        "valid": "",
+        "advance": false,
+        "failure": ""
+      },
+      {
+        "user": "8112233445",
+        "bot": "What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_SERVICE",
+        "slot": "phone",
+        "slot_value": "8112233445",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "I already told you my address",
+        "bot": "Yes, I have Whitefield as your location. What type of help do you need? Cooking / Cleaning / Baby Care / Elderly Care",
+        "current_state": "ASK_SERVICE",
+        "expected_state": "ASK_SERVICE",
+        "slot": "service_type",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "HISTORY_AUDIT"
+      }
+    ]
+  },
+  {
+    "id": "c67",
+    "category": "location_vague_persistent",
+    "notes": "User is vague about location twice",
+    "turns": [
+      {
+        "user": "need help 9888000111",
+        "bot": "Which area in Bengaluru are you looking for help?",
+        "current_state": "ASK_PHONE",
+        "expected_state": "ASK_LOCATION",
+        "slot": "phone",
+        "slot_value": "9888000111",
+        "valid": true,
+        "advance": true,
+        "failure": ""
+      },
+      {
+        "user": "near center",
+        "bot": "Which specific area near the center? For example, MG Road or Shivajinagar.",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "near center",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      },
+      {
+        "user": "I said center of bangalore",
+        "bot": "I need a specific locality name to find the right helpers for you. Could you share an area like Jayanagar or Indiranagar?",
+        "current_state": "ASK_LOCATION",
+        "expected_state": "ASK_LOCATION",
+        "slot": "location",
+        "slot_value": "center",
+        "valid": false,
+        "advance": false,
+        "failure": "INVALID_SLOT"
+      }
+    ]
+  },
+  {
+    "id": "c68",
+    "category": "silence_handling",
+    "notes": "User says nothing or just dots",
+    "turns": [
+      {
+        "user": "...",
+        "bot": "I didn't catch that. How can I help you today? I can assist with hiring a maid, registering as a helper, or handling a complaint.",
+        "current_state": "START",
+        "expected_state": "START",
+        "slot": "",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "GIBBERISH"
+      }
+    ]
+  },
+  {
+    "id": "c69",
+    "category": "abusive_handling",
+    "notes": "User is abusive - bot should remain professional and redirect or end",
+    "turns": [
+      {
+        "user": "you are a stupid bot",
+        "bot": "I apologize if I haven't been helpful. I'm here to assist with domestic help services. How can I help you specifically?",
+        "current_state": "START",
+        "expected_state": "START",
+        "slot": "",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "OFF_TOPIC"
+      }
+    ]
+  },
+  {
+    "id": "c70",
+    "category": "technical_inquiry",
+    "notes": "User asks where DB is stored or about code",
+    "turns": [
+      {
+        "user": "where is your database stored and what language is this",
+        "bot": "I'm a support assistant for EzyHelpers. I don't have access to technical infrastructure details. I can help you hire a maid or register as one.",
+        "current_state": "START",
+        "expected_state": "START",
+        "slot": "",
+        "slot_value": "",
+        "valid": false,
+        "advance": false,
+        "failure": "OFF_TOPIC"
+      }
+    ]
   }
 ]

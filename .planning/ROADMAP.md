@@ -1,320 +1,102 @@
 # EzyBot Roadmap
 
 **Project:** EzyBot
-**Current milestone:** v3.0 - Multi-Intent Reliability and PM Observability
+**Current milestone:** v4.0 - Production Promotion & Scaling
 **Roadmap status:** In Progress
-**Last updated:** 2026-03-10
+**Last updated:** 2026-03-13
 
 ---
 
 ## Baseline From Latest Evals
 
-- 2026-03-03 `eval:state` (`50 conv / 192 turns`): `100%`, but recurring quality misses remain in failed-turn list (`c15 t2`, `c28 t5`).
-- 2026-03-03 `eval:unhappy` (`8 conv / 48 turns`): `96%`, with concentrated failures in `c56` (`synonym_hinglish_service`, turns 4-8).
-- 2026-03-02 `eval:unhappy` improved from `91%` to `96%`, but the same `c56` cluster persisted.
+- 2026-03-12 `eval:state`: `100%` (V3 Complete).
+- 2026-03-12 `eval:unhappy`: `98%` (V3 Complete).
+- 2026-03-12 `eval:normal`: `100%`.
 
-Interpretation: core flow is stable, but multi-intent robustness, confusion handling, and PM-grade observability still need product-level hardening.
-
----
-
-## v2.0 Summary (Completed)
-
-| # | Phase | Status |
-|---|-------|--------|
-| 1 | LLM Extraction Integration | COMPLETE |
-| 2 | Agentic Tool-Calling Flow | COMPLETE |
-| 3 | Dashboard and Cost Tracking | COMPLETE |
-| 4 | Data Flywheel Scripts | Deferred to v3 |
-
-v2 shipped successfully and is now considered baseline.
+Interpretation: Core multi-intent agentic system is stable and ready for full production promotion. v4.0 focuses on decommissioning legacy systems and hardening the flywheel for all intents.
 
 ---
 
-## v3.0 Phase Overview
+## Phases
 
-| # | Phase | Goal | Status |
-|---|-------|------|--------|
-| 5 | V3-01 Intent Contract + English Policy | Lock canonical intents and enforce English-only response behavior with graceful fallback | COMPLETE (local) |
-| 6 | V3-02 Multi-Intent Orchestration | Support mid-flow intent switches without data loss via intent stack/queue | COMPLETE (local) |
-| 7 | V3-03 Confusion Protocol 2.0 | Eliminate repeated-question loops; improve human-like recovery and escalation | COMPLETE (local) |
-| 8 | V3-04 Response Playbooks (Knowledge Contract) | Define required response and data contract per intent | NEXT |
-| 9 | V3-05 PM Dashboard Metrics Redesign | Keep existing metrics, add definitions + new agentic quality and memory metrics | COMPLETE (local) |
-| 10 | V3-06 Eval Governance (3 Tracks) | Gate releases on state + unhappy + normal eval tracks with slice thresholds | Planned |
-| 11 | V3-07 Flywheel for Synonyms and Recovery | Convert production/eval misses (especially c56 class) into repeatable improvements | Planned |
-| 12 | V2-TD-01 Documentation Alignment | Close v2.0 audit gaps: missing requirement IDs in REQUIREMENTS.md and empty SUMMARY frontmatter | Planned |
-| 13 | V2-TD-02 Code Debt Clearance | Close v2.0 audit gaps: obsolete exports and stray comments | Planned |
-
-Explicitly removed from v3 scope for now (PM decision): shadow-system expansion tasks.
-
-## Current Execution Picture (2026-03-10)
-
-**Locally completed since v3 planning began:**
-- V3-01 Intent Contract + English Policy
-- V3-02 Multi-Intent Orchestration
-- V3-03 Confusion Protocol 2.0
-- V3-05 PM Dashboard Metrics Redesign
-
-**Remaining execution queue:**
-1. Reconcile planning source of truth so `ROADMAP.md`, `STATE.md`, and resume flows report the same milestone state.
-2. Package and plan V3-04 Response Playbooks / Knowledge Contract.
-3. Define V3-06 Eval Governance so release decisions are track-based, not average-score based.
-4. Define V3-07 Synonyms and Recovery Flywheel so repeated unhappy-path misses become deterministic improvements.
-5. Close V2-TD-01 and V2-TD-02 once the v3 planning picture is stable.
-
-**Interpretation:**
-- Core orchestration and confusion-handling work is locally ahead of the planning state.
-- The remaining v3 work is product hardening and governance, not another core architecture rewrite.
-- Shadow-system expansion remains explicitly out of scope until reintroduced by PM decision.
+- [x] **Phase 1-14**: Completed Milestone v2.0 and v3.0 work.
+- [ ] **Phase 15: Flywheel Generalization** - Refactor mining scripts for all canonical intents beyond maid_hire.
+- [ ] **Phase 16: Production Agentic Default** - Flip USE_AGENTIC=true for all users and remove deterministic fallbacks.
+- [ ] **Phase 17: Shadow System 2.0** - Enable shadow simulation for agentic turns (model-vs-model comparisons).
+- [ ] **Phase 18: Extreme Unhappy Path & Stack Robustness** - Add complex multi-intent and deep-stack cases to eval-unhappy.
+- [ ] **Phase 19: Technical Debt Finalization** - Delete BaseFlow.ts, MaidHiringFlow.ts, and redundant state-machine code.
 
 ---
 
-## Phase 5: V3-01 Intent Contract + English Policy
+## Progress Table
 
-**Goal:** Standardize routing contract and language policy before orchestration changes.
-
-**Intent set (canonical):**
-- `maid_hire`
-- `complaint`
-- `maid_registration`
-- `general`
-
-**Policy decisions:**
-- Bot output remains English only.
-- Non-English/Hinglish user input is still accepted for intent/slot understanding, then answered in English.
-- If user asks in non-English explicitly, respond in English with a brief policy line and continue task.
-
-**Exit criteria:**
-1. All entry routes map to one canonical intent.
-2. No legacy alias drift (`helper_reg`/`helper_registration` mismatch removed).
-3. Language policy test cases pass in eval suite.
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1-14 | 14/14 | COMPLETE | 2026-03-13 |
+| 15. Flywheel Generalization | 0/1 | Not started | - |
+| 16. Production Agentic Default | 0/1 | Not started | - |
+| 17. Shadow System 2.0 | 0/1 | Not started | - |
+| 18. Extreme Unhappy Path | 0/1 | Not started | - |
+| 19. Technical Debt Finalization | 0/1 | Not started | - |
 
 ---
 
-## Phase 6: V3-02 Multi-Intent Orchestration
+## Phase Details
 
-**Goal:** Handle intent switches without resetting collected data unexpectedly.
+### Phase 15: Flywheel Generalization & Level 3 Agentic Upgrade
+**Goal**: Generalize data improvement scripts and upgrade runtime to autonomous Level 3 (Reflection/Planning).
+**Depends on**: Phase 14
+**Requirements**: FLY-06, FLY-07, AG-L3, AG-REFL, UX-PROC
+**Success Criteria**:
+1. Mining scripts extract misses and golden sessions for `complaint` and `maid_registration`.
+2. `AgentPlanner` replaces deterministic logic with guardrailed reflection and 3-strike retry.
+3. UI shows "Processing..." indicator during reasoning turns.
+4. Dashboard displays "Chain of Thought" for audited turns.
+**Plans**: 15-01-PLAN.md through 15-08-PLAN.md
 
-**Core behavior:**
-- Introduce `intent_stack` (active intent + suspended intents with snapshots).
-- On side-intent trigger, push current intent to stack and enter new intent.
-- On completion/exit of side-intent, pop and resume prior intent with preserved state.
-- Store intent history per session for dashboard and auditability.
+### Phase 16: Production Agentic Default
+**Goal**: Formally promote agentic system to the sole production path.
+**Depends on**: Phase 15
+**Requirements**: ROLL-01, ROLL-02
+**Success Criteria**:
+1. `USE_AGENTIC=true` logic is moved to default behavior in `src/app/api/chat/route.ts`.
+2. Legacy deterministic handlers are decommissioned and removed.
+3. System passes all regression suites with no deterministic fallback active.
+**Plans**: TBD
 
-**Exit criteria:**
-1. Mid-flow complaint during hire does not wipe hire slots.
-2. Returning from complaint resumes the exact prior hire step.
-3. Intent memory is queryable in logs and dashboard.
+### Phase 17: Shadow System 2.0
+**Goal**: Enable continuous model-vs-model evaluation for agentic responses.
+**Depends on**: Phase 16
+**Requirements**: SHAD-06, SHAD-07
+**Success Criteria**:
+1. Shadow handler successfully simulates agentic turns against production agentic responses.
+2. Dashboard visualizes agreement trends between primary and shadow models.
+**Plans**: TBD
 
----
+### Phase 18: Extreme Unhappy Path & Stack Robustness
+**Goal**: Stress-test the multi-intent stack against edge cases.
+**Depends on**: Phase 17
+**Requirements**: UNH-01, UNH-02
+**Success Criteria**:
+1. `eval-unhappy` suite includes nested intent suspensions (> 2 deep).
+2. Intent stack maintains data integrity across deep suspension/resume cycles.
+**Plans**: TBD
 
-## Phase 7: V3-03 Confusion Protocol 2.0
-
-**Goal:** Make recovery behavior human-like and loop-safe.
-
-**Protocol:**
-1. Clarify: acknowledge what was understood and restate what is missing.
-2. Reframe: ask the same need differently with one concrete example.
-3. Escalate/handoff: offer support or callback when repeated failures continue.
-
-**Guardrails:**
-- Do not ask the same question verbatim twice without new context.
-- Track invalid-attempt streak per slot and total retries per session.
-- For phone mistakes, allow multiple retries; valid input at later attempt must still continue flow.
-
-**Exit criteria:**
-1. Repeat-question rate drops below agreed threshold.
-2. `c56`-style loop class has no unresolved failures.
-3. Retry recovery rate improves without increasing abandonment.
-
----
-
-## Phase 8: V3-04 Response Playbooks (Knowledge Contract)
-
-**Goal:** Define what information is minimally required and how to respond for each intent.
-
-**Why now:**
-- V3-01, V3-02, and V3-03 improved routing, memory, and recovery, but the bot still needs explicit intent contracts so future prompt and eval work do not drift.
-- PM and engineering need one place that defines what "good completion" means per intent.
-
-**Maid hire minimum data:**
-- phone, area, service_type, schedule
-
-**Complaint minimum data:**
-- contact, issue summary, severity, callback preference, incident timing (if available)
-
-**Maid registration minimum data:**
-- contact, role/service offered, experience, availability window, preferred areas
-
-**Playbook standard per intent:**
-- Entry confirmation line
-- Required fields
-- Optional fields
-- Failure/repair responses
-- Completion confirmation format
-- Escalation criteria
-
-**Exit criteria:**
-1. Every intent has explicit required/optional schema.
-2. Prompt templates reference playbook contracts, not ad-hoc rules.
-3. Playbook coverage is testable via eval datasets.
-
-**Current risks if skipped:**
-- Prompt logic continues to accumulate intent-specific rules informally.
-- Eval failures will be harder to interpret because required-vs-optional behavior is not locked.
-- Dashboard metrics can show drift without a clear contract for what the bot should have collected or said.
-
-**Recommended next action:**
-- Reconcile planning docs first, then discuss/package this phase as the next PM-facing work item.
-- Suggested command after reconciliation: `$gsd-discuss-phase 8`
+### Phase 19: Technical Debt Finalization
+**Goal**: Purge all remaining legacy state-machine artifacts.
+**Depends on**: Phase 18
+**Requirements**: DEBT-03, DEBT-04
+**Success Criteria**:
+1. `src/flows/BaseFlow.ts` and `src/flows/MaidHiringFlow.ts` are deleted.
+2. Over 200 lines of redundant state-machine logic are removed from core routing.
+3. Codebase compile-time check passes with zero legacy flow dependencies.
+**Plans**: TBD
 
 ---
 
-## Phase 9: V3-05 PM Dashboard Metrics Redesign
+## v3.0 (Completed Milestone Reference)
 
-**Goal:** Keep all existing cards, add metric definitions and new signals needed for agentic monitoring.
-
-**Plans:** 2 plans
-
-Plans:
-- [x] 09-01-PLAN.md — Metric registry (src/lib/metricRegistry.ts) + new agentic quality server actions in actions.ts
-- [x] 09-02-PLAN.md — Dashboard UI: Agentic Quality tab, MetricTooltip definitions, pre-production checklist panel
-
-**Keep (no removal):**
-- Completion, quality score, escalation, slot fill, token usage, latency, alerts, eval scores, conversation health.
-
-**Add:**
-- Repeat-question rate
-- Intent switch success rate
-- Resume success after side-intent
-- Slot retry distribution (per field)
-- Recovery step distribution (clarify/reframe/escalate)
-- Memory retention rate after switch (did bot remember prior state/slots)
-- Human handoff acceptance and completion
-- Lead Quality Score
-- Safety Net Trigger Rate
-- Semantic Paraphrase Success
-- Ambiguity Resolution Rate
-- Intent Drift Rate
-- Guardrail Bypass Attempt Rate
-- Hallucination Rate (HITL sample)
-- Escalation-after-confusion rate
-- Slot Retention after Switch
-- Stuck Loop Rate
-
-**Exit criteria:**
-1. Each dashboard metric has a visible definition.
-2. PM can detect whether orchestration and memory behaviors improved.
-3. Pre-production checklist view is driven by metrics + eval gates.
-
-**Local completion evidence:**
-- `09-01-SUMMARY.md` records metric registry and server-action completion on 2026-03-03.
-- `09-02-SUMMARY.md` records Agentic Quality UI and pre-production checklist completion on 2026-03-03.
+(Historical details omitted for brevity, see ROADMAP.md history for Phases 5-14)
 
 ---
-
-## Phase 10: V3-06 Eval Governance (3 Tracks)
-
-**Goal:** Separate release quality gates by failure mode.
-
-**Why now:**
-- Latest evals show strong headline scores with concentrated failure clusters still present.
-- PM needs a release policy that blocks regressions in unhappy-path behavior even when state-machine correctness remains high.
-
-**Tracks:**
-- `eval:state` (core flow correctness)
-- `eval:unhappy` (recovery/robustness under bad inputs)
-- `eval` (normal conversational regression suite)
-
-**Release gate policy:**
-- No gate passes on overall score alone.
-- Track-specific floor + must-fix conversation IDs for known risk slices.
-- Fail release if unhappy robustness regresses, even if state score is high.
-
-**Current risks if skipped:**
-- Releases can be approved on a strong average while known unhappy-path slices still fail.
-- Dashboard pre-production views risk becoming informative only, not decision-enforcing.
-- Team discussions about "ready to ship" remain subjective.
-
-**Recommended next action:**
-- Package this immediately after V3-04 so governance is defined before another round of prompt/flow tuning.
-- Suggested command after reconciliation: `$gsd-discuss-phase 10`
-
----
-
-## Phase 11: V3-07 Flywheel for Synonyms and Recovery
-
-**Goal:** Turn repeated misses into deterministic improvements.
-
-**Why now:**
-- `c56` and related synonym/recovery failures are already known and should become a systematic improvement loop, not one-off fixes.
-- The value of V3-06 governance increases if the team also has a disciplined way to resolve the exact misses that gates surface.
-
-**Scope:**
-- Mine synonym/phrase misses from eval and production logs.
-- Feed misses into extractor synonyms + playbook examples.
-- Add regression cases for each resolved miss class.
-
-**Primary target:** `synonym_hinglish_service` error family (for example current `c56` pattern).
-
-**Current risks if skipped:**
-- The same failure families keep reappearing in eval review without a standard path to resolution.
-- Recovery behavior improves manually but does not compound into a reusable product-learning loop.
-- PM sees recurring misses without a repeatable remediation mechanism.
-
-**Recommended next action:**
-- Package after V3-06 so new governance can point directly at a flywheel for fixing surfaced misses.
-- Suggested command after reconciliation: `$gsd-discuss-phase 11`
-
----
-
-## Phase 12: V2-TD-01 Documentation Alignment
-
-**Goal:** Ensure 100% requirements traceability and documentation accuracy for v2.0.
-
-**Tasks:**
-- Add definitions for SHADOW-01/04, CONV-01/04, and ALERT-01/04 to REQUIREMENTS.md.
-- Update traceability matrix in REQUIREMENTS.md to include these IDs.
-- Backfill `requirements_completed` frontmatter in SUMMARY.md files for phases 01 and 02.
-
-**Exit criteria:**
-1. REQUIREMENTS.md contains all IDs referenced in roadmap/plans.
-2. All completed phase summaries correctly list their satisfied requirements.
-
----
-
-## Phase 13: V2-TD-02 Code Debt Clearance
-
-**Goal:** Clean up minor code artifacts identified in v2.0 audit.
-
-**Tasks:**
-- Remove obsolete `agenticTools` export from `src/flows/agenticMaidHire.ts`.
-- Remove stray backslash comment in `src/app/api/chat/route.ts` (line 694).
-- Verify dashboard gate condition hardcoding is acceptable or needs dynamic wiring.
-
-**Exit criteria:**
-1. Codebase is free of identified obsolete exports and stray comments.
-2. Milestone audit tech debt items are resolved.
-
----
-
-## Non-Goals (Current v3)
-
-- Shadow-mode expansion work (intentionally deferred for now).
-- Real-time streaming analytics rewrite.
-- New channels/apps beyond current web flow.
-
-### Phase 14: true agentic parity ,agentic orchestration and complete agentic based system
-
-**Goal:** Build a shared constrained agentic runtime with faithful shadow parity, true multi-intent orchestration, and PM-visible rollout readiness across all canonical intents.
-**Requirements**: Future agentic runtime contract, shadow parity, multi-intent fidelity, PM reference docs, rollout verification
-**Depends on:** Phase 13
-**Plans:** 4 plans
-
-Plans:
-- [ ] 14-01-PLAN.md - Shared runtime contract, playbooks, validators, and canonical intent normalization
-- [ ] 14-02-PLAN.md - Maid-hire migration onto shared runtime plus faithful shadow simulation
-- [ ] 14-03-PLAN.md - Complaint and maid-registration migration with real suspend / resume multi-intent behavior
-- [ ] 14-04-PLAN.md - PM reference docs, parity regressions, and rollout readiness signals
-
----
-*Roadmap updated: 2026-03-10 with reconciled local completion status and packaged remaining v3 work.*
+*Roadmap updated: 2026-03-13 after initialization of Milestone v4.0.*

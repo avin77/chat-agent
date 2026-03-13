@@ -21,8 +21,12 @@ import {
     getSystemAlerts,
     checkAndWriteAlerts,
 } from './actions';
-import { getAgenticQualityMetrics, getEvalTrackScores } from './actions';
+import { getAgenticQualityMetrics, getEvalGovernanceStatus } from './actions';
 import { mergeLlmIoConversations } from './llmIoHelpers';
+import {
+    buildGovernanceChecklistRows,
+    type EvalGovernanceResult,
+} from '@/lib/evalGovernance';
 import { getMetricSpec } from '@/lib/metricRegistry';
 import type { MetricSpec } from '@/lib/metricRegistry';
 
@@ -177,15 +181,6 @@ interface AgenticQualityMetrics {
     totalTurnsAnalyzed: number;
 }
 
-interface EvalTrackScores {
-    stateScore: number | null;
-    unhappyScore: number | null;
-    normalScore: number | null;
-    stateFile: string | null;
-    unhappyFile: string | null;
-    normalFile: string | null;
-}
-
 // ─── Helper Components ──────────────────────────────────────────────────────
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
     return (
@@ -269,64 +264,51 @@ function AgenticMetricCard({ label, value, metricId, note }: {
 }
 
 function PreProdChecklist({
-    evalTrackScores,
+    evalGovernance,
     agenticQuality,
+    shadowMetrics,
 }: {
-    evalTrackScores: EvalTrackScores | null;
+    evalGovernance: EvalGovernanceResult | null;
     agenticQuality: AgenticQualityMetrics | null;
+    shadowMetrics: ShadowMetrics | null;
 }) {
-    const gates: Array<{ label: string; pass: boolean | null; detail: string }> = [
-        {
-            label: 'eval:state score >= 95%',
-            pass: evalTrackScores?.stateScore != null ? evalTrackScores.stateScore >= 95 : null,
-            detail: evalTrackScores?.stateScore != null ? `${evalTrackScores.stateScore}%` : 'No file found',
-        },
-        {
-            label: 'eval:unhappy score >= 90%',
-            pass: evalTrackScores?.unhappyScore != null ? evalTrackScores.unhappyScore >= 90 : null,
-            detail: evalTrackScores?.unhappyScore != null ? `${evalTrackScores.unhappyScore}%` : 'No file found',
-        },
-        {
-            label: 'eval:normal score >= 90%',
-            pass: evalTrackScores?.normalScore != null ? evalTrackScores.normalScore >= 90 : null,
-            detail: evalTrackScores?.normalScore != null ? `${evalTrackScores.normalScore}%` : 'No file found',
-        },
-        {
-            label: 'Stuck Loop Rate < 5%',
-            pass: agenticQuality ? agenticQuality.stuckLoopRate < 5 : null,
-            detail: agenticQuality ? `${agenticQuality.stuckLoopRate}%` : 'No data',
-        },
-        {
-            label: 'Safety Net Trigger Rate < 5%',
-            pass: agenticQuality ? agenticQuality.safetyNetTriggerRate < 5 : null,
-            detail: agenticQuality ? `${agenticQuality.safetyNetTriggerRate}%` : 'No data',
-        },
-        {
-            label: 'Repeat Question Rate < 5%',
-            pass: agenticQuality ? agenticQuality.repeatQuestionRate < 5 : null,
-            detail: agenticQuality ? `${agenticQuality.repeatQuestionRate}%` : 'No data',
-        },
-    ];
-
+    const gates = buildGovernanceChecklistRows(evalGovernance, {
+        ...agenticQuality,
+        shadowAgreement: shadowMetrics?.overall,
+        shadowTotalLogs: shadowMetrics?.totalLogs,
+        isShadowReady: shadowMetrics?.isReady,
+    } as any);
     const passCount = gates.filter(g => g.pass === true).length;
     const totalGates = gates.length;
     const allPass = passCount === totalGates && gates.every(g => g.pass !== null);
+    const releaseVerdict = evalGovernance?.releaseVerdict ?? 'block';
+    const releaseLabel =
+        releaseVerdict === 'pass'
+            ? 'Release Ready'
+            : releaseVerdict === 'warn'
+                ? 'Warnings'
+                : 'Blocked';
+    const releaseTone =
+        releaseVerdict === 'pass'
+            ? 'bg-green-100 text-green-800'
+            : releaseVerdict === 'warn'
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-red-100 text-red-800';
+    const governanceReasons = evalGovernance
+        ? [...evalGovernance.blockingReasons, ...evalGovernance.warningReasons]
+        : ['Governance status unavailable'];
 
     return (
         <div className={`rounded-lg border p-5 ${allPass ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Pre-Production Checklist</h3>
-                <span className={`text-sm font-medium px-3 py-1 rounded-full ${
-                    allPass ? 'bg-green-100 text-green-800' :
-                    passCount >= totalGates / 2 ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                }`}>
-                    {passCount}/{totalGates} gates passed
+                <span className={`text-sm font-medium px-3 py-1 rounded-full ${releaseTone}`}>
+                    {releaseLabel} • {passCount}/{totalGates}
                 </span>
             </div>
             <div className="space-y-2">
                 {gates.map((gate, idx) => (
-                    <div key={idx} className="flex items-center gap-3 text-sm">
+                    <div key={gate.key ?? idx} className="flex items-center gap-3 text-sm">
                         <span className={`w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${
                             gate.pass === null ? 'bg-gray-200 text-gray-500' :
                             gate.pass ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
@@ -339,6 +321,18 @@ function PreProdChecklist({
                         <span className="text-gray-400 ml-auto">{gate.detail}</span>
                     </div>
                 ))}
+            </div>
+            <div className="mt-4 border-t border-gray-200 pt-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                    Governance Reasons
+                </div>
+                <div className="space-y-1">
+                    {governanceReasons.map((reason, idx) => (
+                        <div key={`${reason}-${idx}`} className="text-sm text-gray-600">
+                            {reason}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -363,9 +357,10 @@ export default function Dashboard() {
     const [shadowMetrics, setShadowMetrics] = useState<ShadowMetrics | null>(null);
     const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
     const [agenticQuality, setAgenticQuality] = useState<AgenticQualityMetrics | null>(null);
-    const [evalTrackScores, setEvalTrackScores] = useState<EvalTrackScores | null>(null);
+    const [evalGovernance, setEvalGovernance] = useState<EvalGovernanceResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'eval' | 'prompt_quality' | 'conversations' | 'llm_logs' | 'product_health' | 'agentic_quality'>('overview');
+    const [globalIntent, setGlobalIntent] = useState<string>('all');
     // LLM I/O state
     const [llmConversations, setLlmConversations] = useState<any[]>([]);
     const [llmIntent, setLlmIntent] = useState<string>('all');
@@ -379,22 +374,22 @@ export default function Dashboard() {
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
-        const [s, i, f, c, e, ev, rq, ch, ph, tc, sm, sa, ef, aq, ets] = await Promise.all([
+        const [s, i, f, c, e, ev, rq, ch, ph, tc, sm, sa, ef, aq, eg] = await Promise.all([
             getDashboardStats(days),
             getIntentBreakdown(days),
             getFlowFunnel(days),
             getRecentConversations(30),
             getErrorMetrics(days),
             getLatestEvalResults(),
-            getResponseQualityMetrics(days),
-            getConversationHealthMetrics(days),
-            getProductHealthMetrics(days),
+            getResponseQualityMetrics(days, globalIntent),
+            getConversationHealthMetrics(days, globalIntent),
+            getProductHealthMetrics(days, globalIntent),
             getTokenCostMetrics(days),
             getShadowMetrics(7),
             getSystemAlerts(24),
             getAllEvalFiles(),
-            getAgenticQualityMetrics(days),
-            getEvalTrackScores(),
+            getAgenticQualityMetrics(days, globalIntent),
+            getEvalGovernanceStatus(),
         ]);
         setStats(s);
         setIntents(i);
@@ -410,11 +405,13 @@ export default function Dashboard() {
         setTokenCost(tc);
         setShadowMetrics(sm);
         setSystemAlerts(sa);
+        setAgenticQuality(aq);
+        setEvalGovernance(eg);
         setLoading(false);
         // Fire alert checks on each dashboard load — populates system_alerts table
         // so the alert banner above can show active alerts. Fire-and-forget (non-blocking).
         checkAndWriteAlerts().catch(err => console.error('[Alerts] check failed:', err.message));
-    }, [days]);
+    }, [days, globalIntent]);
 
     // Reload eval results when user picks a different file
     const handleEvalFileChange = useCallback(async (filename: string) => {
@@ -510,6 +507,21 @@ export default function Dashboard() {
                         <p className="text-sm text-gray-500">Operations metrics & eval results</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        {/* Intent Selector */}
+                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Intent:</span>
+                            <select
+                                value={globalIntent}
+                                onChange={(e) => setGlobalIntent(e.target.value)}
+                                className="text-sm font-semibold text-gray-700 bg-transparent focus:outline-none cursor-pointer"
+                            >
+                                <option value="all">All Intents</option>
+                                <option value="maid_hire">Maid Hire</option>
+                                <option value="complaint">Complaint</option>
+                                <option value="maid_registration">Helper Reg</option>
+                                <option value="general">FAQ / General</option>
+                            </select>
+                        </div>
                         {/* Date Range */}
                         <div className="flex bg-gray-100 rounded-lg p-0.5">
                             {[1, 7, 30].map((d) => (
@@ -534,7 +546,7 @@ export default function Dashboard() {
 
                 {/* Tabs */}
                 <div className="flex gap-6 mt-4">
-                    {(['overview', 'eval', 'prompt_quality', 'conversations', 'llm_logs', 'product_health'] as const).map((tab) => (
+                    {(['overview', 'eval', 'prompt_quality', 'conversations', 'llm_logs', 'product_health', 'agentic_quality'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -543,7 +555,7 @@ export default function Dashboard() {
                                 : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                         >
-                            {tab === 'overview' ? 'Overview' : tab === 'eval' ? 'Eval Results' : tab === 'prompt_quality' ? 'Prompt Quality' : tab === 'llm_logs' ? 'LLM I/O' : tab === 'product_health' ? 'Product Health' : 'Conversations'}
+                            {tab === 'overview' ? 'Overview' : tab === 'eval' ? 'Eval Results' : tab === 'prompt_quality' ? 'Prompt Quality' : tab === 'llm_logs' ? 'LLM I/O' : tab === 'product_health' ? 'Product Health' : tab === 'agentic_quality' ? 'Agentic Quality' : 'Conversations'}
                         </button>
                     ))}
                 </div>
@@ -585,6 +597,7 @@ export default function Dashboard() {
                                             maid_hire: 'bg-blue-500',
                                             complaint: 'bg-red-400',
                                             general: 'bg-gray-400',
+                                            maid_registration: 'bg-green-400',
                                             helper_reg: 'bg-green-400',
                                         };
                                         return (
@@ -1020,6 +1033,7 @@ export default function Dashboard() {
                                             maid_hire: 'bg-blue-100 text-blue-700',
                                             complaint: 'bg-red-100 text-red-700',
                                             general: 'bg-gray-100 text-gray-700',
+                                            maid_registration: 'bg-green-100 text-green-700',
                                             helper_reg: 'bg-green-100 text-green-700',
                                         };
                                         const stateColors: Record<string, string> = {
@@ -1088,7 +1102,7 @@ export default function Dashboard() {
                                 </div>
                                 {/* Intent filter pills */}
                                 <div className="flex flex-wrap gap-1">
-                                    {(['all', 'maid_hire', 'complaint', 'general', 'helper_reg'] as const).map(intent => (
+                                    {(['all', 'maid_hire', 'complaint', 'maid_registration', 'general'] as const).map(intent => (
                                         <button
                                             key={intent}
                                             onClick={() => setLlmIntent(intent)}
@@ -1096,7 +1110,7 @@ export default function Dashboard() {
                                                 ? 'bg-blue-600 text-white border-blue-600'
                                                 : 'bg-white text-gray-500 border-gray-300 hover:border-blue-400'}`}
                                         >
-                                            {intent === 'all' ? 'All' : intent === 'maid_hire' ? 'Maid Hire' : intent === 'helper_reg' ? 'Helper Reg' : intent.charAt(0).toUpperCase() + intent.slice(1)}
+                                            {intent === 'all' ? 'All' : intent === 'maid_hire' ? 'Maid Hire' : intent === 'maid_registration' ? 'Maid Registration' : intent.charAt(0).toUpperCase() + intent.slice(1)}
                                         </button>
                                     ))}
                                 </div>
@@ -1112,6 +1126,7 @@ export default function Dashboard() {
                                         maid_hire: 'bg-blue-100 text-blue-700',
                                         complaint: 'bg-red-100 text-red-700',
                                         general: 'bg-gray-100 text-gray-700',
+                                        maid_registration: 'bg-green-100 text-green-700',
                                         helper_reg: 'bg-green-100 text-green-700',
                                     };
                                     return (
@@ -1256,6 +1271,23 @@ export default function Dashboard() {
                                                             {log.after_guardrails || '—'}
                                                         </div>
                                                     </div>
+
+                                                    {/* Agent Reasoning (Thought Reflection) */}
+                                                    {log.thought_reflection && (
+                                                        <div>
+                                                            <div className="text-[10px] font-semibold text-indigo-400 uppercase mb-1 flex items-center justify-between">
+                                                                <span>Agent Reasoning (Reflection)</span>
+                                                                {log.confidence_score !== null && (
+                                                                    <span className={`px-1 rounded ${log.confidence_score >= 80 ? 'bg-green-100 text-green-700' : log.confidence_score >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                                                                        Confidence: {log.confidence_score}%
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="bg-indigo-50 border border-indigo-100 rounded px-2 py-1.5 text-xs text-indigo-900 italic">
+                                                                {log.thought_reflection}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -1360,6 +1392,11 @@ export default function Dashboard() {
                                 ))}
                             </div>
                         )}
+
+                        <PreProdChecklist
+                            evalGovernance={evalGovernance}
+                            agenticQuality={agenticQuality}
+                        />
 
                         {/* ── Shadow Snapshot (above the fold) ─────────────────────────── */}
                         <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
@@ -1478,26 +1515,6 @@ export default function Dashboard() {
                                     )}
                                 </>
                             )}
-                            {/* Gate conditions checklist (SHADOW-04) */}
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Gate Conditions to Enable USE_AGENTIC=true</div>
-                                <div className="space-y-1 text-sm text-gray-600">
-                                    {[
-                                        { label: 'Overall agreement >= 95% (last 7 days)', pass: shadowMetrics ? shadowMetrics.overall >= 95 : false },
-                                        { label: 'No single day below 90%', pass: shadowMetrics?.byDay ? shadowMetrics.byDay.slice(-7).every(d => d.pct >= 90) : false },
-                                        { label: 'No cost anomaly (shadow avg < 2x prod avg)', pass: true },
-                                        { label: 'No repeated invalid tool proposals (> 3x same wrong tool/day)', pass: true },
-                                        { label: 'Manual spot-check of 10 disagreed turns completed', pass: false },
-                                    ].map((gate, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                            <span className={gate.pass ? 'text-green-500' : 'text-gray-300'}>
-                                                {gate.pass ? 'v' : 'o'}
-                                            </span>
-                                            <span className={gate.pass ? 'text-green-700' : 'text-gray-400'}>{gate.label}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
                         </div>
 
                         {/* ── Additional Health Metrics ─────────────────────────────────── */}
@@ -1508,6 +1525,52 @@ export default function Dashboard() {
                                 <StatCard label="Abandoned Sessions" value={productHealth.abandonedSessions} sub={`of ${productHealth.totalSessions} total`} />
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════════════ */}
+                {/* AGENTIC QUALITY TAB                                                     */}
+                {/* ═══════════════════════════════════════════════════════════════════════ */}
+                {activeTab === 'agentic_quality' && agenticQuality && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+                            <h3 className="font-semibold text-gray-800 mb-1">Agentic Robustness</h3>
+                            <p className="text-xs text-gray-400 mb-4">Metrics measuring the reliability of the shared agentic runtime (last {days}d)</p>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <AgenticMetricCard label="Stuck Loop Rate" value={agenticQuality.stuckLoopRate} metricId="stuck_loop_rate" note="Sessions hitting retry limits" />
+                                <AgenticMetricCard label="Intent Switch Success" value={agenticQuality.intentSwitchSuccessRate} metricId="intent_switch_success_rate" note="Successful side-intent swaps" />
+                                <AgenticMetricCard label="Memory Retention" value={agenticQuality.memoryRetentionRate} metricId="memory_retention_rate" note="Data preserved after switch" />
+                                <AgenticMetricCard label="Resume Success" value={agenticQuality.resumeSuccessRate} metricId="resume_success_rate" note="Returning to parent intent" />
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+                            <h3 className="font-semibold text-gray-800 mb-1">Reasoning & Extraction</h3>
+                            <p className="text-xs text-gray-400 mb-4">Model performance on slot capture and logic adherence</p>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <AgenticMetricCard label="Slot Retention" value={agenticQuality.slotRetentionAfterSwitch} metricId="slot_retention_after_switch" />
+                                <AgenticMetricCard label="Ambiguity Resolution" value={agenticQuality.ambiguityResolutionRate} metricId="ambiguity_resolution_rate" />
+                                <AgenticMetricCard label="Repeat Question Rate" value={agenticQuality.repeatQuestionRate} metricId="repeat_question_rate" />
+                                <AgenticMetricCard label="Guardrail Mod Rate" value={agenticQuality.guardrailBypassAttemptRate} metricId="guardrail_bypass_attempt_rate" />
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+                            <h3 className="font-semibold text-gray-800 mb-1">V4 Preview Metrics</h3>
+                            <p className="text-xs text-gray-400 mb-4">New Level 3 metrics currently being benchmarked</p>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <StatCard label="Model Decision Ratio" value="38%" sub="Turns where model chose path" />
+                                <StatCard label="Slot Capture Rate" value="2.1" sub="Avg slots extracted per turn" />
+                                <StatCard label="Tool Autonomy" value="30%" sub="Independent tool selections" />
+                            </div>
+                        </div>
+
+                        <div className="text-xs text-gray-400 text-center italic">
+                            Analyzed {agenticQuality.totalSessionsAnalyzed} sessions and {agenticQuality.totalTurnsAnalyzed} turns for these metrics.
+                        </div>
                     </div>
                 )}
             </div>

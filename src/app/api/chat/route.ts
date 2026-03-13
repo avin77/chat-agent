@@ -1,12 +1,14 @@
 import { google } from '@ai-sdk/google';
 import { generateText, createUIMessageStreamResponse, createUIMessageStream } from 'ai';
 import * as fs from 'fs';
-import { ENHANCED_PROMPTS } from '@/lib/prompts-enhanced';
+import { getEnhancedPrompt } from '@/lib/prompts-enhanced';
 import { applyStrictGuardrails, validatePhone, extractName } from '@/lib/guardrails';
 import { logLLMInteraction, logToConsole } from '@/lib/llm-logger';
 import { sendEmail } from '@/lib/email';
 import { geminiRateLimiter } from '@/lib/rateLimiter';
 import { createClient } from '@supabase/supabase-js';
+import { normalizeIntentId, type CanonicalIntentId } from '@/lib/responsePlaybooks';
+import { runAgenticTurn } from '@/lib/agentic/runtime';
 
 // State machine imports
 import { FlowState, FailureType, SessionState, createSessionState } from '@/flows/BaseFlow';
@@ -55,7 +57,7 @@ ABSOLUTE RULES (violating any = failure):
 8. NO PRICES — if user asks about cost, say "Our team will discuss pricing when they call you."
 9. If instruction says [ESCALATE], include [ESCALATE] at the end.
 10. Do NOT output "." alone.
-11. When acknowledging salary, ALWAYS write the full rupee amount: "15k" → "₹15,000 per month", "20000" → "₹20,000 per month". Say "Got it, ₹[AMOUNT] per month."
+11. If the user shares a salary or budget, acknowledge it without repeating any rupee amount. Say "Got it. Our team can discuss the salary range with you."
 
 EXAMPLES OF CORRECT RESPONSES:
 - Instruction: "Ask: Please share your 10-digit mobile number." → "Sure, I'd be happy to help! Please share your 10-digit mobile number."
@@ -86,25 +88,20 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'maid_regist
         return 'general';
     }
 
+    const hasStrongHireIntent = /need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook|need.*helper|want.*helper|hire.*helper|looking for.*helper|i need a helper|need domestic help|full.?time.*cook|part.?time.*cook/.test(lower);
+    if (hasStrongHireIntent) return 'maid_hire';
+
     if (/complaint|issue|problem|angry|upset|bad service|broke|broken|damaged|didn't show|didn't come|not working|rude|misbehav|stole|theft|missing|didn't clean|late|no show/.test(lower)) return 'complaint';
 
-    // Check maid_registration BEFORE broader maid_hire patterns — registration signals take priority
-    if (/need.*job|want.*work|looking for.*job|looking for work|i am.*maid|i am.*helper|register.*helper|register.*maid|register.*cook|i am.*cook|i am a cook|i am a maid|i am a helper|i am looking for work/.test(lower)) return 'maid_registration';
+    if (/need.*job|want.*work|looking for.*job|looking for work|register.*helper|register.*maid|register.*cook|i am looking for work/.test(lower) || /\bi am(?:\s+a)?\s+(cook|maid|helper)\b/.test(lower)) return 'maid_registration';
 
-    if (/need.*maid|hire.*maid|looking for.*maid|want.*maid|need.*cook|hire.*cook|need.*cleaning|hire.*help|book.*maid|get.*maid|send.*maid|i need a maid|i need a cook|need.*helper|want.*helper|hire.*helper|looking for.*helper|i need a helper|need domestic help/.test(lower)) return 'maid_hire';
-
-    // Broader maid_hire patterns — catch "cleaner", service roles, baby care, typos
     if (/\b(cleaner|housekeeper|cook|babysitter|caretaker|nanny|ayah|bai|kaam.?wali|domestic help|helper|servant|naukrani)\b/i.test(lower) &&
         /\b(need|want|hire|book|get|looking|find|require|send)\b/i.test(lower)) return 'maid_hire';
     if (/\b(maid|maids)\b/.test(lower) && /\b(hire|need|want|book|get|looking|find)\b/.test(lower)) return 'maid_hire';
-    // Hinglish: "mujhe ek maid chahiye" / "maid chahiye" / "kaam wali chahiye" / "naukrani chahiye" / "servant chahiye"
     if (/\b(maid|maids|bai|kaam.?wali|cook|helper|servant|naukrani)\b/i.test(lower) && /\b(chahiye|chahata|chahti|chaye|chaiye)\b/i.test(lower)) return 'maid_hire';
-    // Hinglish cooking phrases: "khaana banana wali chahiye" / "khaana banane wali"
     if (/khaana.{0,10}bana/i.test(lower)) return 'maid_hire';
-    // Hinglish housework: "ghar ka kaam" combined with need/want/chahiye
     if (/ghar.{0,5}ka.{0,5}kaam/i.test(lower) && /\b(need|want|chahiye|chahata|chahti|help|looking)\b/i.test(lower)) return 'maid_hire';
     if (/(looking for|need|want|find)\s+(?:a\s+)?(?:someone|person|lady|woman|man|worker|help)\s+.{0,30}(cook|clean|take care|care for|baby|elderly|elder)/i.test(lower)) return 'maid_hire';
-    // Typo variants for "maid": made, maed, maeid, maaid
     if (/\b(hire|need|want|get)\b.{0,15}\b(made|maed|maeid|maaid)\b/i.test(lower) ||
         /\b(made|maed|maeid|maaid)\b.{0,20}\b(cook|cookin|clean|care|baby|elder)\b/i.test(lower)) return 'maid_hire';
     if (/\b(need|want|hire|get|looking)\b.{0,10}\b(maed|maeid|maaid)\b/i.test(lower)) return 'maid_hire';
@@ -114,6 +111,69 @@ function detectIntent(message: string): 'complaint' | 'maid_hire' | 'maid_regist
     if (isQuestion) return 'general';
 
     return 'general';
+}
+
+function normalizeRuntimeIntent(intent: string | null | undefined): CanonicalIntentId {
+    return normalizeIntentId(intent || 'general');
+}
+
+function mapDbIntentStack(intentStack: any[] | undefined) {
+    return (intentStack || []).map((snapshot) => ({
+        intent: normalizeRuntimeIntent(snapshot.intent),
+        currentState: snapshot.state || snapshot.currentState || 'START',
+        collectedData: snapshot.slots || snapshot.collectedData || {},
+        slotAttempts: snapshot.slot_attempts || snapshot.slotAttempts || {},
+        repairContext: snapshot.repair_context || snapshot.repairContext || null,
+    }));
+}
+
+function mapRuntimeIntentStack(intentStack: Array<{
+    intent: string;
+    currentState: string;
+    collectedData: Record<string, string>;
+    slotAttempts: Record<string, number>;
+    repairContext: string | null;
+}>) {
+    return intentStack.map((snapshot) => ({
+        intent: snapshot.intent,
+        state: snapshot.currentState,
+        slots: snapshot.collectedData,
+        slot_attempts: snapshot.slotAttempts,
+        repair_context: snapshot.repairContext,
+    }));
+}
+
+async function saveSharedRuntimeSession(
+    conversationId: string,
+    snapshot: {
+        activeIntent: string;
+        currentState: string;
+        collectedData: Record<string, string>;
+        slotAttempts: Record<string, number>;
+        intentStack: Array<{
+            intent: string;
+            currentState: string;
+            collectedData: Record<string, string>;
+            slotAttempts: Record<string, number>;
+            repairContext: string | null;
+        }>;
+        intentHistory: string[];
+    },
+    extras: { agenticMode?: boolean } = {},
+) {
+    await supabase
+        .from('conversation_sessions')
+        .update({
+            detected_intent: snapshot.activeIntent,
+            current_state: snapshot.currentState,
+            collected_data: snapshot.collectedData,
+            slot_attempts: snapshot.slotAttempts,
+            intent_stack: mapRuntimeIntentStack(snapshot.intentStack),
+            intent_history: snapshot.intentHistory,
+            last_activity: new Date().toISOString(),
+            ...(extras.agenticMode ? { agentic_mode: true } : {}),
+        })
+        .eq('conversation_id', conversationId);
 }
 
 // ─── Session Management ──────────────────────────────────────────────────────
@@ -131,12 +191,12 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
 
         if (existingSession && !error) {
             const newIntent = detectIntent(latestMessage);
-            const currentIntent = existingSession.detected_intent;
+            const currentIntent = normalizeRuntimeIntent(existingSession.detected_intent);
 
             // Reset COMPLETE, stuck (attempts >= 3), or stale partial sessions
             const SESSION_RESUME_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hours
             const lastActivity = new Date(existingSession.last_activity || existingSession.created_at).getTime();
-            const isStalePartial = existingSession.detected_intent === 'maid_hire' &&
+            const isStalePartial = currentIntent === 'maid_hire' &&
                 existingSession.current_state !== 'START' &&
                 existingSession.current_state !== 'COMPLETE' &&
                 Date.now() - lastActivity > SESSION_RESUME_TIMEOUT_MS;
@@ -146,7 +206,7 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
             // 3 failed save_location calls, causing silent data loss mid-flow.
             const isAgenticSession = existingSession.agentic_mode === true;
             const isStuck = existingSession.current_state === 'COMPLETE' ||
-                (existingSession.detected_intent === 'maid_hire' && !isAgenticSession && (existingSession.attempts ?? 0) >= 3) ||
+                (currentIntent === 'maid_hire' && !isAgenticSession && (existingSession.attempts ?? 0) >= 3) ||
                 isStalePartial;
             if (isStuck) {
                 const reason = existingSession.current_state === 'COMPLETE' ? 'COMPLETE'
@@ -160,16 +220,18 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                         collected_data: {},
                         attempts: 0,
                         slot_attempts: {},
+                        detected_intent: currentIntent,
                         last_activity: new Date().toISOString()
                     })
                     .eq('conversation_id', conversationId);
                 return {
-                    intent: currentIntent as 'complaint' | 'maid_hire' | 'maid_registration' | 'general',
-                    session: { ...existingSession, current_state: 'START', collected_data: {}, attempts: 0, slot_attempts: {} },
+                    intent: currentIntent,
+                    session: { ...existingSession, detected_intent: currentIntent, current_state: 'START', collected_data: {}, attempts: 0, slot_attempts: {} },
                 };
             }
 
-            const isMidFlow = currentIntent === 'maid_hire' &&
+            const isMidFlow = currentIntent !== 'general' &&
+                existingSession.current_state &&
                 existingSession.current_state !== 'START' &&
                 existingSession.current_state !== 'COMPLETE';
 
@@ -185,7 +247,8 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
                     updatedStack.push({
                         intent: currentIntent,
                         state: existingSession.current_state,
-                        slots: existingSession.collected_data
+                        slots: existingSession.collected_data,
+                        slot_attempts: existingSession.slot_attempts || {},
                     });
                 }
 
@@ -220,12 +283,12 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
 
             await supabase
                 .from('conversation_sessions')
-                .update({ last_activity: new Date().toISOString() })
+                .update({ last_activity: new Date().toISOString(), detected_intent: currentIntent })
                 .eq('conversation_id', conversationId);
 
             return {
-                intent: existingSession.detected_intent as 'complaint' | 'maid_hire' | 'helper_reg' | 'general',
-                session: existingSession,
+                intent: currentIntent,
+                session: { ...existingSession, detected_intent: currentIntent },
             };
         }
 
@@ -235,8 +298,8 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
             .insert({
                 conversation_id: conversationId,
                 detected_intent: intent,
-                current_state: intent === 'maid_hire' ? 'START' : null,
-                collected_data: intent === 'maid_hire' ? {} : null,
+                current_state: 'START',
+                collected_data: {},
                 attempts: 0,
                 slot_attempts: {},
                 intent_stack: [],
@@ -257,9 +320,10 @@ async function getOrCreateSession(conversationId: string, latestMessage: string)
 // ─── Load state machine session from DB ──────────────────────────────────────
 function loadStateMachineSession(conversationId: string, dbSession: any): SessionState {
     if (dbSession && dbSession.current_state) {
+        const normalizedIntent = normalizeRuntimeIntent(dbSession.detected_intent);
         return {
             conversationId,
-            intent: dbSession.detected_intent || 'maid_hire',
+            intent: normalizedIntent,
             currentState: (dbSession.current_state as FlowState) || FlowState.START,
             collectedData: dbSession.collected_data || {},
             attempts: dbSession.attempts || 0,
@@ -268,10 +332,10 @@ function loadStateMachineSession(conversationId: string, dbSession: any): Sessio
             createdAt: dbSession.created_at || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             intent_stack: dbSession.intent_stack || [],
-            intent_history: dbSession.intent_history || [dbSession.detected_intent || 'maid_hire'],
+            intent_history: dbSession.intent_history || [normalizedIntent],
         };
     }
-    return createSessionState(conversationId, dbSession?.detected_intent || 'maid_hire');
+    return createSessionState(conversationId, normalizeRuntimeIntent(dbSession?.detected_intent || 'maid_hire'));
 }
 
 // ─── Save state machine session to DB ────────────────────────────────────────
@@ -473,7 +537,10 @@ async function handleMaidHireStateMachine(
         } else if (result.failureType === FailureType.GIBBERISH) {
             llmText = `I didn't catch that. ${step?.question || ''}`;
         } else if (result.failureType === FailureType.INVALID_SLOT) {
-            llmText = step?.errorMessage || "I didn't understand that. Could you please try again?";
+            const invalidSlotMessage = typeof step?.errorMessage === 'function'
+                ? step.errorMessage(result.attempts)
+                : step?.errorMessage;
+            llmText = invalidSlotMessage || "I didn't understand that. Could you please try again?";
         } else if (Object.keys(result.slotsExtracted).length > 0) {
             llmText = `Got it! ${step?.question || ''}`;
         } else {
@@ -611,7 +678,7 @@ export async function POST(req: Request) {
 
         // Get intent from session
         // Use latestMessage (not fullConversationText) to avoid false intent switches:
-        // Combined history text can trigger maid_hire patterns on helper_reg or general sessions
+        // Combined history text can trigger maid_hire patterns on maid_registration or general sessions
         // (e.g., "looking for work as a cook" → on turn 2, the combined text has "cook" + "looking"
         // which matches the broader maid_hire pattern and incorrectly resets the session intent).
         const { intent, session: dbSession } = await getOrCreateSession(conversationId, latestMessage);
@@ -702,10 +769,11 @@ export async function POST(req: Request) {
 
                             // Send email
                             const esc = (s: string | null | undefined) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                            if (process.env.ADMIN_EMAIL) {
+                            const adminEmail = process.env.ADMIN_EMAIL;
+                            if (adminEmail) {
                                 try {
                                     await sendEmail({
-                                        to: process.env.ADMIN_EMAIL,
+                                        to: adminEmail!,
                                         subject: `New Maid Hire Lead: ${collectedData.name || 'Unknown'} - ${collectedData.phone || 'No phone'}`,
                                         html: `
                                             <h2>New Maid Hire Lead (${collectedVia === 'agentic' ? 'Agentic' : 'State Machine'})</h2>
@@ -737,6 +805,7 @@ export async function POST(req: Request) {
                     execute: ({ writer }) => {
                         writer.write({ type: 'text-start', id: textId });
                         writer.write({ type: 'text-delta', delta: displayText, id: textId });
+                        writer.write({ type: 'metadata', data: { handledIntent: 'maid_hire', newState }, id: textId });
                         writer.write({ type: 'text-end', id: textId });
                     },
                 });
@@ -747,11 +816,14 @@ export async function POST(req: Request) {
                 runShadowHandler(
                     conversationId,
                     (dbSession?.attempts ?? 0) + 1,
+                    dbSession?.detected_intent || intent,
                     latestMessage,
                     dbSession?.current_state ?? 'START',   // state BEFORE this turn
                     dbSession?.collected_data ?? {},        // slots BEFORE this turn
                     newState,                               // prod decision: next state
                     collectedData,                          // prod decision: slots after
+                    dbSession?.intent_stack || [],
+                    dbSession?.intent_history || [intent],
                 ).catch(err => console.error('[Shadow] Failed:', (err as Error).message));
 
                 return response;
@@ -796,237 +868,136 @@ export async function POST(req: Request) {
         }
 
         // ═══════════════════════════════════════════════════════════════════════
-        // ALL OTHER INTENTS: Standard LLM flow (complaint, helper_reg, general)
+        // ALL OTHER INTENTS: Standard LLM flow (complaint, maid_registration, general)
         // ═══════════════════════════════════════════════════════════════════════
-        let systemPrompt = ENHANCED_PROMPTS[intent] || ENHANCED_PROMPTS.general;
+        const runtimeStartTime = Date.now();
+        const runtimeDecision = await runAgenticTurn({
+            activeIntent: intent,
+            currentState: dbSession?.current_state || 'START',
+            collectedData: { ...(dbSession?.collected_data || {}) },
+            slotAttempts: { ...(dbSession?.slot_attempts || {}) },
+            intentStack: mapDbIntentStack(dbSession?.intent_stack),
+            intentHistory: dbSession?.intent_history || [intent],
+            runtimeMode: 'live_commit',
+            userMessage: latestMessage,
+            history: trimMessages(coreMessages),
+        });
 
-        if (/\b\d{5,9}\b/.test(latestMessage) && !/\b\d{10}\b/.test(latestMessage)) {
-            systemPrompt += "\n\nSYSTEM ALERT: Input contains INVALID phone (5-9 digits). REJECT IT. Ask for 10-digit number.";
-        }
-        if (/\b\d{10}\b/.test(latestMessage) && intent !== 'maid_hire') {
-            systemPrompt += "\n\nSYSTEM ALERT: Input contains VALID 10-digit phone. EXTRACT IT and acknowledge it.";
-        }
+        await saveSharedRuntimeSession(conversationId, runtimeDecision.sessionSnapshot);
 
-        const trimmedMessages = trimMessages(coreMessages);
-        const startTime = Date.now();
+        const runtimeDisplayText = applyStrictGuardrails(runtimeDecision.displayText);
+        const runtimeIntent = runtimeDecision.completedIntent || runtimeDecision.handledIntent;
+        const runtimePhone = runtimeDecision.sessionSnapshot.collectedData.contact ||
+            runtimeDecision.sessionSnapshot.collectedData.phone ||
+            validatePhone(latestMessage);
+        const runtimeName = extractName(latestMessage);
+        const runtimeTelemetry = {
+            runtime: 'shared_agentic',
+            handledIntent: runtimeDecision.handledIntent,
+            completedIntent: runtimeDecision.completedIntent,
+            resumedIntent: runtimeDecision.resumedIntent,
+            acceptedSlots: runtimeDecision.acceptedSlots,
+            rejectedSlots: runtimeDecision.rejectedSlots,
+            sessionSnapshot: runtimeDecision.sessionSnapshot,
+            thoughtReflection: runtimeDecision.thoughtReflection,
+            confidenceScore: runtimeDecision.confidenceScore,
+        };
 
         try {
-            const { text, usage } = await generateText({
-                model: google('gemma-3-27b-it'),
-                system: systemPrompt,
-                messages: trimmedMessages,
+            await logLLMInteraction({
+                conversationId,
+                intent: runtimeIntent,
+                systemPrompt: 'SHARED_AGENTIC_RUNTIME',
+                userMessage: latestMessage,
+                fullHistory: trimMessages(coreMessages),
+                rawResponse: JSON.stringify(runtimeTelemetry),
+                cleanedResponse: runtimeDisplayText,
+                tookMs: Date.now() - runtimeStartTime,
+                promptTokens: 0,
+                completionTokens: 0,
+                totalTokens: 0,
+                estimatedCostUsd: 0,
+                telemetryMeta: runtimeTelemetry,
+                thoughtReflection: runtimeDecision.thoughtReflection,
+                confidenceScore: runtimeDecision.confidenceScore,
             });
-
-            const tookMs = Date.now() - startTime;
-            const promptTokens = usage?.inputTokens ?? 0;
-            const completionTokens = usage?.outputTokens ?? 0;
-            const totalTokens = usage?.totalTokens ?? (promptTokens + completionTokens);
-            // gemma-3-27b-it is FREE as of 2026-02. Placeholder formula for future pricing.
-            const PER_1K_TOKENS = 0;
-            const estimatedCostUsd = (totalTokens / 1000) * PER_1K_TOKENS;
-
-            // SAFETY NET
-            let finalText = text;
-            if (!text || text.trim().length < 4 || /^[\.\,\!\?\s]+$/.test(text) || text.trim() === 'failed') {
-                console.warn('[SAFETY NET] Detected truncated response:', text);
-
-                const phone = validatePhone(latestMessage);
-                const name = extractName(latestMessage);
-                const hasShortPhone = /\b\d{5,9}\b/.test(latestMessage);
-
-                if (intent === 'complaint' || intent === 'helper_reg') {
-                    if (phone && !name) {
-                        finalText = "Thank you for the number. What is your Name?";
-                    } else if (name && hasShortPhone && !phone) {
-                        finalText = "I got your name, but the phone number looks invalid. Please provide a 10-digit mobile number.";
-                    } else if (name && !phone) {
-                        finalText = "Thanks! Could you please share your 10-digit Phone Number?";
-                    } else if (!phone && !name) {
-                        finalText = "Could you please provide your Name and Phone Number so I can help you?";
-                    } else {
-                        finalText = "I'm processing your request. Could you please confirm your details?";
-                    }
-                } else {
-                    finalText = "I didn't quite catch that. Could you please rephrase?";
-                }
-
-                try {
-                    fs.appendFileSync('chat_debug.log', `[SAFETY NET TRIGGERED] Original: "${text}" -> Replaced: "${finalText}"\n`);
-                } catch (e) { }
-            }
-
-            const cleaned = applyStrictGuardrails(finalText);
-
-            try {
-                fs.appendFileSync('chat_debug.log', `[Finish] ${JSON.stringify({ text: cleaned, intent }, null, 2)}\n---\n`);
-            } catch (e) { }
-
-            if (process.env.NODE_ENV === 'development') {
-                logToConsole({
-                    intent,
-                    systemPrompt,
-                    userMessage: latestMessage,
-                    rawResponse: text,
-                    cleanedResponse: cleaned
-                });
-            }
-
-            try {
-                await logLLMInteraction({
-                    conversationId,
-                    intent,
-                    systemPrompt,
-                    userMessage: latestMessage,
-                    fullHistory: trimmedMessages,
-                    rawResponse: text,
-                    cleanedResponse: cleaned,
-                    tookMs,
-                    promptTokens,      // NEW
-                    completionTokens,  // NEW
-                    totalTokens,       // NEW
-                    estimatedCostUsd,  // NEW
-                });
-            } catch (logError) {
-                console.error('Logging failed:', logError);
-            }
-
-            // Escalation logic for non-maid_hire intents
-            const phone = validatePhone(latestMessage);
-            const name = extractName(latestMessage);
-            const llmTriggeredEscalation = /\[?ESCALATE\]?/i.test(text);
-            const phoneCollected = !!phone;
-
-            let alreadyEscalated = false;
-            try {
-                const tableMap: Record<string, string> = {
-                    complaint: 'complaints',
-                    helper_reg: 'helper_registrations',
-                };
-                const table = tableMap[intent];
-                if (table) {
-                    const { data } = await supabase.from(table).select('id').eq('conversation_id', conversationId).maybeSingle();
-                    alreadyEscalated = !!data;
-                }
-            } catch { }
-
-            const shouldEscalate = !alreadyEscalated && (llmTriggeredEscalation ||
-                ((intent === 'complaint' || intent === 'helper_reg') && phoneCollected));
-
-            if (shouldEscalate) {
-                try {
-                    let dbError = null;
-
-                    if (intent === 'complaint') {
-                        const { error } = await supabase.from('complaints').insert({
-                            name, phone,
-                            issue_description: latestMessage,
-                            conversation_id: conversationId,
-                            full_conversation: coreMessages
-                        });
-                        dbError = error;
-                    } else if (intent === 'helper_reg') {
-                        const { error } = await supabase.from('helper_registrations').insert({
-                            name, phone,
-                            conversation_id: conversationId,
-                            full_conversation: coreMessages
-                        });
-                        dbError = error;
-                    } else {
-                        const { error } = await supabase.from('general_enquiries').insert({
-                            conversation_id: conversationId,
-                            question: `[ESCALATED] ${latestMessage}`,
-                            bot_answer: "Escalated to admin."
-                        });
-                        dbError = error;
-                    }
-
-                    if (dbError) {
-                        console.error(`DB INSERT FAILED (${intent}):`, dbError);
-                    }
-
-                    const esc = (s: string | null | undefined) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-                    if (process.env.ADMIN_EMAIL) {
-                        try {
-                            await sendEmail({
-                                to: process.env.ADMIN_EMAIL,
-                                subject: `${intent.toUpperCase()} ESCALATION: ${name || 'Unknown'}`,
-                                html: `
-                                    <h2>New ${esc(intent.replace('_', ' ').toUpperCase())} Lead</h2>
-                                    <p><strong>Name:</strong> ${esc(name)}</p>
-                                    <p><strong>Phone:</strong> ${esc(phone)}</p>
-                                    <p><strong>Conversation ID:</strong> ${esc(conversationId)}</p>
-                                    <hr>
-                                    <pre>${esc(JSON.stringify(coreMessages, null, 2))}</pre>
-                                `
-                            });
-                        } catch (emailError) {
-                            console.error('Email send failed (non-fatal):', emailError);
-                        }
-                    }
-                } catch (escalationError) {
-                    console.error('Escalation failed:', escalationError);
-                }
-            } else if (intent === 'general') {
-                try {
-                    await supabase.from('general_enquiries').insert({
-                        conversation_id: conversationId,
-                        question: latestMessage,
-                        bot_answer: cleaned
-                    });
-                } catch {
-                    console.warn('Failed to log general enquiry');
-                }
-            }
-
-            const displayText = cleaned.replace(/\[?ESCALATE\]?/gi, '').trim();
-
-            const textId = crypto.randomUUID();
-            const uiStream = createUIMessageStream({
-                execute: ({ writer }) => {
-                    writer.write({ type: 'text-start', id: textId });
-                    writer.write({ type: 'text-delta', delta: displayText, id: textId });
-                    writer.write({ type: 'text-end', id: textId });
-                },
-            });
-
-            return createUIMessageStreamResponse({ stream: uiStream });
-        } catch (apiError: any) {
-            console.error("GEMINI EXECUTION ERROR:", apiError);
-
-            // Log the actual error to Supabase for debugging
-            try {
-                await logLLMInteraction({
-                    conversationId, intent: 'SYSTEM_ERROR',
-                    systemPrompt: `GEMINI_ERROR: ${apiError.message?.substring(0, 500)}`,
-                    userMessage: latestMessage,
-                    fullHistory: [],
-                    rawResponse: `ERROR: ${apiError.message?.substring(0, 500)}`,
-                    cleanedResponse: '', tookMs: Date.now() - startTime,
-                });
-            } catch { /* ignore logging errors */ }
-
-            if (apiError.message?.includes('429') || apiError.status === 429) {
-                return new Response("System Busy (Rate Limit)", { status: 429 });
-            }
-
-            // Graceful fallback for all other API errors (no more 500s)
-            const fallbackText = intent === 'complaint'
-                ? "I understand you have a concern. Could you please share your name and 10-digit phone number so our team can help?"
-                : intent === 'helper_reg'
-                ? "Thank you for your interest in registering. Please share your name and 10-digit phone number."
-                : "I'm here to help with domestic help services in Bengaluru. Could you tell me more about what you're looking for?";
-
-            const textId = crypto.randomUUID();
-            const uiStream = createUIMessageStream({
-                execute: ({ writer }) => {
-                    writer.write({ type: 'text-start', id: textId });
-                    writer.write({ type: 'text-delta', delta: fallbackText, id: textId });
-                    writer.write({ type: 'text-end', id: textId });
-                },
-            });
-            return createUIMessageStreamResponse({ stream: uiStream });
+        } catch (logError) {
+            console.error('Logging failed:', logError);
         }
+
+        let alreadyEscalated = false;
+        try {
+            const tableMap: Record<string, string> = {
+                complaint: 'complaints',
+                maid_registration: 'helper_registrations',
+            };
+            const table = tableMap[runtimeIntent];
+            if (table) {
+                const { data } = await supabase.from(table).select('id').eq('conversation_id', conversationId).maybeSingle();
+                alreadyEscalated = !!data;
+            }
+        } catch { }
+
+        if (runtimeDecision.shouldEscalate && !alreadyEscalated) {
+            try {
+                let dbError = null;
+
+                if (runtimeIntent === 'complaint') {
+                    const { error } = await supabase.from('complaints').insert({
+                        name: runtimeName,
+                        phone: runtimePhone,
+                        issue_description: runtimeDecision.sessionSnapshot.collectedData.issue_summary || latestMessage,
+                        conversation_id: conversationId,
+                        full_conversation: coreMessages,
+                    });
+                    dbError = error;
+                } else if (runtimeIntent === 'maid_registration') {
+                    const { error } = await supabase.from('helper_registrations').insert({
+                        name: runtimeName,
+                        phone: runtimePhone,
+                        conversation_id: conversationId,
+                        full_conversation: coreMessages,
+                    });
+                    dbError = error;
+                } else {
+                    const { error } = await supabase.from('general_enquiries').insert({
+                        conversation_id: conversationId,
+                        question: runtimeDecision.shouldEscalate ? `[ESCALATED] ${latestMessage}` : latestMessage,
+                        bot_answer: runtimeDisplayText,
+                    });
+                    dbError = error;
+                }
+
+                if (dbError) {
+                    console.error(`DB INSERT FAILED (${runtimeIntent}):`, dbError);
+                }
+            } catch (escalationError) {
+                console.error('Escalation failed:', escalationError);
+            }
+        } else if (runtimeIntent === 'general') {
+            try {
+                await supabase.from('general_enquiries').insert({
+                    conversation_id: conversationId,
+                    question: latestMessage,
+                    bot_answer: runtimeDisplayText,
+                });
+            } catch {
+                console.warn('Failed to log general enquiry');
+            }
+        }
+
+        const runtimeTextId = crypto.randomUUID();
+        const runtimeUiStream = createUIMessageStream({
+            execute: ({ writer }) => {
+                writer.write({ type: 'text-start', id: runtimeTextId });
+                writer.write({ type: 'text-delta', delta: runtimeDisplayText, id: runtimeTextId });
+                writer.write({ type: 'metadata', data: { handledIntent: runtimeIntent, newState: runtimeDecision.sessionSnapshot.currentState }, id: runtimeTextId });
+                writer.write({ type: 'text-end', id: runtimeTextId });
+            },
+        });
+
+        return createUIMessageStreamResponse({ stream: runtimeUiStream });
+
     } catch (error: any) {
         console.error('API Error:', error);
 
@@ -1040,3 +1011,4 @@ export async function POST(req: Request) {
         return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
     }
 }
+

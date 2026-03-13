@@ -1,4 +1,5 @@
 // Structured Data Extraction using regex + validation
+import { normalizeServicePhrase } from '../lib/serviceVocabulary.ts';
 
 export interface ExtractedData {
   name: string | null;
@@ -59,7 +60,8 @@ export function isValidPhone(phone: string): boolean {
 // ─── Name ────────────────────────────────────────────────────────────────────
 export function extractName(text: string): string | null {
   const namePatterns = [
-    /(?:my name is|i am|this is|call me|i'm|naam)\s+([a-z]{2,30}(?:\s+[a-z]{2,30})?)/i,
+    /(?:my name is|this is|call me|i'm|naam)\s+([a-z]{2,30}(?:\s+[a-z]{2,30})?)/i,
+    /i am(?!\s+(?:in|at|from)\b)\s+([a-z]{2,30}(?:\s+[a-z]{2,30})?)/i,
     /^([a-z]{3,30})$/i,
   ];
 
@@ -227,16 +229,7 @@ export function extractLocation(text: string): string | null {
 
 // ─── Work Type / Service Type ────────────────────────────────────────────────
 export function extractWorkType(text: string): string | null {
-  const lower = text.toLowerCase();
-
-  if (lower.includes('cook') || lower.includes('cooking') || lower.includes('khana')) return 'Cooking';
-  if (lower.includes('clean') || lower.includes('cleaning') || lower.includes('safai')) return 'Cleaning';
-  if (lower.includes('babysit') || lower.includes('baby') || lower.includes('child') || lower.includes('nanny') || lower.includes('baccha')) return 'Baby Care';
-  if (lower.includes('elderly') || lower.includes('old') || lower.includes('senior') || lower.includes('caretaker')) return 'Elderly Care';
-  if (lower.includes('both') || (lower.includes('cook') && lower.includes('clean'))) return 'Cooking & Cleaning';
-  if (/\ball\s+work\b|\ball\s+type|\ball\s+kind/.test(lower)) return 'Cleaning';
-
-  return null;
+  return normalizeServicePhrase(text);
 }
 
 // ─── Schedule (NEW) ──────────────────────────────────────────────────────────
