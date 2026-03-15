@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { generateText, streamText } from 'ai';
+import { generateText, createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import * as fs from 'fs';
 import { getEnhancedPrompt } from '@/lib/prompts-enhanced';
 import { applyStrictGuardrails, validatePhone, extractName } from '@/lib/guardrails';
@@ -814,15 +814,16 @@ export async function POST(req: Request) {
                     dbSession?.intent_history || [intent],
                 ).catch(err => console.error('[Shadow] Failed:', (err as Error).message));
 
-                // Return response
-                return new Response(
-                    JSON.stringify({
-                        message: displayText,
-                        handledIntent: 'maid_hire',
-                        newState,
-                    }),
-                    { headers: { 'Content-Type': 'application/json' } }
-                );
+                // Return response in AI SDK stream format (required by useChat in frontend)
+                const textId = crypto.randomUUID();
+                const uiStream = createUIMessageStream({
+                    execute: ({ writer }) => {
+                        writer.write({ type: 'text-start', id: textId });
+                        writer.write({ type: 'text-delta', delta: displayText, id: textId });
+                        writer.write({ type: 'text-end', id: textId });
+                    },
+                });
+                return createUIMessageStreamResponse({ stream: uiStream });
             };
 
             try {
@@ -982,14 +983,16 @@ export async function POST(req: Request) {
             }
         }
 
-        return new Response(
-            JSON.stringify({
-                message: runtimeDisplayText,
-                handledIntent: runtimeIntent,
-                newState: runtimeDecision.sessionSnapshot.currentState,
-            }),
-            { headers: { 'Content-Type': 'application/json' } }
-        );
+        // Return response in AI SDK stream format (required by useChat in frontend)
+        const runtimeTextId = crypto.randomUUID();
+        const runtimeUiStream = createUIMessageStream({
+            execute: ({ writer }) => {
+                writer.write({ type: 'text-start', id: runtimeTextId });
+                writer.write({ type: 'text-delta', delta: runtimeDisplayText, id: runtimeTextId });
+                writer.write({ type: 'text-end', id: runtimeTextId });
+            },
+        });
+        return createUIMessageStreamResponse({ stream: runtimeUiStream });
 
     } catch (error: any) {
         console.error('API Error:', error);
